@@ -1,0 +1,41 @@
+<!-- ============ OUTLINE ============ -->
+<!-- Single source for the section list: the script below also copies it into every divider slide. -->
+<section class="slide" data-section="outline">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>Outline</div>
+  <h2>Seven sections: why balance, where it happens, how to pick a backend, what to do when one fails.</h2>
+  <ol class="outline" id="outline-list">
+    <li data-divider="divider-01"><span class="n">01</span><span class="t">Introduction</span><span class="p"></span><span class="d">Why one server stops being enough</span></li>
+    <li data-divider="divider-02"><span class="n">02</span><span class="t">Layers</span><span class="p"></span><span class="d">DNS, L4, L7, client-side, the EKS path</span></li>
+    <li data-divider="divider-03"><span class="n">03</span><span class="t">Algorithms</span><span class="p"></span><span class="d">Round robin to consistent hashing</span></li>
+    <li data-divider="divider-04"><span class="n">04</span><span class="t">Health &amp; failure</span><span class="p"></span><span class="d">Checks, ejection, draining, retries</span></li>
+    <li data-divider="divider-05"><span class="n">05</span><span class="t">Connections &amp; state</span><span class="p"></span><span class="d">Sticky sessions, gRPC, keep-alive</span></li>
+    <li data-divider="divider-06"><span class="n">06</span><span class="t">System design</span><span class="p"></span><span class="d">Two regions, 200k requests / s</span></li>
+    <li data-divider="divider-07"><span class="n">07</span><span class="t">Takeaways</span><span class="p"></span><span class="d">Five things to keep</span></li>
+  </ol>
+  <div class="foot"><span>2 / 39</span><span>outline</span></div>
+</section>
+
+<script>
+(() => {
+  const items = [...document.querySelectorAll('#outline-list > li')];
+  const slides = [...document.querySelectorAll('#deck .slide')];
+  const pad = (n) => String(n).padStart(2, '0');
+
+  items.forEach((li, i) => {
+    const divider = document.querySelector(`.slide.divider[data-section="${li.dataset.divider}"]`);
+    if (!divider) return;
+    li.querySelector('.p').textContent = `slide ${slides.indexOf(divider) + 1}`;
+
+    const state = (j) => (j < i ? 'done' : j === i ? 'now' : '');
+    const aside = document.createElement('aside');
+    aside.className = 'outline-mini';
+    aside.setAttribute('aria-label', 'Outline');
+    aside.innerHTML = `
+      <div class="om-head"><span>Section</span><b>${pad(i + 1)}</b><span>/ ${pad(items.length)}</span></div>
+      <div class="om-rail">${items.map((_, j) => `<i class="${state(j)}"></i>`).join('')}</div>
+      <ol>${items.map((it, j) =>
+        `<li class="${state(j)}"><span>${pad(j + 1)}</span>${it.querySelector('.t').textContent}</li>`).join('')}</ol>`;
+    divider.insertBefore(aside, divider.querySelector('.foot'));
+  });
+})();
+</script>

@@ -1,0 +1,402 @@
+<!-- ============ SECTION 3 — ALGORITHMS ============ -->
+<section class="slide divider" data-section="divider-03">
+  <div class="divider-num">03</div>
+  <div class="section-tag"><i></i>SECTION 3</div>
+  <h2>Algorithms</h2>
+  <div class="lead">
+    <p>Two families:</p>
+    <ul class="lead-list">
+      <li><b>Spread</b> — send each request to whoever is next or least busy.</li>
+      <li><b>Hash</b> — send the same key to the same backend every time.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>14 / 39</span><span>act iii · algorithms</span></div>
+</section>
+
+<section class="slide" data-section="round-robin">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>3.1 · Round robin</div>
+  <h2>Next backend in the list, then wrap around. Weights give bigger boxes more turns.</h2>
+  <div class="split even" style="align-items:start;">
+    <div class="stack">
+      <div class="code-label">round robin · 3 equal pods</div>
+      <pre class="code">req #1  → pod-a
+req #2  → pod-b
+req #3  → pod-c
+req #4  → pod-a   <span class="c"># wrap around</span>
+req #5  → pod-b
+req #6  → pod-c
+
+<span class="c"># 6 requests → 2 / 2 / 2</span></pre>
+    </div>
+    <div class="stack" data-step="1">
+      <div class="code-label">weighted · pod-a is an 8 vCPU node, weight 2</div>
+      <pre class="code">req #1  → <span class="hl">pod-a</span>
+req #2  → <span class="hl">pod-a</span>
+req #3  → pod-b
+req #4  → pod-c
+req #5  → <span class="hl">pod-a</span>
+req #6  → <span class="hl">pod-a</span>
+
+<span class="c"># 8 requests → 4 / 2 / 2</span></pre>
+    </div>
+  </div>
+  <ul class="points tight">
+    <li><span class="chip ok">good</span> No state beyond one counter. Perfectly even <b>when every request costs the same</b>.</li>
+    <li data-step="2"><span class="chip risk">blind</span> It counts requests, not work. A 3-second report export and a 5 ms health ping are both "one turn".</li>
+  </ul>
+  <div class="foot"><span>15 / 39</span><span>round robin · weighted round robin</span></div>
+</section>
+
+<section class="slide" data-section="least-conn">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>3.2 · Least connections</div>
+  <h2>Send to the backend with the fewest requests in flight right now</h2>
+  <div class="split code-left">
+    <table class="tbl dense">
+      <thead><tr><th>at 12:00:01.200</th><th class="num">in flight</th><th>round robin</th><th>least conn</th></tr></thead>
+      <tbody>
+        <tr><td class="name">pod-a</td><td class="num">2</td><td></td><td></td></tr>
+        <tr><td class="name">pod-b</td><td class="num"><b>41</b> <span class="chip risk">GC pause</span></td><td><span class="chip risk">next in line</span></td><td></td></tr>
+        <tr><td class="name">pod-c</td><td class="num">0</td><td></td><td><span class="chip ok" data-step="1">picked</span></td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight">
+      <li>pod-b is stuck in a 2-second GC pause. Its requests pile up.</li>
+      <li>Round robin still gives it every third request, and each of those waits behind 41 others.</li>
+      <li data-step="1">Least connections sees <b>41 vs. 0</b> and sends to pod-c. A slow backend gets fewer requests <b>automatically</b>, because it finishes fewer.</li>
+      <li data-step="2">ALB calls it <code>least_outstanding_requests</code>; NGINX <code>least_conn</code>; HAProxy <code>leastconn</code>; Envoy <code>LEAST_REQUEST</code>.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>16 / 39</span><span>least connections · least outstanding requests</span></div>
+</section>
+
+<section class="slide" data-section="p2c">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-die"/></svg>3.3 · Power of two choices</div>
+  <h2>Pick two backends at random, send to the less busy one</h2>
+  <div class="split code-left">
+    <div class="stack">
+      <pre class="code"><span class="c">// Envoy LEAST_REQUEST does this by default (choice_count = 2)</span>
+fun pick(pods: List&lt;Pod&gt;): Pod {
+  val a = pods.random()
+  var b = pods.random()
+  while (b == a) b = pods.random()
+  return <span class="hl">if (a.inFlight &lt;= b.inFlight) a else b</span>
+}</pre>
+      <div class="chart meter" data-step="1">
+        <svg viewBox="0 0 640 128" role="img" aria-label="Three load balancers all choosing the same idle pod">
+          <defs><marker id="arrow-p2c" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
+          <rect x="0" y="4" width="120" height="30" rx="7" class="sv-box"/><text x="60" y="24" text-anchor="middle" class="sv-lbl-sm">ingress-1</text>
+          <rect x="0" y="48" width="120" height="30" rx="7" class="sv-box"/><text x="60" y="68" text-anchor="middle" class="sv-lbl-sm">ingress-2</text>
+          <rect x="0" y="92" width="120" height="30" rx="7" class="sv-box"/><text x="60" y="112" text-anchor="middle" class="sv-lbl-sm">ingress-3</text>
+          <path d="M120 19 L380 60" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
+          <path d="M120 63 L380 63" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
+          <path d="M120 107 L380 66" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
+          <rect x="384" y="44" width="186" height="38" rx="8" class="sv-box-risk"/>
+          <text x="477" y="68" text-anchor="middle" class="sv-risk">new pod · 0 in flight</text>
+          <text x="580" y="58" class="sv-lbl-sm">all 3</text>
+          <text x="580" y="76" class="sv-lbl-sm">pick it</text>
+        </svg>
+        <figcaption>With strict "least busy", every balancer that sees the same stale counts sends to the same pod.</figcaption>
+      </div>
+    </div>
+    <ul class="points tight">
+      <li>Scanning all 200 pods for the minimum costs O(n) per request. Two random picks cost O(1).</li>
+      <li>It still avoids the worst pod: a stuck pod only wins when it is compared with a pod that is even worse.</li>
+      <li data-step="1">It also fixes the <b>herd</b>: with several balancers, each only knows its own in-flight counts. Random pairs keep them from all choosing the same "idle" pod at once.</li>
+      <li data-step="2">Result: close to least-connections quality, at round-robin cost. A good default for L7.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>17 / 39</span><span>power of two random choices</span></div>
+</section>
+
+<section class="slide" data-section="lb-sim">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>3.4 · One slow pod, four algorithms</div>
+  <h2>Round robin keeps feeding the slow pod until its queue explodes</h2>
+  <div class="body">
+    <div style="display:flex; align-items:center; gap:22px;">
+      <div class="seg" id="sim-seg" role="group" aria-label="Algorithm" style="flex-shrink:0;">
+        <button data-mode="rr" aria-pressed="true">Round robin</button>
+        <button data-mode="random">Random</button>
+        <button data-mode="least">Least conn</button>
+        <button data-mode="p2c">Power of two</button>
+      </div>
+      <p class="readout" id="sim-readout" style="margin:0;"></p>
+    </div>
+    <div class="chart meter">
+      <svg id="sim"></svg>
+      <figcaption>Simulated: 480 req/s for 10 s into 4 pods with 4 workers each. pod-a…c take 20 ms per request on average, pod-d takes 60 ms (noisy neighbour). Bars are requests in flight, sampled every 100 ms.</figcaption>
+    </div>
+  </div>
+  <div class="foot"><span>18 / 39</span><span>simulation · same arrivals, same service times for every algorithm</span></div>
+</section>
+
+<section class="slide" data-section="hash-mod">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-hash"/></svg>3.5 · Hash-based</div>
+  <h2>Same key, same backend. Until you add a backend and <code>hash % N</code> moves almost every key.</h2>
+  <div class="body">
+    <div style="display:flex; align-items:center; gap:22px;">
+      <div class="seg" id="hash-seg" role="group" aria-label="Hashing" style="flex-shrink:0;">
+        <button data-mode="three" aria-pressed="true">3 cache nodes</button>
+        <button data-mode="mod">Add D · hash % 4</button>
+        <button data-mode="ring">Add D · consistent hash</button>
+      </div>
+      <p class="readout" id="hash-readout" style="margin:0;"></p>
+    </div>
+    <div class="chart meter">
+      <svg id="hash"></svg>
+      <div class="legend"><span><i class="lg-dot"></i>same node as before</span><span><i class="lg-dot risk"></i>moved: cache miss, goes to the DB</span></div>
+    </div>
+    <p class="caption" style="margin:0; font-size:16px;">Hash on a user ID or cache key when locality matters: a per-user cache, a shard, a WebSocket room. NGINX <code>hash $key consistent</code>, HAProxy <code>balance uri</code>, Envoy <code>RING_HASH</code> / <code>MAGLEV</code>.</p>
+  </div>
+  <div class="foot"><span>19 / 39</span><span>hash % n vs. consistent hashing</span></div>
+</section>
+
+<section class="slide" data-section="ring">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-ring"/></svg>3.6 · Consistent hashing</div>
+  <h2>Put nodes and keys on one ring. A key belongs to the next node clockwise.</h2>
+  <div class="split">
+    <div class="chart meter" style="align-items:center;">
+      <svg id="ring" style="max-width:440px;"></svg>
+    </div>
+    <ul class="points tight">
+      <li>Hash each node's name to a point on a ring of 2<sup>32</sup> positions. Hash each key the same way.</li>
+      <li>Walk clockwise from the key; the first node you meet owns it.</li>
+      <li data-step="1">Add node D: only keys between C and D change owner, and they all move <b>to D</b>. Everything else stays put — about 1/N of the keys move.</li>
+      <li data-step="2">With 3 points the arcs are uneven. Give each node <b>100–200 virtual nodes</b> (<code>A#0 … A#149</code>) so every node owns about the same share.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>20 / 39</span><span>consistent hashing · the ring</span></div>
+</section>
+
+<section class="slide" data-section="algo-comparison">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>Algorithms, compared</div>
+  <h2>Least request (P2C) for most HTTP traffic; hash only when you need affinity</h2>
+  <div class="body meter" style="justify-content:center;">
+    <table class="tbl">
+      <thead><tr><th>Algorithm</th><th>State per LB</th><th>Slow backend</th><th>Same key → same backend</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Round robin</td><td class="mono">1 counter</td><td><span class="chip risk">keeps feeding it</span></td><td>—</td><td>Equal pods, equal requests</td></tr>
+        <tr><td class="name">Weighted RR</td><td class="mono">1 counter</td><td><span class="chip risk">keeps feeding it</span></td><td>—</td><td>Mixed instance sizes</td></tr>
+        <tr><td class="name">Least conn</td><td class="mono">in-flight per pod</td><td><span class="chip ok">avoids it</span></td><td>—</td><td>Long or uneven requests</td></tr>
+        <tr><td class="name">Power of two</td><td class="mono">in-flight per pod</td><td><span class="chip ok">avoids it</span></td><td>—</td><td><b>Default for L7</b>, many balancers</td></tr>
+        <tr><td class="name">Hash % N</td><td class="mono">none</td><td><span class="chip risk">stuck with it</span></td><td><span class="chip hot">until N changes</span></td><td>Fixed-size pools only</td></tr>
+        <tr><td class="name">Consistent hash</td><td class="mono">the ring</td><td><span class="chip risk">stuck with it</span></td><td><span class="chip ok">yes, ~1/N move</span></td><td>Caches, shards, sticky rooms</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>21 / 39</span><span>algorithm comparison</span></div>
+</section>
+
+<script>
+(() => {
+  const { el, scale, fmt, $, rng } = window.Charts;
+
+  // ---------- 3.4 simulator ----------
+  // Same arrivals and same per-request work for every mode; only the pick changes.
+  const PODS = ['pod-a', 'pod-b', 'pod-c', 'pod-d'];
+  const MEAN = [20, 20, 20, 60];       // ms per request
+  const WORKERS = 4, RATE = 0.48, END = 10000, BIN = 100;
+  const exp = (r) => -Math.log(1 - r());
+
+  const arrivals = (() => {
+    const r = rng(7), out = [];
+    for (let t = exp(r) / RATE; t < END; t += exp(r) / RATE) out.push({ t, work: exp(r) });
+    return out;
+  })();
+
+  function simulate(mode) {
+    const pick = rng(11);
+    const free = PODS.map(() => new Array(WORKERS).fill(0));
+    const inflight = PODS.map(() => []);
+    const recs = [];
+    let next = 0;
+    arrivals.forEach(({ t, work }) => {
+      inflight.forEach((list, s) => { inflight[s] = list.filter((f) => f > t); });
+      let s;
+      if (mode === 'rr') s = next++ % PODS.length;
+      else if (mode === 'random') s = Math.floor(pick() * PODS.length);
+      else if (mode === 'least') {
+        const off = next++ % PODS.length;
+        s = off;
+        for (let k = 0; k < PODS.length; k++) {
+          const c = (off + k) % PODS.length;
+          if (inflight[c].length < inflight[s].length) s = c;
+        }
+      } else {
+        const a = Math.floor(pick() * PODS.length);
+        let b = Math.floor(pick() * (PODS.length - 1));
+        if (b >= a) b++;
+        s = inflight[a].length <= inflight[b].length ? a : b;
+      }
+      const w = free[s].indexOf(Math.min(...free[s]));
+      const fin = Math.max(t, free[s][w]) + work * MEAN[s];
+      free[s][w] = fin;
+      inflight[s].push(fin);
+      recs.push({ s, t, fin });
+    });
+    const bins = END / BIN;
+    const depth = PODS.map(() => new Array(bins).fill(0));
+    recs.forEach(({ s, t, fin }) => {
+      for (let b = Math.ceil(t / BIN); b < bins && b * BIN < fin; b++) if (b * BIN >= t) depth[s][b]++;
+    });
+    const lat = recs.map((q) => q.fin - q.t).sort((a, b) => a - b);
+    return {
+      depth,
+      p50: lat[Math.floor(lat.length * 0.5)],
+      p99: lat[Math.floor(lat.length * 0.99)],
+      share: recs.filter((q) => q.s === 3).length / recs.length,
+    };
+  }
+
+  function simChart(svg, seg, readout) {
+    const W = 1100, H = 300, L = 150, R = 70, T = 6, B = 30, CAP = 30;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const bins = END / BIN;
+    const x = scale(0, END, L, W - R);
+    const rowH = (H - T - B) / PODS.length;
+    const bw = x(BIN) - x(0);
+    for (let s = 0; s <= END; s += 2000) {
+      el('line', { x1: x(s), x2: x(s), y1: T, y2: H - B, class: 'sv-grid' }, svg);
+      el('text', { x: x(s), y: H - B + 22, class: 'sv-tick', 'text-anchor': 'middle' }, svg, `${s / 1000} s`);
+    }
+    const rows = PODS.map((name, i) => {
+      const base = T + rowH * (i + 1) - 6;
+      const y = scale(0, CAP, base, base - rowH + 14);
+      el('line', { x1: L, x2: W - R, y1: base, y2: base, class: 'sv-axis' }, svg);
+      el('text', { x: L - 14, y: base - 18, class: 'sv-lbl', 'text-anchor': 'end' }, svg, name);
+      el('text', { x: L - 14, y: base - 2, class: i === 3 ? 'sv-risk' : 'sv-lbl-sm', 'text-anchor': 'end' }, svg,
+        i === 3 ? '60 ms · slow' : '20 ms');
+      const bars = Array.from({ length: bins }, (_, b) =>
+        el('rect', { x: x(b * BIN) + 0.5, width: Math.max(1, bw - 1), y: base, height: 0, class: 'sv-bar' }, svg));
+      const end = el('text', { x: W - R + 8, y: base - 4, class: 'sv-tick' }, svg);
+      return { y, base, bars, end };
+    });
+
+    function show(mode) {
+      const r = simulate(mode);
+      rows.forEach(({ y, base, bars, end }, i) => {
+        r.depth[i].forEach((d, b) => {
+          const top = y(Math.min(d, CAP));
+          bars[b].setAttribute('y', top);
+          bars[b].setAttribute('height', base - top);
+          bars[b].style.y = `${top}px`;
+          bars[b].style.height = `${base - top}px`;
+          bars[b].setAttribute('class', d > CAP ? 'sv-bar-risk' : 'sv-bar');
+        });
+        const last = r.depth[i][r.depth[i].length - 1];
+        end.textContent = fmt(last);
+        end.setAttribute('class', last > CAP ? 'sv-risk' : 'sv-tick');
+      });
+      const p99 = r.p99 >= 1000 ? `${fmt(r.p99 / 1000, 1)} s` : `${fmt(r.p99)} ms`;
+      readout.innerHTML = `p99 <b>${p99}</b> · p50 <b>${fmt(r.p50)} ms</b> · slow pod got <b>${fmt(r.share * 100)}%</b> of requests`;
+      seg.querySelectorAll('button').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode)));
+    }
+    seg.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn) show(btn.dataset.mode);
+    });
+    show('rr');
+  }
+  simChart($('sim'), $('sim-seg'), $('sim-readout'));
+
+  // ---------- 3.5 hash % N vs consistent hashing ----------
+  // FNV-1a plus a murmur finalizer: sequential names like "user:12" still spread evenly.
+  function hash(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+    return h >>> 0;
+  }
+  const NODES = ['A', 'B', 'C', 'D'];
+  const KEYS = Array.from({ length: 60 }, (_, i) => ({ id: i + 1, h: hash(`user:${i + 1}`) }));
+  function ringOf(n, vnodes = 150) {
+    const pts = [];
+    NODES.slice(0, n).forEach((name, i) => { for (let v = 0; v < vnodes; v++) pts.push({ p: hash(`${name}#${v}`), i }); });
+    return pts.sort((a, b) => a.p - b.p);
+  }
+  const owner = (ring, h) => (ring.find((pt) => pt.p >= h) || ring[0]).i;
+  const ring3 = ringOf(3), ring4 = ringOf(4);
+  const ASSIGN = {
+    three: KEYS.map((k) => owner(ring3, k.h)),
+    mod: KEYS.map((k) => k.h % 4),
+    ring: KEYS.map((k) => owner(ring4, k.h)),
+  };
+
+  function hashChart(svg, seg, readout) {
+    const W = 1100, H = 236, L = 140, ROW = 56, GAP = 25;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const labels = NODES.map((n, i) => {
+      el('line', { x1: L - 10, x2: W, y1: 30 + i * ROW + 22, y2: 30 + i * ROW + 22, class: 'sv-grid' }, svg);
+      return el('text', { x: 0, y: 30 + i * ROW + 5, class: 'sv-lbl' }, svg, `cache-${n}`);
+    });
+    const counts = NODES.map((_, i) => el('text', { x: 84, y: 30 + i * ROW + 5, class: 'sv-tick' }, svg));
+    const coins = KEYS.map((k) => {
+      const g = el('g', { class: 'coin coin-move' }, svg);
+      el('circle', { r: 11 }, g);
+      el('text', {}, g, k.id);
+      return g;
+    });
+    function show(mode) {
+      const a = ASSIGN[mode], n = mode === 'three' ? 3 : 4;
+      const slot = NODES.map(() => 0);
+      let moved = 0, toD = 0;
+      coins.forEach((g, k) => {
+        const i = a[k];
+        const cx = L + 12 + slot[i]++ * GAP, cy = 30 + i * ROW;
+        g.style.transform = `translate(${cx}px, ${cy}px)`;
+        const m = mode !== 'three' && i !== ASSIGN.three[k];
+        g.classList.toggle('risk', m);
+        if (m) { moved++; if (i === 3) toD++; }
+      });
+      labels[3].setAttribute('class', n === 4 ? 'sv-lbl' : 'sv-lbl-sm');
+      counts.forEach((c, i) => { c.textContent = i < n ? `${slot[i]} keys` : 'not added'; });
+      readout.innerHTML = mode === 'three'
+        ? 'Each user\'s cache entry lives on one node.'
+        : `<b>${moved} of 60</b> keys moved (${fmt((moved / 60) * 100)}%)` +
+          (mode === 'ring' ? ` · all ${toD} of them to D` : ' · most between A, B and C, which didn\'t change');
+      seg.querySelectorAll('button').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode)));
+    }
+    seg.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn) show(btn.dataset.mode);
+    });
+    show('three');
+  }
+  hashChart($('hash'), $('hash-seg'), $('hash-readout'));
+
+  // ---------- 3.6 the ring (hand-placed angles so the picture is readable) ----------
+  function ringChart(svg) {
+    const W = 470, H = 420, cx = 235, cy = 210, r = 160;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const at = (deg, rr = r) => [cx + rr * Math.sin((deg * Math.PI) / 180), cy - rr * Math.cos((deg * Math.PI) / 180)];
+    el('circle', { cx, cy, r, class: 'sv-ring' }, svg);
+    el('text', { x: cx, y: cy - 6, class: 'sv-lbl-sm', 'text-anchor': 'middle' }, svg, '0 … 2³² − 1');
+    el('text', { x: cx, y: cy + 14, class: 'sv-lbl-sm', 'text-anchor': 'middle' }, svg, 'clockwise →');
+    const nodes = { A: 20, B: 140, C: 250 };
+    const keys = [10, 55, 80, 110, 165, 200, 230, 272, 290, 306, 340, 355];
+    const before = (d) => (d <= 20 ? 'A' : d <= 140 ? 'B' : d <= 250 ? 'C' : 'A');
+    keys.forEach((d) => {
+      const [x, y] = at(d);
+      const moves = d > 250 && d <= 320;
+      el('circle', { cx: x, cy: y, r: 6, class: 'sv-ink' }, svg);
+      if (moves) {
+        const g = el('g', { 'data-step': '1' }, svg);
+        el('circle', { cx: x, cy: y, r: 7, class: 'sv-box-risk', 'stroke-width': 2 }, g);
+      }
+      const [lx, ly] = at(d, r + 22);
+      el('text', { x: lx, y: ly + 4, class: 'sv-tick', 'text-anchor': 'middle' }, svg, before(d).toLowerCase());
+    });
+    const node = (name, d, parent, cls) => {
+      const [x, y] = at(d);
+      el('circle', { cx: x, cy: y, r: 17, class: cls }, parent);
+      el('text', { x, y: y + 5, class: cls === 'sv-box-hot' ? 'sv-hot' : 'sv-risk', 'text-anchor': 'middle' }, parent, name);
+    };
+    Object.entries(nodes).forEach(([n, d]) => node(n, d, svg, 'sv-box-hot'));
+    const add = el('g', { 'data-step': '1' }, svg);
+    node('D', 320, add, 'sv-box-risk');
+    const [tx, ty] = at(291, r - 44);
+    el('text', { x: tx, y: ty, class: 'sv-risk', 'text-anchor': 'middle' }, add, 'a → d');
+    el('text', { x: 10, y: H - 8, class: 'sv-lbl-sm' }, svg, 'small letters: which node owns the key before D joins');
+  }
+  ringChart($('ring'));
+})();
+</script>

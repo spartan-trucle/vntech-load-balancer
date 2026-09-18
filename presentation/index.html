@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Load Balancing</title>
+<meta name="description" content="A systems talk on load balancing: where it happens, how a balancer picks a backend, what it does when one fails, and how to design one that is not a single point of failure." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23081112'/%3E%3Cpath d='M6 12h4m0 0 6-5m-6 5h6m-6 0 6 5' stroke='%233fc7d4' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/deck.css" />
+</head>
+<body>
+
+
+<svg class="icons" aria-hidden="true">
+  <symbol id="ic-gate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 20V6l9-3 9 3v14" /><path d="M3 20h18" /><path d="M9 20v-7h6v7" /></symbol>
+  <symbol id="ic-bucket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 8h14l-1.4 11.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8L5 8Z" /><path d="M3.5 8h17" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></symbol>
+  <symbol id="ic-pipe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 9h13a4 4 0 0 1 4 4v7" /><circle cx="19" cy="20" r="1.4" fill="currentColor" stroke="none" /><path d="M2 9v6" /></symbol>
+  <symbol id="ic-window" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="1.5" /><path d="M12 4v16" /><path d="M3 12h18" /></symbol>
+  <symbol id="ic-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 3h11l3 3v15H5z" /><path d="M16 3v3h3" /><path d="M8 11h8M8 14h8M8 17h5" /></symbol>
+  <symbol id="ic-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 15a8 8 0 1 1 16 0" /><path d="M12 15 16 9" /><path d="M4 19h16" /></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9" /><path d="M12 7v5l4 2" /></symbol>
+  <symbol id="ic-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="8" cy="15" r="4" /><path d="M11 12 20 3" /><path d="M16 7l3 3" /><path d="M13 10l2.5 2.5" /></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="10" width="16" height="10" rx="1.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></symbol>
+  <symbol id="ic-valve" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 12h5M17 12h5" /><path d="M7 12l3-4v8l-3-4Z" /><path d="M10 12h4" /><circle cx="16" cy="12" r="2" /></symbol>
+  <symbol id="ic-die" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="4" width="16" height="16" rx="3" /><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="9" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="9" cy="15" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none" /></symbol>
+  <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="4.5" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="4.5" cy="18" r="1.3" fill="currentColor" stroke="none" /></symbol>
+  <symbol id="ic-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="4" width="16" height="6" rx="1.5" /><rect x="4" y="14" width="16" height="6" rx="1.5" />
+    <circle cx="7.2" cy="7" r="0.9" fill="currentColor" stroke="none" /><circle cx="7.2" cy="17" r="0.9" fill="currentColor" stroke="none" /></symbol>
+  <symbol id="ic-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v17" /><path d="M12 20h5M12 20H7" /><path d="M5 7h14" />
+    <path d="M5 7 2 13a3 3 0 0 0 6 0Z" /><path d="M19 7l-3 6a3 3 0 0 0 6 0Z" /></symbol>
+  <symbol id="ic-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3.2 19 6v6c0 5-3.2 7.8-7 8.8-3.8-1-7-3.8-7-8.8V6Z" /></symbol>
+  <symbol id="ic-question" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9" /><path d="M9.3 9.2a2.7 2.7 0 0 1 5.2.9c0 1.6-1.1 2.1-2.1 3-.6.5-.9 1-.9 1.8" />
+    <circle cx="12" cy="17.2" r="0.6" fill="currentColor" stroke="none" /></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 21 21" /></symbol>
+  <symbol id="ic-balancer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="5" cy="12" r="2.2" /><path d="M7.2 12H11" /><path d="M11 12 17 5.5M11 12h6M11 12l6 6.5" />
+    <circle cx="19" cy="5.5" r="1.6" /><circle cx="19" cy="12" r="1.6" /><circle cx="19" cy="18.5" r="1.6" /></symbol>
+  <symbol id="ic-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 12h4l2-5 4 10 3-7 2 2h5" /></symbol>
+  <symbol id="ic-ring" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8" /><circle cx="12" cy="4" r="1.8" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="15.5" r="1.8" fill="currentColor" stroke="none" /><circle cx="5" cy="15.5" r="1.8" fill="currentColor" stroke="none" /></symbol>
+  <symbol id="ic-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.6 2.7 3.8 5.7 3.8 9s-1.2 6.3-3.8 9c-2.6-2.7-3.8-5.7-3.8-9S9.4 5.7 12 3Z" /></symbol>
+  <symbol id="ic-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 3v4M15 3v4" /><path d="M6 7h12v3a6 6 0 0 1-12 0Z" /><path d="M12 16v5" /></symbol>
+  <symbol id="ic-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 3 7 21M17 3l-2 18M4 8.5h16M3.5 15.5h16" /></symbol>
+  <symbol id="ic-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="5" cy="19" r="2" /><circle cx="19" cy="5" r="2" /><path d="M7 19h8.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H17" /></symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><circle cx="17" cy="9" r="2.4" /><path d="M16 14.2a4.6 4.6 0 0 1 5 4.8" /></symbol>
+</svg>
+
+<div class="stage">
+  <div class="deck" id="deck">
+    <!-- Slides live in sections/*.html, fetched by the loader at the bottom of this file. -->
+  </div>
+</div>
+
+<div class="progress"><i></i></div>
+<div class="pager"></div>
+
+<script src="js/charts-lib.js"></script>
+<script>
+// Sections are fetched, so the deck needs HTTP (GitHub Pages or a local server), not file://.
+// Order here is slide order. Each section's inline <script> (its charts) runs after all
+// slides are in the DOM and before deck.js counts data-step reveals.
+(async () => {
+  const SECTIONS = [
+    '00-cover',
+    '00-outline',
+    '01-introduction',
+    '02-layers',
+    '03-algorithms',
+    '04-health-and-failure',
+    '05-connections-and-state',
+    '06-system-design',
+    '07-takeaways',
+  ];
+  // Cache-bust the stylesheet too: a cached deck.css leaves new slides (e.g. the outline) unstyled.
+  document.querySelector('link[href="css/deck.css"]').href = `css/deck.css?v=${Date.now()}`;
+  const deck = document.getElementById('deck');
+  const htmls = await Promise.all(SECTIONS.map((n) =>
+    fetch(`sections/${n}.html`, { cache: 'no-cache' }).then((r) => {
+      if (!r.ok) throw new Error(`sections/${n}.html: HTTP ${r.status}`);
+      return r.text();
+    })));
+  const scripts = [];
+  htmls.forEach((html) => {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html;
+    tpl.content.querySelectorAll('script').forEach((s) => { scripts.push(s.textContent); s.remove(); });
+    deck.appendChild(tpl.content);
+  });
+  scripts.forEach((code) => {
+    const s = document.createElement('script');
+    s.textContent = code;
+    document.body.appendChild(s);
+  });
+  const engine = document.createElement('script');
+  // Cache-bust: without this, browsers keep running a stale deck.js after edits.
+  engine.src = `js/deck.js?v=${Date.now()}`;
+  document.body.appendChild(engine);
+})().catch((err) => {
+  const hint = location.protocol === 'file:'
+    ? 'This page was opened as a file. Serve the folder over HTTP instead: <code>cd presentation &amp;&amp; python3 -m http.server</code>, then open <code>http://localhost:8000</code>.'
+    : 'Check that the file exists and the name matches the SECTIONS list in index.html.';
+  document.getElementById('deck').innerHTML =
+    `<p style="padding:2rem;color:var(--ink, #eee)">Failed to load slides: ${err.message}.<br>${hint}</p>`;
+});
+</script>
+</body>
+</html>

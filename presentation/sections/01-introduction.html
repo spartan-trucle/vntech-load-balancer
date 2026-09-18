@@ -1,0 +1,132 @@
+<!-- ============ SECTION 1 — INTRODUCTION ============ -->
+<section class="slide divider" data-section="divider-01">
+  <div class="divider-num">01</div>
+  <div class="section-tag"><i></i>SECTION 1</div>
+  <h2>Introduction</h2>
+  <p class="lead">Why adding servers doesn't help on its own, and the three jobs a load balancer does for you.</p>
+  <div class="foot"><span>3 / 39</span><span>act i · introduction</span></div>
+</section>
+
+<section class="slide" data-section="one-server">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>The problem</div>
+  <h2>Three servers, but every user still hits the first one</h2>
+  <div class="chart meter" style="flex:1; min-height:0; justify-content:center;">
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Users sending traffic to one server while two others sit idle, then a load balancer splitting it">
+      <defs>
+        <marker id="arrow-one" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" class="sv-ink"/></marker>
+      </defs>
+      <rect x="20" y="112" width="200" height="76" rx="12" class="sv-box"/>
+      <text x="120" y="144" text-anchor="middle" class="sv-lbl">10,000 users</text>
+      <text x="120" y="166" text-anchor="middle" class="sv-lbl-sm" data-hide-at="1">api.shop.vn → 10.0.1.11</text>
+      <text x="120" y="166" text-anchor="middle" class="sv-lbl-sm" data-step="1">api.shop.vn → LB</text>
+
+      <!-- before: all traffic to server 1 -->
+      <g data-hide-at="1">
+        <path d="M220 150 L690 56" class="sv-line" stroke-width="8" marker-end="url(#arrow-one)"/>
+      </g>
+
+      <rect x="700" y="20" width="270" height="72" rx="12" class="sv-box"/>
+      <text x="720" y="48" class="sv-lbl">server-1 · 10.0.1.11</text>
+      <g data-hide-at="1"><rect x="700" y="20" width="270" height="72" rx="12" class="sv-box-risk"/>
+      <text x="720" y="48" class="sv-lbl">server-1 · 10.0.1.11</text>
+      <text x="720" y="72" class="sv-risk">CPU 100% · p99 4.2 s</text></g>
+
+      <rect x="700" y="114" width="270" height="72" rx="12" class="sv-box"/>
+      <text x="720" y="142" class="sv-lbl">server-2 · 10.0.1.12</text>
+      <text x="720" y="166" class="sv-lbl-sm" data-hide-at="1">CPU 3% · idle</text>
+
+      <rect x="700" y="208" width="270" height="72" rx="12" class="sv-box"/>
+      <text x="720" y="236" class="sv-lbl">server-3 · 10.0.1.13</text>
+      <text x="720" y="260" class="sv-lbl-sm" data-hide-at="1">CPU 3% · idle</text>
+
+      <g data-step="1">
+        <path d="M220 150 H368" class="sv-line" stroke-width="8" marker-end="url(#arrow-one)"/>
+        <rect x="380" y="112" width="160" height="76" rx="12" class="sv-box-hot"/>
+        <text x="460" y="144" text-anchor="middle" class="sv-lbl">Load balancer</text>
+        <text x="460" y="166" text-anchor="middle" class="sv-hot">api.shop.vn</text>
+        <path d="M540 140 L690 60" class="sv-line" stroke-width="3" marker-end="url(#arrow-one)"/>
+        <path d="M540 150 H690" class="sv-line" stroke-width="3" marker-end="url(#arrow-one)"/>
+        <path d="M540 160 L690 240" class="sv-line" stroke-width="3" marker-end="url(#arrow-one)"/>
+        <text x="720" y="72" class="sv-hot">CPU 35% · p99 180 ms</text>
+        <text x="720" y="166" class="sv-hot">CPU 34% · p99 175 ms</text>
+        <text x="720" y="260" class="sv-hot">CPU 33% · p99 172 ms</text>
+      </g>
+    </svg>
+    <figcaption>More servers only help if something splits the traffic. Clients know one hostname; something behind that name has to pick a server for every request.</figcaption>
+  </div>
+  <div class="foot"><span>4 / 39</span><span>why load balancing exists</span></div>
+</section>
+
+<section class="slide" data-section="what-is-lb">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>What a load balancer is</div>
+  <h2>For each request, pick one healthy backend from a pool. Skip the ones that are down.</h2>
+  <div class="split code-left">
+    <pre class="code"><span class="c"># pool: api  ·  algorithm: round robin</span>
+
+12:00:01.010  GET /orders/81   → pod-a  200  <span class="c">42 ms</span>
+12:00:01.013  GET /orders/82   → pod-b  200  <span class="c">39 ms</span>
+12:00:01.020  POST /cart       → pod-c  200  <span class="c">51 ms</span>
+12:00:01.024  GET /orders/83   → pod-a  200  <span class="c">40 ms</span>
+<span class="hl">12:00:01.500  health  pod-b    → timeout ×3 → DOWN</span>
+12:00:01.502  GET /orders/84   → pod-c  200  <span class="c"># pod-b skipped</span>
+12:00:01.509  GET /orders/85   → pod-a  200</pre>
+    <ul class="points tight">
+      <li><span class="chip hot">listener</span> The address clients connect to: <code>api.shop.vn:443</code>.</li>
+      <li><span class="chip hot">pool</span> The backends it may send to: pods, VMs, IPs.</li>
+      <li><span class="chip hot">algorithm</span> How it picks one: next in line, least busy, or by hash.</li>
+      <li><span class="chip hot">health</span> Which backends are allowed to be picked right now.</li>
+      <li data-step="1">Clients never learn the backend IPs. You can add, remove, or restart pods without anyone changing config.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>5 / 39</span><span>definition · listener, pool, algorithm, health</span></div>
+</section>
+
+<section class="slide" data-section="scale-up-out">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>Scale up vs. scale out</div>
+  <h2>A bigger box has a ceiling and one power cord. More boxes need a balancer.</h2>
+  <div class="two" style="gap:22px;">
+    <div class="card">
+      <div class="k">Scale up · vertical</div>
+      <div class="t">Move from 4 vCPU to 64 vCPU</div>
+      <p>No code change. Stops at the biggest instance type, costs more per core near the top, and one host failure is a full outage.</p>
+      <div class="stack" style="gap:8px; margin-top:auto;"><span class="chip ok" style="align-self:flex-start">simple</span><span class="chip risk" style="align-self:flex-start">single point of failure</span></div>
+    </div>
+    <div class="card">
+      <div class="k">Scale out · horizontal</div>
+      <div class="t">Run 16 pods of 4 vCPU each</div>
+      <p>Add pods as traffic grows, lose one without an outage. Needs a balancer in front and an app that keeps no user state in memory.</p>
+      <div class="stack" style="gap:8px; margin-top:auto;"><span class="chip ok" style="align-self:flex-start">survives a dead pod</span><span class="chip hot" style="align-self:flex-start">needs stateless app + LB</span></div>
+    </div>
+  </div>
+  <ul class="points tight" data-step="1">
+    <li>If a user's cart lives in pod memory, the next request lands on another pod and the cart is empty. Put session state in Redis or the DB first.</li>
+  </ul>
+  <div class="foot"><span>6 / 39</span><span>vertical vs. horizontal scaling</span></div>
+</section>
+
+<section class="slide" data-section="three-jobs">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>What you actually get</div>
+  <h2>Three jobs: spread the load, route around failure, hide deploys</h2>
+  <div class="trio">
+    <div class="card lift">
+      <svg class="ic"><use href="#ic-balancer"/></svg>
+      <div class="k">Spread</div>
+      <div class="t">No backend gets more than its share</div>
+      <p>600 req/s across 3 pods is ~200 each, not 600 on one and 0 on two.</p>
+    </div>
+    <div class="card lift">
+      <svg class="ic"><use href="#ic-pulse"/></svg>
+      <div class="k">Route around failure</div>
+      <div class="t">A dead pod stops getting traffic</div>
+      <p>Health checks and error counts take a failing backend out of the pool in seconds, and put it back when it recovers.</p>
+    </div>
+    <div class="card lift">
+      <svg class="ic"><use href="#ic-route"/></svg>
+      <div class="k">Hide change</div>
+      <div class="t">Deploy without users noticing</div>
+      <p>Drain one pod, replace it, add it back. Canary 5% of traffic to v2. Clients see one stable address.</p>
+    </div>
+  </div>
+  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
+  <div class="foot"><span>7 / 39</span><span>spread · route around failure · hide change</span></div>
+</section>

@@ -1,0 +1,126 @@
+<!-- ============ SECTION 6 — SYSTEM DESIGN ============ -->
+<section class="slide divider" data-section="divider-06">
+  <div class="divider-num">06</div>
+  <div class="section-tag"><i></i>SECTION 6</div>
+  <h2>System design</h2>
+  <p class="lead">Putting it together: an API in two regions at 200,000 requests a second, where losing a whole region is not an outage.</p>
+  <div class="foot"><span>32 / 39</span><span>act vi · system design</span></div>
+</section>
+
+<section class="slide" data-section="requirements">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>6.1 · Requirements</div>
+  <h2>A worked example</h2>
+  <div class="trio">
+    <div class="card lift" style="align-items:flex-start;">
+      <div class="big" style="font-size:56px;">200</div>
+      <div class="big-unit">thousand req/s peak, global</div>
+    </div>
+    <div class="card lift" style="align-items:flex-start;">
+      <div class="big" style="font-size:56px;">2</div>
+      <div class="big-unit">regions, active-active</div>
+    </div>
+    <div class="card lift" style="align-items:flex-start;">
+      <div class="big" style="font-size:56px;">99.99</div>
+      <div class="big-unit">% availability · 4.3 min / month</div>
+    </div>
+  </div>
+  <ul class="points tight" data-step="1">
+    <li><b>Region loss:</b> Singapore or Tokyo can disappear; the other must carry 100% within 2 minutes.</li>
+    <li><b>Pod loss:</b> invisible to users. <b>Deploys:</b> 20 times a day, zero errors.</li>
+    <li><b>Traffic:</b> REST from web and mobile, gRPC between 30 internal services, WebSockets for live order status.</li>
+  </ul>
+  <div class="foot"><span>33 / 39</span><span>system design · requirements</span></div>
+</section>
+
+<section class="slide" data-section="architecture">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>6.2 · Architecture</div>
+  <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
+  <div class="body meter" style="justify-content:center;">
+    <svg viewBox="0 0 1120 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
+      <defs><marker id="arrow-arch" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
+      <rect x="0" y="120" width="120" height="60" rx="10" class="sv-box"/><text x="60" y="146" text-anchor="middle" class="sv-lbl">Clients</text><text x="60" y="164" text-anchor="middle" class="sv-lbl-sm">web · mobile</text>
+      <path d="M120 150 H158" class="sv-line" marker-end="url(#arrow-arch)"/>
+      <rect x="162" y="112" width="150" height="76" rx="10" class="sv-box-hot"/><text x="237" y="140" text-anchor="middle" class="sv-lbl">Route 53</text><text x="237" y="160" text-anchor="middle" class="sv-hot">latency + health</text><text x="237" y="176" text-anchor="middle" class="sv-lbl-sm">TTL 60 s</text>
+      <path d="M312 140 L378 70" class="sv-line" marker-end="url(#arrow-arch)"/>
+      <path d="M312 160 L378 230" class="sv-line" marker-end="url(#arrow-arch)"/>
+
+      <g>
+        <rect x="382" y="10" width="738" height="120" rx="12" class="sv-band"/>
+        <text x="396" y="30" class="sv-lbl-sm">ap-southeast-1 · Singapore</text>
+        <rect x="396" y="44" width="150" height="70" rx="10" class="sv-box"/><text x="471" y="72" text-anchor="middle" class="sv-lbl">NLB</text><text x="471" y="92" text-anchor="middle" class="sv-lbl-sm">L4 · 3 AZs</text>
+        <path d="M546 79 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <rect x="588" y="44" width="190" height="70" rx="10" class="sv-box-hot"/><text x="683" y="72" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="683" y="92" text-anchor="middle" class="sv-hot">TLS · L7 · P2C</text>
+        <path d="M778 79 H816" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <rect x="820" y="44" width="286" height="70" rx="10" class="sv-box"/><text x="963" y="72" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="963" y="92" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
+      </g>
+      <g>
+        <rect x="382" y="170" width="738" height="120" rx="12" class="sv-band"/>
+        <text x="396" y="190" class="sv-lbl-sm">ap-northeast-1 · Tokyo</text>
+        <rect x="396" y="204" width="150" height="70" rx="10" class="sv-box"/><text x="471" y="232" text-anchor="middle" class="sv-lbl">NLB</text><text x="471" y="252" text-anchor="middle" class="sv-lbl-sm">L4 · 3 AZs</text>
+        <path d="M546 239 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <rect x="588" y="204" width="190" height="70" rx="10" class="sv-box-hot"/><text x="683" y="232" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="683" y="252" text-anchor="middle" class="sv-hot">TLS · L7 · P2C</text>
+        <path d="M778 239 H816" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <rect x="820" y="204" width="286" height="70" rx="10" class="sv-box"/><text x="963" y="232" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="963" y="252" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>34 / 39</span><span>system design · architecture</span></div>
+</section>
+
+<section class="slide" data-section="lb-spof">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>6.3 · Who balances the balancer?</div>
+  <h2>A single balancer is a single point of failure with a nicer name</h2>
+  <div class="body meter" style="justify-content:center;">
+    <table class="tbl">
+      <thead><tr><th>Pattern</th><th>How it works</th><th>Failover</th><th>Watch out for</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Active-passive<span>keepalived · VRRP</span></td><td>Two nodes share one floating IP; the standby takes it when heartbeats stop</td><td class="num">~1–3 s</td><td>Half the hardware sits idle; split brain if both think they're primary</td></tr>
+        <tr><td class="name">Active-active<span>ECMP · anycast</span></td><td>Routers spread flows over N balancer nodes that all announce the same IP</td><td class="num">seconds (BGP)</td><td>A node change can move existing flows: pair it with consistent hashing (Maglev)</td></tr>
+        <tr><td class="name">Managed<span>ALB · NLB · GCLB</span></td><td>The cloud runs a fleet across AZs and scales it for you</td><td class="num">handled for you</td><td>ALB scales up gradually: a flash sale from zero can see 5xx for minutes</td></tr>
+        <tr><td class="name">Client-side<span>gRPC · mesh</span></td><td>No central balancer; every caller has the pod list</td><td class="num">instant, per call</td><td>Every client must refresh the pod list; one bug is replicated in every service</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>35 / 39</span><span>high availability for the balancer itself</span></div>
+</section>
+
+<section class="slide" data-section="region-failover">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>6.4 · Losing a region</div>
+  <h2>DNS failover is bounded by the TTL. Anycast is bounded by BGP.</h2>
+  <div class="split code-left">
+    <pre class="code"><span class="c"># Singapore goes dark at 10:00:00</span>
+
+10:00:30  Route 53 health check: 3 fails → SIN removed
+10:00:30  new lookups get Tokyo only
+10:01:30  TTL 60 s expired for most resolvers
+<span class="hl">10:05:00  a few clients still on SIN</span>  <span class="c"># ignore TTL</span>
+
+<span class="c"># Tokyo now receives 2× traffic</span>
+10:00:40  Tokyo Envoy p99  90 ms → 310 ms
+10:01:10  HPA adds pods (takes ~60–90 s)
+<span class="hl">10:02:30  Tokyo p99 back to 110 ms</span></pre>
+    <ul class="points tight">
+      <li><span class="chip hot">DNS</span> Simple, works with any backend. Failover ≈ detection (~30 s) + TTL (60 s) + stragglers.</li>
+      <li><span class="chip hot">anycast</span> One IP announced from every region (AWS Global Accelerator, Cloudflare). Routers pick the nearest; failover in seconds.</li>
+      <li data-step="1"><span class="chip risk">the real trap</span> Failover moves the traffic, not the capacity. If Tokyo can't take 100% <b>right now</b>, you've turned one region outage into two.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>36 / 39</span><span>global balancing · dns vs. anycast</span></div>
+</section>
+
+<section class="slide" data-section="capacity">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>6.5 · Capacity</div>
+  <h2>Size each region for the whole world, then add room to lose a node</h2>
+  <div class="split" style="align-items:start;">
+    <div class="stack">
+      <div class="formula">peak <b>200,000 req/s</b> global<br>one region down → survivor takes <b>200,000</b><br>Envoy node: <b>25,000 req/s</b> at 60% CPU <span class="muted">(measure yours)</span></div>
+      <div class="formula">200,000 ÷ 25,000 = <b>8 nodes</b><br>+ lose 1 AZ of 3 → × 1.5 = <b>12</b><br>per region: <b>12 nodes</b>, normally at ~33% of rated load</div>
+    </div>
+    <ul class="points tight">
+      <li>Run the balancer tier at <b>30–40%</b> in normal times. That idle headroom is what makes failover a non-event.</li>
+      <li>Count <b>connections</b> too, not only requests: 400,000 open WebSockets × ~50 KB is 20 GB of memory across the fleet.</li>
+      <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>37 / 39</span><span>system design · capacity</span></div>
+</section>

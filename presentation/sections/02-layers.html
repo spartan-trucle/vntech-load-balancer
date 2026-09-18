@@ -1,0 +1,188 @@
+<!-- ============ SECTION 2 — LAYERS ============ -->
+<section class="slide divider" data-section="divider-02">
+  <div class="divider-num">02</div>
+  <div class="section-tag"><i></i>SECTION 2</div>
+  <h2>Layers</h2>
+  <p class="lead">A request is balanced several times before it reaches your code. Each hop sees different information and can make a different decision.</p>
+  <div class="foot"><span>8 / 39</span><span>act ii · layers</span></div>
+</section>
+
+<section class="slide" data-section="dns-lb">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>2.1 · DNS</div>
+  <h2>Return several IPs and let the client pick. Cheap, but clients keep a dead IP until the TTL runs out.</h2>
+  <div class="split code-left">
+    <pre class="code"><span class="c">$ dig +short api.shop.vn</span>
+10.0.1.11
+10.0.1.12
+10.0.1.13
+<span class="c"># resolver rotates the order on each lookup</span>
+
+<span class="c">$ dig api.shop.vn | grep TTL</span>
+api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
+
+<span class="c"># 12:00:00  10.0.1.12 dies</span>
+<span class="c"># 12:00:00  record removed from the zone</span>
+<span class="hl">12:04:59  clients still send to 10.0.1.12</span>  <span class="chip risk">5 min of errors</span></pre>
+    <ul class="points tight">
+      <li><span class="chip ok">good at</span> Sending users to the nearest <b>region</b>: Route 53 latency or geo routing.</li>
+      <li><span class="chip risk">bad at</span> Reacting fast. Resolvers, OS caches and JVMs cache the answer for the TTL, some for longer.</li>
+      <li data-step="1">No health, no load info: the client can't tell a busy IP from an idle one.</li>
+      <li data-step="1">Use DNS to pick a <b>region</b>, then a real balancer inside it to pick a <b>server</b>.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>9 / 39</span><span>dns load balancing · ttl</span></div>
+</section>
+
+<section class="slide" data-section="l4-l7">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.2 · L4 vs. L7</div>
+  <h2>An L4 balancer sees IPs and ports. An L7 balancer reads the HTTP request.</h2>
+  <div class="body" style="gap:18px;">
+    <div class="chart meter">
+      <svg viewBox="0 0 1100 150" role="img" aria-label="What an L4 and an L7 balancer can see in one request">
+        <rect x="0" y="20" width="1100" height="110" rx="10" class="sv-box"/>
+        <rect x="12" y="32" width="330" height="86" rx="8" class="sv-box-hot"/>
+        <text x="28" y="58" class="sv-hot">TCP / IP header</text>
+        <text x="28" y="84" class="sv-lbl">src 113.161.4.20:51422</text>
+        <text x="28" y="104" class="sv-lbl">dst 52.77.10.8:443</text>
+        <rect x="354" y="32" width="734" height="86" rx="8" class="sv-box"/>
+        <text x="370" y="58" class="sv-lbl-sm">payload · encrypted until TLS is terminated</text>
+        <text x="370" y="84" class="sv-lbl" data-step="1">GET /api/orders/81  Host: api.shop.vn</text>
+        <text x="370" y="104" class="sv-lbl" data-step="1">Cookie: sid=9f2…  X-Canary: true  Authorization: Bearer …</text>
+        <text x="177" y="146" text-anchor="middle" class="sv-hot">L4 stops here</text>
+        <text x="721" y="146" text-anchor="middle" class="sv-hot" data-step="1">L7 terminates TLS and reads all of it</text>
+      </svg>
+    </div>
+    <table class="tbl dense">
+      <thead><tr><th></th><th>L4 · transport</th><th>L7 · application</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Balances</td><td>Connections</td><td>Requests, even many on one connection</td></tr>
+        <tr><td class="name">Can route by</td><td>IP, port</td><td>Path, host, header, cookie, method</td></tr>
+        <tr><td class="name">TLS</td><td>Passes it through</td><td>Terminates it; can re-encrypt to the pod</td></tr>
+        <tr><td class="name">Cost</td><td>Very low, millions of connections</td><td>Parses every request; more CPU per request</td></tr>
+        <tr><td class="name">Examples</td><td>AWS NLB, HAProxy <code>mode tcp</code>, kube-proxy</td><td>AWS ALB, Envoy, NGINX, HAProxy <code>mode http</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>10 / 39</span><span>l4 vs. l7</span></div>
+</section>
+
+<section class="slide" data-section="l7-routing">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>2.3 · What L7 buys you</div>
+  <h2>One address, many pools. Route by path, header, or weight.</h2>
+  <div class="split code-left">
+    <pre class="code"><span class="c"># NGINX-style, one listener on :443</span>
+location /api/          { proxy_pass http://api_pool; }
+location /ws/           { proxy_pass http://socket_pool; }
+location /static/       { proxy_pass http://cdn_origin; }
+
+<span class="c"># canary: 5% of /api/ goes to v2</span>
+split_clients $request_id $api_version {
+  <span class="hl">5%   api_v2;</span>
+  *    api_v1;
+}
+
+<span class="c"># internal testers always get v2</span>
+if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
+    <ul class="points tight">
+      <li><span class="chip hot">path</span> <code>/api</code> and <code>/ws</code> scale separately, on different pod types.</li>
+      <li><span class="chip hot">weight</span> Ship v2 to 5% of requests, watch the error rate, then 25%, 100%.</li>
+      <li><span class="chip hot">header</span> QA sends <code>X-Canary: true</code> to test v2 in production.</li>
+      <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>11 / 39</span><span>l7 routing · path, weight, header</span></div>
+</section>
+
+<section class="slide" data-section="eks-path">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.4 · The path on AWS EKS</div>
+  <h2>Four hops pick a destination before a request reaches a pod</h2>
+  <div class="body" style="gap:16px;">
+    <div class="chart">
+    <svg viewBox="0 0 1160 104" role="img" aria-label="Route 53, ALB, ingress controller, Kubernetes Service, pod">
+      <defs>
+        <marker id="arrow-eks" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+      </defs>
+      <rect x="0" y="14" width="170" height="54" rx="10" class="sv-box-hot"/>
+      <text x="85" y="38" text-anchor="middle" class="sv-lbl">Route 53</text>
+      <text x="85" y="57" text-anchor="middle" class="sv-lbl-sm">DNS</text>
+      <text x="85" y="94" text-anchor="middle" class="sv-hot">① picks a region</text>
+      <path d="M172 41 H214" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <rect x="220" y="14" width="200" height="54" rx="10" class="sv-box-hot"/>
+      <text x="320" y="38" text-anchor="middle" class="sv-lbl">ALB</text>
+      <text x="320" y="57" text-anchor="middle" class="sv-lbl-sm">L7 · managed by AWS</text>
+      <text x="320" y="94" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
+      <path d="M422 41 H464" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <rect x="470" y="14" width="230" height="54" rx="10" class="sv-box-hot"/>
+      <text x="585" y="38" text-anchor="middle" class="sv-lbl">Ingress controller</text>
+      <text x="585" y="57" text-anchor="middle" class="sv-lbl-sm">NGINX · Envoy Gateway</text>
+      <text x="585" y="94" text-anchor="middle" class="sv-hot">③ picks a pod</text>
+      <path d="M702 41 H744" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <rect x="750" y="14" width="220" height="54" rx="10" class="sv-box"/>
+      <text x="860" y="38" text-anchor="middle" class="sv-lbl">Service · kube-proxy</text>
+      <text x="860" y="57" text-anchor="middle" class="sv-lbl-sm">L4 · iptables / IPVS</text>
+      <text x="860" y="94" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
+      <path d="M972 41 H1014" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <rect x="1020" y="14" width="140" height="54" rx="10" class="sv-box"/>
+      <text x="1090" y="46" text-anchor="middle" class="sv-lbl">Pod</text>
+    </svg>
+    </div>
+    <table class="tbl dense">
+      <thead><tr><th></th><th>Layer</th><th>Default algorithm</th><th>Health signal</th></tr></thead>
+      <tbody>
+        <tr><td class="name">① Route 53</td><td>DNS</td><td>Latency, geo, or weighted records</td><td>Route 53 health checks</td></tr>
+        <tr><td class="name">② ALB</td><td>L7</td><td>Round robin; can switch to least outstanding requests</td><td>Target group health check</td></tr>
+        <tr><td class="name">③ Ingress</td><td>L7</td><td>Round robin (NGINX); Envoy also offers least request, ring hash</td><td>Pod readiness via Endpoints</td></tr>
+        <tr><td class="name">④ Service</td><td>L4</td><td>iptables: random pick per connection · IPVS: round robin</td><td>Pod readiness only</td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight" data-step="1">
+      <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests (section 5).</li>
+    </ul>
+  </div>
+  <div class="foot"><span>12 / 39</span><span>layers · the path on eks</span></div>
+</section>
+
+<section class="slide" data-section="client-side-lb">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>2.5 · Client-side balancing</div>
+  <h2>For service-to-service calls, the caller can pick the backend itself and skip a hop</h2>
+  <div class="split">
+    <div class="chart meter">
+      <svg viewBox="0 0 640 300" role="img" aria-label="Proxy balancing versus client-side balancing">
+        <defs>
+          <marker id="arrow-cs" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+        </defs>
+        <text x="10" y="18" class="sv-lbl-sm">proxy in the middle</text>
+        <rect x="10" y="30" width="130" height="50" rx="10" class="sv-box"/><text x="75" y="60" text-anchor="middle" class="sv-lbl">order-svc</text>
+        <path d="M140 55 H218" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <rect x="222" y="30" width="130" height="50" rx="10" class="sv-box-hot"/><text x="287" y="60" text-anchor="middle" class="sv-lbl">LB</text>
+        <path d="M352 55 L458 26" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <path d="M352 55 H458" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <path d="M352 55 L458 84" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <text x="470" y="30" class="sv-lbl">payment-1</text><text x="470" y="60" class="sv-lbl">payment-2</text><text x="470" y="90" class="sv-lbl">payment-3</text>
+        <text x="10" y="124" class="sv-lbl-sm">+1 network hop, +1 thing to scale and monitor</text>
+
+        <g data-step="1">
+          <text x="10" y="176" class="sv-lbl-sm">client-side</text>
+          <rect x="10" y="188" width="200" height="70" rx="10" class="sv-box-hot"/>
+          <text x="110" y="216" text-anchor="middle" class="sv-lbl">order-svc</text>
+          <text x="110" y="238" text-anchor="middle" class="sv-hot">picker inside</text>
+          <path d="M210 223 L458 190" class="sv-line" marker-end="url(#arrow-cs)"/>
+          <path d="M210 223 H458" class="sv-line" marker-end="url(#arrow-cs)"/>
+          <path d="M210 223 L458 256" class="sv-line" marker-end="url(#arrow-cs)"/>
+          <text x="470" y="194" class="sv-lbl">payment-1</text><text x="470" y="227" class="sv-lbl">payment-2</text><text x="470" y="260" class="sv-lbl">payment-3</text>
+          <text x="10" y="290" class="sv-lbl-sm">pod list from DNS (headless Service) or a registry</text>
+        </g>
+      </svg>
+    </div>
+    <ul class="points tight">
+      <li>A <b>gRPC client</b> with <code>round_robin</code> and a headless Service opens one connection per pod and spreads calls itself.</li>
+      <li>A <b>service mesh</b> (Istio, Linkerd) puts an Envoy-like proxy next to every pod. Your code calls <code>localhost</code>; the sidecar balances.</li>
+      <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>13 / 39</span><span>client-side · grpc, service mesh</span></div>
+</section>

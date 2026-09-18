@@ -1,0 +1,21 @@
+<!-- ============ TAKEAWAYS ============ -->
+<section class="slide divider" data-section="divider-07">
+  <div class="divider-num">07</div>
+  <div class="section-tag"><i></i>SECTION 7</div>
+  <h2>Takeaways</h2>
+  <p class="lead">Five things worth carrying out of this room.</p>
+  <div class="foot"><span>38 / 39</span><span>act vii · summary</span></div>
+</section>
+
+<section class="slide" data-section="takeaways">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>Takeaways</div>
+  <h2>Five things worth remembering</h2>
+  <ul class="points">
+    <li><span class="chip">algorithm</span> Least request with two random choices is the right default for HTTP. Round robin only works when pods and requests are all the same size; hash only when you need the same key on the same backend.</li>
+    <li><span class="chip">health</span> Combine active checks (is it ready?) with passive ejection (is it failing real traffic?). Keep dependencies out of the health check, or one slow DB empties the pool.</li>
+    <li><span class="chip">deploys</span> Drain before you stop: <code>preStop</code> sleep, a sane deregistration delay, readiness before traffic, slow start for cold pods.</li>
+    <li><span class="chip">connections</span> An L4 balancer balances connections, not requests. gRPC and WebSockets need per-call balancing or a max connection age. Backend keep-alive must outlast the balancer's.</li>
+    <li><span class="chip">design</span> The balancer is part of the system: make it redundant, size each region for the whole load, and test failover on purpose.</li>
+  </ul>
+  <div class="foot"><span>39 / 39</span><span>vntech · load balancing</span></div>
+</section>
