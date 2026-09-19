@@ -121,23 +121,69 @@
 <section class="slide" data-section="what-is-lb">
   <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>What a load balancer is</div>
   <h2>For each request, pick one healthy backend from a pool. Skip the ones that are down.</h2>
-  <div class="split code-left">
-    <pre class="code"><span class="c"># pool: api  ·  algorithm: round robin</span>
+  <div class="body" style="gap:18px;">
+    <div class="chart meter" style="padding:14px 20px 8px;">
+      <svg viewBox="0 0 1000 214" role="img" aria-label="Anatomy of a load balancer: listener, algorithm, pool and health checks">
+        <defs>
+          <marker id="arrow-anat" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+        </defs>
 
-12:00:01.010  GET /orders/81   → pod-a  200  <span class="c">42 ms</span>
-12:00:01.013  GET /orders/82   → pod-b  200  <span class="c">39 ms</span>
-12:00:01.020  POST /cart       → pod-c  200  <span class="c">51 ms</span>
-12:00:01.024  GET /orders/83   → pod-a  200  <span class="c">40 ms</span>
-<span class="hl">12:00:01.500  health  pod-b    → timeout ×3 → DOWN</span>
-12:00:01.502  GET /orders/84   → pod-c  200  <span class="c"># pod-b skipped</span>
-12:00:01.509  GET /orders/85   → pod-a  200</pre>
-    <ul class="points tight">
-      <li><span class="chip hot">listener</span> The address clients connect to: <code>api.shop.vn:443</code>.</li>
-      <li><span class="chip hot">pool</span> The backends it may send to: pods, VMs, IPs.</li>
-      <li><span class="chip hot">algorithm</span> How it picks one: next in line, least busy, or by hash.</li>
-      <li><span class="chip hot">health</span> Which backends are allowed to be picked right now.</li>
-      <li data-step="1">Clients never learn the backend IPs. You can add, remove, or restart pods without anyone changing config.</li>
-    </ul>
+        <rect x="0" y="52" width="104" height="56" rx="10" class="sv-box"/>
+        <text x="52" y="85" text-anchor="middle" class="sv-lbl">clients</text>
+        <path d="M106 80 H150" class="sv-line" marker-end="url(#arrow-anat)"/>
+
+        <rect x="156" y="40" width="216" height="80" rx="12" class="sv-box-hot"/>
+        <text x="174" y="68" class="sv-hot">① listener</text>
+        <text x="174" y="98" class="sv-lbl">api.shop.vn:443</text>
+        <text x="156" y="146" class="sv-lbl-sm">the one address clients</text>
+        <text x="156" y="166" class="sv-lbl-sm">connect to</text>
+
+        <path d="M374 80 H418" class="sv-line" marker-end="url(#arrow-anat)"/>
+
+        <rect x="424" y="40" width="200" height="80" rx="12" class="sv-box-hot"/>
+        <text x="442" y="68" class="sv-hot">② algorithm</text>
+        <text x="442" y="98" class="sv-lbl">round robin</text>
+        <text x="424" y="146" class="sv-lbl-sm">how it picks one of</text>
+        <text x="424" y="166" class="sv-lbl-sm">them, per request</text>
+
+        <path d="M626 74 L688 28" class="sv-line" marker-end="url(#arrow-anat)"/>
+        <path d="M626 86 L688 158" class="sv-line" marker-end="url(#arrow-anat)"/>
+        <path d="M626 80 L688 93" class="sv-line-soft" stroke-dasharray="5 4"/>
+
+        <rect x="694" y="4" width="246" height="48" rx="10" class="sv-box"/>
+        <text x="710" y="26" class="sv-lbl">pod-a</text>
+        <text x="710" y="43" class="sv-lbl-sm">10.0.1.11</text>
+        <text x="924" y="33" text-anchor="end" class="sv-ok">up</text>
+
+        <rect x="694" y="60" width="246" height="48" rx="10" class="sv-box-risk"/>
+        <text x="710" y="82" class="sv-lbl">pod-b</text>
+        <text x="710" y="99" class="sv-lbl-sm">10.0.1.12</text>
+        <text x="924" y="89" text-anchor="end" class="sv-risk">down</text>
+        <path d="M648 74 L668 94 M668 74 L648 94" class="sv-strike"/>
+
+        <rect x="694" y="116" width="246" height="48" rx="10" class="sv-box"/>
+        <text x="710" y="138" class="sv-lbl">pod-c</text>
+        <text x="710" y="155" class="sv-lbl-sm">10.0.1.13</text>
+        <text x="924" y="145" text-anchor="end" class="sv-ok">up</text>
+
+        <text x="694" y="192" class="sv-hot">③ pool</text>
+        <text x="762" y="192" class="sv-lbl-sm">the backends it may send to</text>
+        <text x="694" y="212" class="sv-hot">④ health</text>
+        <text x="772" y="212" class="sv-lbl-sm">who may be picked right now</text>
+      </svg>
+    </div>
+    <div class="split code-left" style="gap:34px; align-items:center;">
+      <pre class="code" style="font-size:13.5px;"><span class="c"># pool: api · algorithm: round robin</span>
+12:00:01.010  GET /orders/81  → pod-a  200  <span class="c">42 ms</span>
+12:00:01.013  GET /orders/82  → pod-b  200  <span class="c">39 ms</span>
+<span class="hl">12:00:01.500  health  pod-b   → timeout ×3 → DOWN</span>
+12:00:01.502  GET /orders/84  → pod-c  200  <span class="c"># pod-b skipped</span>
+12:00:01.509  GET /orders/85  → pod-a  200</pre>
+      <ul class="points tight">
+        <li>Health checks decide <b>who is allowed</b>; the algorithm picks <b>which one</b> of those.</li>
+        <li data-step="1">Clients never learn the backend IPs, so you can add, remove or restart pods without anyone changing config.</li>
+      </ul>
+    </div>
   </div>
   <div class="foot"><span>6 / 42</span><span>definition · listener, pool, algorithm, health</span></div>
 </section>
