@@ -1,0 +1,77 @@
+<!-- ============ THANK YOU + KAHOOT ============ -->
+<!-- data-no-part: keeps the default hue instead of the demo's yellow.
+     Kahoot: paste the assignment's link and PIN into data-kahoot-url / data-kahoot-pin below.
+     They stay valid until the assignment deadline, so QR and PIN are fixed. Leave them empty to
+     fall back to typing a live game PIN on stage. -->
+<section class="slide" data-section="thanks" data-no-part>
+  <div class="thanks-grid">
+    <div class="stack">
+      <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>Load Balancing</div>
+      <h1 class="display">Thank you</h1>
+      <p class="lead">Questions first. Then a Kahoot quiz on what the balancer knows: order, capacity, load, client identity.</p>
+      <div class="byline">
+        <div class="person"><img src="img/truc-le.jpg" alt="Trúc Lê" /><div><b>Trúc Lê</b><span>local &amp; global balancing</span></div></div>
+        <div class="person"><img src="img/khanh-do.jpg" alt="Khánh Đỗ" /><div><b>Khánh Đỗ</b><span>algorithms &amp; demo</span></div></div>
+      </div>
+    </div>
+    <figure class="kahoot-card" data-kahoot-url="" data-kahoot-pin="">
+      <div class="kahoot-qr" id="kahoot-qr"></div>
+      <a class="kahoot-link" id="kahoot-link" href="https://kahoot.it/" target="_blank" rel="noopener">kahoot.it</a>
+      <label class="kahoot-pin">
+        <span>Game PIN</span>
+        <input id="kahoot-pin" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="type PIN" aria-label="Kahoot game PIN" />
+      </label>
+    </figure>
+  </div>
+  <div class="foot"><span>40 / 40</span><span>thank you · kahoot</span></div>
+</section>
+
+<script>
+(() => {
+  // Fixed mode (assignment): QR → the assignment link, PIN shown read-only.
+  // Typed mode (live game): QR → kahoot.it with the typed PIN filled in.
+  const JOIN = 'https://kahoot.it/';
+  const card = document.querySelector('.kahoot-card');
+  const fixedUrl = card.dataset.kahootUrl.trim(), fixedPin = card.dataset.kahootPin.trim();
+  const box = document.getElementById('kahoot-qr');
+  const link = document.getElementById('kahoot-link');
+  const input = document.getElementById('kahoot-pin');
+
+  function draw(url) {
+    const qr = window.qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    const n = qr.getModuleCount();
+    let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    box.innerHTML = `<svg viewBox="-3 -3 ${n + 6} ${n + 6}" shape-rendering="crispEdges" role="img" aria-label="QR code: ${url}">`
+      + `<rect x="-3" y="-3" width="${n + 6}" height="${n + 6}" rx="2" class="qr-bg"/><path d="${d}" class="qr-ink"/></svg>`;
+  }
+
+  function update() {
+    const pin = input.value.replace(/\D/g, '');
+    if (pin !== input.value) input.value = pin;
+    const url = pin ? `${JOIN}?pin=${pin}&refer_method=link` : JOIN;
+    draw(url);
+    link.href = url;
+    link.textContent = pin ? `kahoot.it · PIN ${pin}` : 'kahoot.it';
+    try { localStorage.setItem('lb-kahoot-pin', pin); } catch { /* private mode: PIN just won't persist */ }
+  }
+
+  if (fixedUrl) {
+    input.value = fixedPin;
+    input.readOnly = true;
+    input.tabIndex = -1;
+    draw(fixedUrl);
+    link.href = fixedUrl;
+    link.textContent = 'kahoot.it';
+    return;
+  }
+
+  try { input.value = localStorage.getItem('lb-kahoot-pin') || ''; } catch { /* ignore */ }
+  input.addEventListener('input', update);
+  // Enter or Esc hands the keyboard back to the deck
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') input.blur(); });
+  update();
+})();
+</script>

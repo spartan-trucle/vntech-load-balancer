@@ -1,0 +1,267 @@
+<!-- ============ SECTION 4 — DEMO: THE CRASHED SERVER ============ -->
+<section class="slide divider" data-section="divider-04">
+  <div class="divider-num">04</div>
+  <div class="section-tag"><i></i>SECTION 4</div>
+  <h2>Demo: the crashed server</h2>
+  <p class="lead">3 HTTP servers on ports 8001–8003, NGINX in front on 8000. Watch the requests cycle, then kill one.</p>
+  <div class="foot"><span>34 / 40</span><span>section 4 · demo</span></div>
+</section>
+
+<section class="slide" data-section="demo-setup">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>4.1 · Setup</div>
+  <h2>Three servers that only say their own name, so every response tells you who answered</h2>
+  <div class="split">
+    <div class="chart meter">
+      <svg viewBox="0 0 640 280" role="img" aria-label="curl sends requests to NGINX on port 8000, which forwards to servers on 8001, 8002 and 8003">
+        <defs><marker id="arrow-demo" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
+        <rect x="0" y="115" width="110" height="50" rx="10" class="sv-box"/>
+        <text x="55" y="145" text-anchor="middle" class="sv-lbl">curl</text>
+        <path d="M110 140 H186" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <rect x="190" y="100" width="160" height="80" rx="12" class="sv-box-hot"/>
+        <text x="270" y="134" text-anchor="middle" class="sv-hot">NGINX</text>
+        <text x="270" y="156" text-anchor="middle" class="sv-lbl-sm">listen 8000</text>
+        <path d="M350 140 L476 44" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <path d="M350 140 H476" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <path d="M350 140 L476 236" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <rect x="480" y="16" width="160" height="56" rx="10" class="sv-box"/>
+        <text x="560" y="49" text-anchor="middle" class="sv-lbl">Server 8001</text>
+        <rect x="480" y="112" width="160" height="56" rx="10" class="sv-box"/>
+        <text x="560" y="145" text-anchor="middle" class="sv-lbl">Server 8002</text>
+        <rect x="480" y="208" width="160" height="56" rx="10" class="sv-box"/>
+        <text x="560" y="241" text-anchor="middle" class="sv-lbl">Server 8003</text>
+      </svg>
+    </div>
+    <div class="stack">
+      <div class="code-label">demo/ · Node + TypeScript backends, NGINX in front</div>
+      <pre class="code">cd demo
+npm install
+npm start     <span class="c"># 8001–8003 + NGINX on 8000</span>
+
+curl localhost:8001   <span class="c"># Server 8001</span>
+npm run status        <span class="c"># who is up, which algorithm</span></pre>
+    </div>
+  </div>
+  <div class="foot"><span>35 / 40</span><span>demo · setup</span></div>
+</section>
+
+<section class="slide" data-section="demo-config">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>4.2 · NGINX as the balancer</div>
+  <h2>One <code>upstream</code> block with three servers. No algorithm line means round robin.</h2>
+  <div class="split even" style="align-items:start;">
+    <div class="stack">
+      <div class="code-label">demo/nginx/nginx.conf · simplified</div>
+      <pre class="code">events {}
+http {
+  upstream backend {
+    <span class="c"># no directive here = round robin</span>
+    server 127.0.0.1:8001;
+    server 127.0.0.1:8002;
+    server 127.0.0.1:8003;
+  }
+  server {
+    listen 8000;
+    location / { proxy_pass http://backend; }
+  }
+}</pre>
+    </div>
+    <div class="stack">
+      <div class="code-label">send 6 requests</div>
+      <pre class="code">for i in $(seq 6); do curl -s localhost:8000; done</pre>
+      <div class="code-label" data-step="1">output</div>
+      <pre class="code" data-step="1">Server 8001
+Server 8002
+Server 8003
+Server 8001   <span class="c"># wrap around</span>
+Server 8002
+Server 8003</pre>
+    </div>
+  </div>
+  <div class="foot"><span>36 / 40</span><span>demo · round robin</span></div>
+</section>
+
+<section class="slide" data-section="demo-algorithms">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>4.3 · Guess first</div>
+  <h2>Each algorithm from section 3 is one line in the <code>upstream</code> block. Guess the 6 responses before we run it.</h2>
+  <div class="body">
+    <table class="tbl">
+      <thead><tr><th>Change</th><th>Output for 6 requests</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="name"><code>server 127.0.0.1:8001 weight=4;</code></td><td class="mono" data-step="1">8001 8001 8002 8001 8003 8001</td><td data-step="1">Smooth weighted round robin, 4 : 1 : 1</td></tr>
+        <tr><td class="name"><code>least_conn;</code></td><td class="mono" data-step="2">8001 8002 8003 8001 8002 8003</td><td data-step="2">Every request finishes instantly, so all counts tie at 0 and NGINX breaks ties with round robin</td></tr>
+        <tr><td class="name"><code>ip_hash;</code></td><td class="mono" data-step="3">one server, 6 times</td><td data-step="3">Every request comes from 127.0.0.1: the office NAT problem, live</td></tr>
+        <tr><td class="name"><code>npm run crash -- 8002</code></td><td class="mono" data-step="4">8001 8003 8001 8003 …</td><td data-step="4">No error for the client. Why? Next two slides</td></tr>
+      </tbody>
+    </table>
+    <pre class="code">npm run algo -- weight   <span class="c"># rr | weight | least | iphash · rewrites the upstream and reloads NGINX</span></pre>
+  </div>
+  <div class="foot"><span>37 / 40</span><span>demo · predict before running</span></div>
+</section>
+
+<section class="slide" data-section="demo-live">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-pulse"/></svg>4.4 · Live</div>
+  <h2>Real requests from this slide through NGINX on :8000. Each coin lands on the server that actually answered.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="live-flow" role="img" aria-label="Live requests through NGINX to three Node servers"></svg></div>
+      <div class="flow-ctl">
+        <div class="seg" id="live-seg"><button data-n="6">Send 6</button><button data-n="12">Send 12</button></div>
+        <span class="chip" id="live-status">checking…</span>
+        <p class="readout" id="live-readout"></p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="code-label">in the terminal, with this slide up</div>
+      <pre class="code">npm run algo -- least      <span class="c"># rr | weight | least | iphash</span>
+npm run slow -- 8002 3000  <span class="c"># GC pause on 8002</span>
+npm run crash -- 8002
+npm run revive -- 8002</pre>
+      <ul class="points tight">
+        <li><code>S</code> sends 6 requests, <code>Shift+S</code> sends 12.</li>
+        <li>The balancer box shows the live algorithm (<code>X-LB</code>) and every server NGINX tried (<code>X-Upstream</code>).</li>
+        <li>NGINX not running? The slide replays a round robin recording, marked <b>recorded</b>.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>38 / 40</span><span>demo · live requests</span></div>
+</section>
+
+<section class="slide" data-section="demo-crash">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-pulse"/></svg>4.5 · Why nobody saw the crash</div>
+  <h2>Kill 8002. The client sees no error: NGINX retries the next server and stops sending to 8002 for 10 s.</h2>
+  <div class="split code-left">
+    <pre class="code">npm run crash -- 8002   <span class="c"># SIGKILL the 8002 backend</span>
+
+for i in $(seq 6); do curl -s localhost:8000; done
+Server 8001
+Server 8003      <span class="c"># 8002 refused → retried on 8003</span>
+Server 8001
+Server 8003
+Server 8001
+Server 8003</pre>
+    <ul class="points tight">
+      <li>Connection refused counts as a failure. NGINX passes the request to the next server (<code>proxy_next_upstream error timeout</code>, the default).</li>
+      <li data-step="1">Defaults: <code>max_fails=1</code>, <code>fail_timeout=10s</code>. One failure takes 8002 out for 10 s, then NGINX tries it again.</li>
+      <li data-step="2"><code>npm run revive -- 8002</code> and it's back in rotation after the next try. This is <b>passive</b> checking: NGINX only notices when real traffic fails.</li>
+      <li data-step="3">Try it with <code>ip_hash;</code>: users who were on 8002 move to another server. With sessions in memory, they'd be logged out.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>39 / 40</span><span>demo · passive failure detection</span></div>
+</section>
+
+<script>
+(() => {
+  // 4.3 live demo: the slide itself sends requests to NGINX (demo/) and animates who answered.
+  // NGINX adds X-Upstream (every server it tried) and X-LB (the algorithm); backends send headers
+  // before the body, so a coin lands when the server starts and leaves when the response ends.
+  const { flow, $ } = window.Charts;
+  const NGINX = 'http://localhost:8000';
+  const PORTS = [8001, 8002, 8003];
+  const SKIP_MS = 10000; // NGINX default fail_timeout: a failed server is skipped for 10 s
+
+  const svg = $('live-flow'), slide = svg.closest('.slide');
+  const statusEl = $('live-status'), readout = $('live-readout');
+  const w = flow(svg, {
+    servers: PORTS.map((p) => ({ name: `Server ${p}` })),
+    title: 'NGINX :8000',
+    stat: (s) => `${s.total} req · ${s.active} active`,
+  });
+
+  let live = false, algo = '', busy = false, lastPick = '', lastTried = '';
+  const up = PORTS.map(() => null);          // backend process reachable? (polled)
+  const skipUntil = PORTS.map(() => 0);      // when NGINX will try a failed server again
+  const seq = [];
+  const probe = (url) => fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(700) });
+
+  function render() {
+    w.lb(live ? algo : 'no NGINX on :8000', lastPick, lastTried, live ? '● live' : '○ recorded');
+    statusEl.textContent = live ? `live · ${algo}` : 'recorded';
+    statusEl.className = live ? 'chip ok' : 'chip';
+    const now = Date.now();
+    PORTS.forEach((p, i) => {
+      const skip = Math.ceil((skipUntil[i] - now) / 1000);
+      if (up[i] === false) { w.mark(i, 'sv-box-risk'); w.sub(i, 'down · process stopped'); }
+      else { w.mark(i, 'sv-box'); w.sub(i, skip > 0 ? `NGINX skips it · ${skip} s` : up[i] ? 'up' : ''); }
+    });
+    const counts = PORTS.map((p) => seq.filter((x) => x === p).length);
+    readout.innerHTML = seq.length
+      ? `${seq.join(' ')}<br><b>${counts.join(' / ')}</b> for ${PORTS.join(' / ')}`
+      : '';
+  }
+
+  async function poll() {
+    try {
+      const r = await probe(`${NGINX}/__lb`);
+      live = true;
+      algo = r.headers.get('X-LB') || '?';
+    } catch { live = false; }
+    await Promise.all(PORTS.map(async (p, i) => {
+      up[i] = await probe(`http://localhost:${p}/__health`).then(() => true, () => false);
+    }));
+    render();
+  }
+
+  const port = (addr) => Number(String(addr).trim().split(':').pop());
+
+  async function one(n) {
+    if (!live) {
+      // recorded round robin, same animation
+      const i = (n - 1) % PORTS.length;
+      lastPick = `req #${n} → ${PORTS[i]}`; lastTried = '';
+      const item = w.send(i, { label: n });
+      seq.push(PORTS[i]); render();
+      w.later(() => w.finish(i, item), w.FLY + 300);
+      return;
+    }
+    let res;
+    try { res = await fetch(`${NGINX}/`, { cache: 'no-store' }); } catch { lastPick = `req #${n} failed`; render(); return; }
+    const tried = (res.headers.get('X-Upstream') || '').split(',').filter(Boolean).map(port);
+    const fails = res.ok ? tried.slice(0, -1) : tried;
+    fails.forEach((p) => {
+      const i = PORTS.indexOf(p);
+      if (i >= 0) { skipUntil[i] = Date.now() + SKIP_MS; w.bounce(i, n); }
+    });
+    lastTried = tried.length > 1 ? `tried ${tried.join(' → ')}` : '';
+    if (!res.ok) { lastPick = `req #${n} → ${res.status}`; render(); return; }
+    if (fails.length) await w.sleep(w.FLY + 100);
+    const i = PORTS.indexOf(tried[tried.length - 1]);
+    lastPick = `req #${n} → ${PORTS[i]}`;
+    const item = w.send(i, { label: n, cls: fails.length ? 'risk' : '' });
+    seq.push(PORTS[i]); render();
+    // body arrives when the (possibly slow) server finishes; a fast one still lands before it leaves
+    await Promise.all([res.text(), w.sleep(w.FLY + 400)]);
+    w.finish(i, item);
+  }
+
+  async function batch(total) {
+    if (busy) return;
+    busy = true;
+    w.reset(); seq.length = 0; lastPick = ''; lastTried = '';
+    await poll();
+    for (let n = 1; n <= total; n++) {
+      one(n);
+      await w.sleep(total > 6 ? 450 : 700);
+    }
+    busy = false;
+  }
+
+  $('live-seg').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (btn) batch(Number(btn.dataset.n));
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() !== 's' || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (slide.classList.contains('active')) batch(e.shiftKey ? 12 : 6);
+  });
+
+  // poll only while this slide is on screen
+  let timer = 0;
+  new MutationObserver(() => {
+    const on = slide.classList.contains('active');
+    if (on && !timer) { poll(); timer = setInterval(poll, 1000); }
+    if (!on && timer) { clearInterval(timer); timer = 0; }
+  }).observe(slide, { attributes: true, attributeFilter: ['class'] });
+
+  w.reset();
+  render();
+})();
+</script>

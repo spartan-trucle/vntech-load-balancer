@@ -1,76 +1,237 @@
 <!-- ============ SECTION 3 — ALGORITHMS ============ -->
+<!-- Main path follows the four algorithms in Alex Xu / ByteByteGo; P2C and consistent hashing sit in the appendix at the end. -->
 <section class="slide divider" data-section="divider-03">
   <div class="divider-num">03</div>
   <div class="section-tag"><i></i>SECTION 3</div>
   <h2>Algorithms</h2>
   <div class="lead">
-    <p>Two families:</p>
+    <p>One question for every algorithm: <b>what does the balancer look at?</b></p>
     <ul class="lead-list">
-      <li><b>Spread</b> — send each request to whoever is next or least busy.</li>
-      <li><b>Hash</b> — send the same key to the same backend every time.</li>
+      <li><b>Order</b>: round robin</li>
+      <li><b>Capacity</b>: weighted round robin</li>
+      <li><b>Current load</b>: least connections</li>
+      <li><b>Client identity</b>: IP hash</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 39</span><span>act iii · algorithms</span></div>
+  <div class="foot"><span>19 / 40</span><span>section 3 · algorithms</span></div>
 </section>
 
-<section class="slide" data-section="round-robin">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>3.1 · Round robin</div>
-  <h2>Next backend in the list, then wrap around. Weights give bigger boxes more turns.</h2>
-  <div class="split even" style="align-items:start;">
-    <div class="stack">
-      <div class="code-label">round robin · 3 equal pods</div>
-      <pre class="code">req #1  → pod-a
-req #2  → pod-b
-req #3  → pod-c
-req #4  → pod-a   <span class="c"># wrap around</span>
-req #5  → pod-b
-req #6  → pod-c
-
-<span class="c"># 6 requests → 2 / 2 / 2</span></pre>
-    </div>
-    <div class="stack" data-step="1">
-      <div class="code-label">weighted · pod-a is an 8 vCPU node, weight 2</div>
-      <pre class="code">req #1  → <span class="hl">pod-a</span>
-req #2  → <span class="hl">pod-a</span>
-req #3  → pod-b
-req #4  → pod-c
-req #5  → <span class="hl">pod-a</span>
-req #6  → <span class="hl">pod-a</span>
-
-<span class="c"># 8 requests → 4 / 2 / 2</span></pre>
-    </div>
-  </div>
-  <ul class="points tight">
-    <li><span class="chip ok">good</span> No state beyond one counter. Perfectly even <b>when every request costs the same</b>.</li>
-    <li data-step="2"><span class="chip risk">blind</span> It counts requests, not work. A 3-second report export and a 5 ms health ping are both "one turn".</li>
-  </ul>
-  <div class="foot"><span>15 / 39</span><span>round robin · weighted round robin</span></div>
-</section>
-
-<section class="slide" data-section="least-conn">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>3.2 · Least connections</div>
-  <h2>Send to the backend with the fewest requests in flight right now</h2>
-  <div class="split code-left">
-    <table class="tbl dense">
-      <thead><tr><th>at 12:00:01.200</th><th class="num">in flight</th><th>round robin</th><th>least conn</th></tr></thead>
+<section class="slide" data-section="algo-question">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>3.1 · What is a load balancing algorithm?</div>
+  <h2>Health checks decide which servers are allowed. The algorithm picks one of them for this request, using whatever information it has.</h2>
+  <div class="split">
+    <table class="tbl">
+      <thead><tr><th>The balancer looks at…</th><th>Algorithm</th><th>Type</th></tr></thead>
       <tbody>
-        <tr><td class="name">pod-a</td><td class="num">2</td><td></td><td></td></tr>
-        <tr><td class="name">pod-b</td><td class="num"><b>41</b> <span class="chip risk">GC pause</span></td><td><span class="chip risk">next in line</span></td><td></td></tr>
-        <tr><td class="name">pod-c</td><td class="num">0</td><td></td><td><span class="chip ok" data-step="1">picked</span></td></tr>
+        <tr><td class="name">the order requests arrive in</td><td>Round robin</td><td><span class="chip">static</span></td></tr>
+        <tr data-step="1"><td class="name">the capacity you configured</td><td>Weighted round robin</td><td><span class="chip">static</span></td></tr>
+        <tr data-step="2"><td class="name">live connection counts</td><td>Least connections</td><td><span class="chip hot">dynamic</span></td></tr>
+        <tr data-step="3"><td class="name">who the client is (IP)</td><td>IP hash</td><td><span class="chip">static</span></td></tr>
       </tbody>
     </table>
     <ul class="points tight">
-      <li>pod-b is stuck in a 2-second GC pause. Its requests pile up.</li>
-      <li>Round robin still gives it every third request, and each of those waits behind 41 others.</li>
-      <li data-step="1">Least connections sees <b>41 vs. 0</b> and sends to pod-c. A slow backend gets fewer requests <b>automatically</b>, because it finishes fewer.</li>
-      <li data-step="2">ALB calls it <code>least_outstanding_requests</code>; NGINX <code>least_conn</code>; HAProxy <code>leastconn</code>; Envoy <code>LEAST_REQUEST</code>.</li>
+      <li><b>Static</b>: fixed rules, blind to what servers are doing right now. <b>Dynamic</b>: reads live server state.</li>
+      <li data-step="3">For each one, ask two things: what does it know, and <b>what does it ignore?</b> The ignored part is where it breaks.</li>
     </ul>
   </div>
-  <div class="foot"><span>16 / 39</span><span>least connections · least outstanding requests</span></div>
+  <div class="foot"><span>20 / 40</span><span>framing · static vs dynamic (ByteByteGo)</span></div>
+</section>
+
+<section class="slide" data-section="round-robin">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>3.2 · Round robin</div>
+  <h2>Next server in the list, then wrap around. Every server gets the same number of requests.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="rr-flow" role="img" aria-label="Round robin sends requests to A, B, C in turn"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="rr-replay">↻ Replay</button></div><p class="readout" id="rr-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">knows</span> One counter: <code>servers[i++ % N]</code>.</li>
+      <li><span class="chip ok">good</span> Simplest possible, almost no state. The default in NGINX, HAProxy and AWS ALB.</li>
+      <li data-step="1"><span class="chip risk">ignores</span> How long each request takes. A 3 s export and a 5 ms health check are both "one turn".</li>
+      <li data-step="1"><span class="chip ok">use when</span> Servers are the same size, requests cost about the same, and the app is stateless.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>21 / 40</span><span>round robin · ByteByteGo · NGINX, HAProxy docs</span></div>
+</section>
+
+<section class="slide" data-section="weighted-rr">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>3.3 · Weighted round robin</div>
+  <h2>Server A is 3× bigger, so it gets 3 turns for every 1 turn of B and C.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="wrr-flow" role="img" aria-label="Weighted round robin with weights 3, 1, 1"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="wrr-replay">↻ Replay</button></div><p class="readout" id="wrr-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">knows</span> A weight per server, <b>set by you</b>: <code>server a weight=3;</code></li>
+      <li><span class="chip ok">use when</span> Mixed instance sizes during a migration, or a canary split (90% v1, 10% v2).</li>
+      <li data-step="1"><span class="chip ok">smooth</span> NGINX interleaves the turns (<code>A B A C A</code>) so A never gets a burst.</li>
+      <li data-step="2"><span class="chip risk">ignores</span> Live load. A weight is what you <i>believe</i> a server can handle, not a measurement. Set it wrong and that server overloads.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>22 / 40</span><span>weighted round robin · ByteByteGo · NGINX smooth WRR</span></div>
+</section>
+
+<section class="slide" data-section="least-conn">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>3.4 · Least connections</div>
+  <h2>Send to the server with the fewest active connections right now. A slow server finishes fewer, so it gets fewer.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="lc-flow" role="img" aria-label="Round robin vs least connections when server B is slow"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="lc-replay">↻ Replay</button></div><p class="readout" id="lc-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li>Server B is in a GC pause: each request takes 5 s instead of 1 s.</li>
+      <li><span class="chip risk">round robin</span> Still sends B every third request. They pile up.</li>
+      <li data-step="1"><span class="chip ok">least conn</span> Sees B is busy and goes elsewhere. No config change needed.</li>
+      <li data-step="2"><span class="chip risk">cost</span> The balancer must track live counts per server. A brand-new server has 0 connections and gets flooded (use slow start).</li>
+      <li data-step="2"><span class="chip ok">use when</span> Request times vary a lot or connections are long-lived: WebSockets, uploads, DB proxies.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>23 / 40</span><span>least connections · ByteByteGo · NGINX least_conn, HAProxy leastconn</span></div>
+</section>
+
+<section class="slide" data-section="ip-hash">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-hash"/></svg>3.5 · IP hash</div>
+  <h2>Hash the client's IP to pick the server. The same user always lands on the same server, with no table to store.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="ip-flow" role="img" aria-label="IP hash sends each client to the same server every time"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="ip-replay">↻ Replay</button></div><p class="readout" id="ip-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">knows</span> The client: <code>server = hash(ip) % N</code>.</li>
+      <li><span class="chip ok">gives</span> <b>Session affinity</b>: round 2 finds each user's session on the same server.</li>
+      <li data-step="1"><span class="chip risk">NAT</span> An office of 50 people behind one IP is "one client". They all hit server A.</li>
+      <li data-step="1">NGINX <code>ip_hash</code> uses only the first 3 octets of an IPv4 address, so a whole <code>/24</code> shares one server. Mobile users change IP and lose affinity.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>24 / 40</span><span>ip hash · ByteByteGo · NGINX ip_hash, HAProxy balance source</span></div>
+</section>
+
+<section class="slide" data-section="ip-hash-scale">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-hash"/></svg>3.6 · IP hash when servers change</div>
+  <h2>Add one server and <code>% N</code> sends most users somewhere new. Lose one server and its users lose their sessions.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="ips-flow" role="img" aria-label="Adding a server or losing one remaps users under IP hash"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="ips-replay">↻ Replay</button></div><p class="readout" id="ips-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li>3 servers, each user's session on one of them.</li>
+      <li data-step="1"><span class="chip risk">add D</span> <code>% 3</code> becomes <code>% 4</code>. About 75% of users move to a new server that has no session for them. Alex Xu calls this the <b>rehashing problem</b> (ch. 5).</li>
+      <li data-step="2"><span class="chip risk">B dies</span> B's users go to another server, which doesn't have their sessions either.</li>
+      <li data-step="3"><span class="chip ok">less bad</span> Consistent hashing moves only ~1/N of users (ch. 5; see appendix). NGINX <code>hash $remote_addr consistent;</code></li>
+    </ul>
+  </div>
+  <div class="foot"><span>25 / 40</span><span>rehashing problem · System Design Interview ch. 5</span></div>
+</section>
+
+<section class="slide" data-section="sticky">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-key"/></svg>3.7 · Sticky sessions: stateful vs stateless</div>
+  <h2>IP hash only matters because the server holds the session. Move the session out and any server can take any request.</h2>
+  <div class="split">
+    <div class="chart meter">
+      <svg viewBox="0 0 640 330" role="img" aria-label="Stateful servers need sticky sessions; stateless servers share a session store">
+        <defs><marker id="arrow-sticky" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
+        <g data-hide-at="1">
+          <text x="0" y="18" class="sv-hot">STATEFUL</text>
+          <rect x="0" y="60" width="120" height="44" rx="8" class="sv-box"/><text x="60" y="87" text-anchor="middle" class="sv-lbl">User A</text>
+          <rect x="0" y="210" width="120" height="44" rx="8" class="sv-box"/><text x="60" y="237" text-anchor="middle" class="sv-lbl">User B</text>
+          <path d="M120 82 H356" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <path d="M120 232 H356" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <text x="238" y="72" text-anchor="middle" class="sv-lbl-sm">must always go to server 1</text>
+          <text x="238" y="222" text-anchor="middle" class="sv-lbl-sm">must always go to server 2</text>
+          <rect x="360" y="40" width="200" height="84" rx="10" class="sv-box"/>
+          <text x="380" y="68" class="sv-lbl">Server 1</text>
+          <rect x="380" y="82" width="160" height="28" rx="6" class="sv-box-risk"/><text x="460" y="101" text-anchor="middle" class="sv-risk">session A in RAM</text>
+          <rect x="360" y="190" width="200" height="84" rx="10" class="sv-box"/>
+          <text x="380" y="218" class="sv-lbl">Server 2</text>
+          <rect x="380" y="232" width="160" height="28" rx="6" class="sv-box-risk"/><text x="460" y="251" text-anchor="middle" class="sv-risk">session B in RAM</text>
+          <text x="0" y="318" class="sv-lbl-sm">Server 1 dies → user A is logged out. Add server 3 → nobody moves to it.</text>
+        </g>
+        <g data-step="1">
+          <text x="0" y="18" class="sv-hot">STATELESS</text>
+          <rect x="0" y="60" width="100" height="40" rx="8" class="sv-box"/><text x="50" y="85" text-anchor="middle" class="sv-lbl">User A</text>
+          <rect x="0" y="140" width="100" height="40" rx="8" class="sv-box"/><text x="50" y="165" text-anchor="middle" class="sv-lbl">User B</text>
+          <rect x="0" y="220" width="100" height="40" rx="8" class="sv-box"/><text x="50" y="245" text-anchor="middle" class="sv-lbl">User C</text>
+          <path d="M100 80 L166 150" class="sv-line"/><path d="M100 160 H166" class="sv-line"/><path d="M100 240 L166 170" class="sv-line"/>
+          <rect x="170" y="130" width="90" height="50" rx="10" class="sv-box-hot"/><text x="215" y="160" text-anchor="middle" class="sv-hot">LB</text>
+          <path d="M260 155 L336 80" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <path d="M260 155 H336" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <path d="M260 155 L336 230" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <rect x="340" y="58" width="120" height="40" rx="8" class="sv-box"/><text x="400" y="83" text-anchor="middle" class="sv-lbl">Server 1</text>
+          <rect x="340" y="135" width="120" height="40" rx="8" class="sv-box"/><text x="400" y="160" text-anchor="middle" class="sv-lbl">Server 2</text>
+          <rect x="340" y="212" width="120" height="40" rx="8" class="sv-box"/><text x="400" y="237" text-anchor="middle" class="sv-lbl">Server 3</text>
+          <path d="M460 78 L518 140" class="sv-dash"/><path d="M460 155 H518" class="sv-dash"/><path d="M460 232 L518 170" class="sv-dash"/>
+          <rect x="520" y="120" width="120" height="70" rx="10" class="sv-box-hot"/>
+          <text x="580" y="150" text-anchor="middle" class="sv-hot">Redis / NoSQL</text>
+          <text x="580" y="172" text-anchor="middle" class="sv-lbl-sm">sessions A, B, C</text>
+          <text x="0" y="318" class="sv-lbl-sm">Any server can serve any user. The balancer is free to use any algorithm.</text>
+        </g>
+      </svg>
+    </div>
+    <ul class="points tight">
+      <li><b>Alex Xu, ch. 1:</b> with stateful servers, every request from a client must go to the same server. Sticky sessions do that, but adding or removing servers gets harder and server failures are hard to handle.</li>
+      <li>Most balancers pin with a <b>cookie</b> instead of the IP (ALB <code>AWSALB</code>, HAProxy <code>cookie SRV insert</code>, NGINX <code>sticky cookie</code>). It survives IP changes, but has the same problems.</li>
+      <li data-step="1"><span class="chip ok">fix · ch. 1</span> Keep session data in shared storage (Redis, NoSQL, a DB). The web tier becomes stateless and easy to scale.</li>
+      <li data-step="2">Still want affinity? Use it only as a <b>cache hint</b>: losing it should cost a cache miss, not a logout.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>26 / 40</span><span>stateful vs stateless web tier · System Design Interview ch. 1</span></div>
+</section>
+
+<section class="slide" data-section="algo-comparison">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>3.8 · Algorithms, compared</div>
+  <h2>Only least connections knows current load. Only IP hash gives affinity. None of them does both.</h2>
+  <div class="body meter" style="justify-content:center;">
+    <table class="tbl compact">
+      <thead><tr><th></th><th>Round robin</th><th>Weighted RR</th><th>Least connections</th><th>IP hash</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Decides by</td><td>request order</td><td>configured capacity</td><td>live connection count</td><td>client IP</td></tr>
+        <tr><td class="name">Complexity</td><td>lowest</td><td>low</td><td>medium</td><td>low</td></tr>
+        <tr><td class="name">State in the LB</td><td class="mono">1 counter</td><td class="mono">counter + weights</td><td class="mono">count per server</td><td class="mono">none</td></tr>
+        <tr><td class="name">Knows server capacity</td><td><span class="chip risk">no</span></td><td><span class="chip ok">yes, fixed</span></td><td><span class="chip">indirectly</span></td><td><span class="chip risk">no</span></td></tr>
+        <tr><td class="name">Knows current load</td><td><span class="chip risk">no</span></td><td><span class="chip risk">no</span></td><td><span class="chip ok">yes</span></td><td><span class="chip risk">no</span></td></tr>
+        <tr><td class="name">Session affinity</td><td><span class="chip risk">no</span></td><td><span class="chip risk">no</span></td><td><span class="chip risk">no</span></td><td><span class="chip ok">yes</span></td></tr>
+        <tr><td class="name">Add / remove servers</td><td>easy</td><td>easy</td><td>easy, new server gets flooded</td><td><span class="chip risk">~75% of users move</span></td></tr>
+        <tr><td class="name">Typical use</td><td>identical servers, stateless API</td><td>mixed sizes, canary</td><td>long or uneven requests</td><td>legacy stateful apps</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>27 / 40</span><span>algorithm comparison</span></div>
+</section>
+
+<section class="slide" data-section="algo-takeaways">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>3.9 · How to choose</div>
+  <h2>Pick the algorithm by the information that matters for your traffic.</h2>
+  <div class="quad">
+    <div class="card"><div class="k">round robin</div><div class="t">Order</div><p>"Whose turn is it?"</p><p>Same-size servers, similar requests.</p></div>
+    <div class="card" data-step="1"><div class="k">weighted round robin</div><div class="t">Capacity</div><p>"Who is bigger?"</p><p>Mixed server sizes, canary splits.</p></div>
+    <div class="card" data-step="2"><div class="k">least connections</div><div class="t">Load</div><p>"Who is least busy now?"</p><p>Request times vary, long connections.</p></div>
+    <div class="card" data-step="3"><div class="k">ip hash</div><div class="t">Identity</div><p>"Who is this client?"</p><p>Must keep a user on one server.</p></div>
+  </div>
+  <p class="lead" data-step="4" style="max-width:none; font-size:19px;">Reaching for sticky sessions? First ask whether you can <b>make the app stateless</b> instead.</p>
+  <div class="foot"><span>28 / 40</span><span>takeaways · algorithms</span></div>
+</section>
+
+<!-- ============ APPENDIX: beyond the four ============ -->
+<section class="slide divider" data-section="appendix-03">
+  <div class="section-tag"><i></i>SECTION 3 · APPENDIX</div>
+  <h2>Beyond the four</h2>
+  <div class="lead">
+    <p>For questions, or if there's time:</p>
+    <ul class="lead-list">
+      <li><b>Power of two choices</b>: least-connections quality at round-robin cost.</li>
+      <li><b>Consistent hashing</b>: the fix for the rehashing problem.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>29 / 40</span><span>appendix · algorithms</span></div>
 </section>
 
 <section class="slide" data-section="p2c">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-die"/></svg>3.3 · Power of two choices</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-die"/></svg>Appendix · Power of two choices</div>
   <h2>Pick two backends at random, send to the less busy one</h2>
   <div class="split code-left">
     <div class="stack">
@@ -105,11 +266,11 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <li data-step="2">Result: close to least-connections quality, at round-robin cost. A good default for L7.</li>
     </ul>
   </div>
-  <div class="foot"><span>17 / 39</span><span>power of two random choices</span></div>
+  <div class="foot"><span>30 / 40</span><span>power of two random choices</span></div>
 </section>
 
 <section class="slide" data-section="lb-sim">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>3.4 · One slow pod, four algorithms</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>Appendix · One slow pod, four algorithms</div>
   <h2>Round robin keeps feeding the slow pod until its queue explodes</h2>
   <div class="body">
     <div style="display:flex; align-items:center; gap:22px;">
@@ -126,11 +287,11 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <figcaption>Simulated: 480 req/s for 10 s into 4 pods with 4 workers each. pod-a…c take 20 ms per request on average, pod-d takes 60 ms (noisy neighbour). Bars are requests in flight, sampled every 100 ms.</figcaption>
     </div>
   </div>
-  <div class="foot"><span>18 / 39</span><span>simulation · same arrivals, same service times for every algorithm</span></div>
+  <div class="foot"><span>31 / 40</span><span>simulation · same arrivals, same service times for every algorithm</span></div>
 </section>
 
 <section class="slide" data-section="hash-mod">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-hash"/></svg>3.5 · Hash-based</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-hash"/></svg>Appendix · Hash-based</div>
   <h2>Same key, same backend. Until you add a backend and <code>hash % N</code> moves almost every key.</h2>
   <div class="body">
     <div style="display:flex; align-items:center; gap:22px;">
@@ -147,11 +308,11 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
     </div>
     <p class="caption" style="margin:0; font-size:16px;">Hash on a user ID or cache key when locality matters: a per-user cache, a shard, a WebSocket room. NGINX <code>hash $key consistent</code>, HAProxy <code>balance uri</code>, Envoy <code>RING_HASH</code> / <code>MAGLEV</code>.</p>
   </div>
-  <div class="foot"><span>19 / 39</span><span>hash % n vs. consistent hashing</span></div>
+  <div class="foot"><span>32 / 40</span><span>hash % n vs. consistent hashing</span></div>
 </section>
 
 <section class="slide" data-section="ring">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-ring"/></svg>3.6 · Consistent hashing</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-ring"/></svg>Appendix · Consistent hashing</div>
   <h2>Put nodes and keys on one ring. A key belongs to the next node clockwise.</h2>
   <div class="split">
     <div class="chart meter" style="align-items:center;">
@@ -164,31 +325,252 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <li data-step="2">With 3 points the arcs are uneven. Give each node <b>100–200 virtual nodes</b> (<code>A#0 … A#149</code>) so every node owns about the same share.</li>
     </ul>
   </div>
-  <div class="foot"><span>20 / 39</span><span>consistent hashing · the ring</span></div>
-</section>
-
-<section class="slide" data-section="algo-comparison">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>Algorithms, compared</div>
-  <h2>Least request (P2C) for most HTTP traffic; hash only when you need affinity</h2>
-  <div class="body meter" style="justify-content:center;">
-    <table class="tbl">
-      <thead><tr><th>Algorithm</th><th>State per LB</th><th>Slow backend</th><th>Same key → same backend</th><th>Best for</th></tr></thead>
-      <tbody>
-        <tr><td class="name">Round robin</td><td class="mono">1 counter</td><td><span class="chip risk">keeps feeding it</span></td><td>—</td><td>Equal pods, equal requests</td></tr>
-        <tr><td class="name">Weighted RR</td><td class="mono">1 counter</td><td><span class="chip risk">keeps feeding it</span></td><td>—</td><td>Mixed instance sizes</td></tr>
-        <tr><td class="name">Least conn</td><td class="mono">in-flight per pod</td><td><span class="chip ok">avoids it</span></td><td>—</td><td>Long or uneven requests</td></tr>
-        <tr><td class="name">Power of two</td><td class="mono">in-flight per pod</td><td><span class="chip ok">avoids it</span></td><td>—</td><td><b>Default for L7</b>, many balancers</td></tr>
-        <tr><td class="name">Hash % N</td><td class="mono">none</td><td><span class="chip risk">stuck with it</span></td><td><span class="chip hot">until N changes</span></td><td>Fixed-size pools only</td></tr>
-        <tr><td class="name">Consistent hash</td><td class="mono">the ring</td><td><span class="chip risk">stuck with it</span></td><td><span class="chip ok">yes, ~1/N move</span></td><td>Caches, shards, sticky rooms</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="foot"><span>21 / 39</span><span>algorithm comparison</span></div>
+  <div class="foot"><span>33 / 40</span><span>consistent hashing · the ring</span></div>
 </section>
 
 <script>
 (() => {
-  const { el, scale, fmt, $, rng } = window.Charts;
+  const { el, scale, fmt, $, rng, flow } = window.Charts;
+
+  // ---------- request-flow animations (3.2 – 3.6): flow() lives in js/charts-lib.js ----------
+  // Runs phase k when the slide is active and its highest shown data-step is k.
+  function drive(id, widget, phases) {
+    const svg = $(`${id}-flow`), slide = svg.closest('.slide');
+    const readout = $(`${id}-readout`);
+    widget.say = (html) => { readout.innerHTML = html; };
+    let key = null;
+    const phaseNow = () => Math.min(phases.length - 1,
+      Math.max(0, ...[...slide.querySelectorAll('[data-step].shown')].map((n) => Number(n.dataset.step))));
+    const run = (p) => {
+      widget.reset();
+      widget.say('');
+      widget.later(() => phases[p](widget), 600);
+    };
+    const check = () => {
+      const k = slide.classList.contains('active') ? phaseNow() : -1;
+      if (k === key) return;
+      key = k;
+      if (k < 0) widget.reset(); else run(k);
+    };
+    const last = () => widget.snapshot(phases[phases.length - 1]);
+    // Print / PDF shows every slide at its last step; ?print renders that state on load (headless export).
+    if (new URLSearchParams(location.search).has('print')) { last(); return; }
+    addEventListener('beforeprint', last);
+    addEventListener('afterprint', () => { key = null; check(); });
+    new MutationObserver(check).observe(slide, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    $(`${id}-replay`).addEventListener('click', () => { if (key >= 0) run(key); });
+    widget.reset();
+  }
+
+  const ABC = ['A', 'B', 'C', 'D'];
+
+  // 3.2 round robin: equal counts, then the same counts with very different work
+  {
+    const w = flow($('rr-flow'), {
+      servers: ['Server A', 'Server B', 'Server C'].map((name) => ({ name, sub: '4 vCPU' })),
+      stat: (s) => (s.work ? `${s.total} req · ${fmt(s.work)} ms of work` : `${s.total} req`),
+    });
+    const JOBS = [['/export', 3000], ['/health', 5], ['/product', 40]];
+    drive('rr', w, [
+      async (w) => {
+        for (let k = 0; k < 6; k++) {
+          w.lb(`i = ${k}`, `${k} % 3 = ${k % 3}`, `→ server ${ABC[k % 3]}`);
+          w.send(k % 3, { label: k + 1 });
+          await w.sleep(1100);
+        }
+        w.lb('6 requests', '2 / 2 / 2');
+        w.say('6 requests → <b>2 / 2 / 2</b>. Perfectly even, by count.');
+      },
+      async (w) => {
+        for (let k = 0; k < 6; k++) {
+          const [path, ms] = JOBS[k % 3];
+          w.lb(`i = ${k} → ${ABC[k % 3]}`, `GET ${path}`, `${fmt(ms)} ms`);
+          w.send(k % 3, { label: k + 1, cls: ms > 1000 ? 'risk' : '', work: ms });
+          await w.sleep(1100);
+        }
+        w.mark(0, 'sv-box-risk');
+        w.lb('same 2 / 2 / 2', 'but A is busy', 'for 6 s');
+        w.say('Still <b>2 / 2 / 2</b> requests, but A has <b>6,000 ms</b> of work and B has 10 ms.');
+      },
+    ]);
+  }
+
+  // 3.3 weighted round robin 3 : 1 : 1, naive burst vs NGINX smooth
+  {
+    const WEIGHTS = [3, 1, 1], TOTAL = 5;
+    const w = flow($('wrr-flow'), {
+      servers: [
+        { name: 'Server A', sub: 'weight 3 · 12 vCPU' },
+        { name: 'Server B', sub: 'weight 1 · 4 vCPU' },
+        { name: 'Server C', sub: 'weight 1 · 4 vCPU' },
+      ],
+      stat: (s) => `${s.total} req`,
+    });
+    const NAIVE = [0, 0, 0, 1, 2];
+    drive('wrr', w, [
+      async (w) => {
+        for (let k = 0; k < 10; k++) {
+          const s = NAIVE[k % 5];
+          w.lb('naive: fixed list', 'A A A B C', `turn ${(k % 5) + 1} → ${ABC[s]}`);
+          w.send(s, { label: ABC[s] });
+          await w.sleep(750);
+        }
+        w.say('Right ratio (<b>6 / 2 / 2</b>), but A gets <b>3 in a row</b> while B and C wait.');
+      },
+      async (w) => {
+        const cur = [0, 0, 0], seq = [];
+        for (let k = 0; k < 10; k++) {
+          WEIGHTS.forEach((wt, i) => { cur[i] += wt; });
+          const s = cur.indexOf(Math.max(...cur));
+          w.lb('current += weight', `A ${cur[0]}  B ${cur[1]}  C ${cur[2]}`, `max → ${ABC[s]}, ${ABC[s]} −= ${TOTAL}`);
+          cur[s] -= TOTAL;
+          seq.push(ABC[s]);
+          w.send(s, { label: ABC[s] });
+          await w.sleep(1250);
+        }
+        w.lb('smooth', seq.slice(0, 5).join(' '), 'repeats');
+        w.say(`Same <b>6 / 2 / 2</b>, interleaved: <b>${seq.slice(0, 5).join(' ')}</b>. Never 3 A's in a row.`);
+      },
+    ]);
+  }
+
+  // 3.4 least connections vs round robin when B is 5× slower
+  {
+    // slow motion (×1.8) so coins are readable; the 1 s : 5 s ratio is what matters
+    const DUR = [1800, 9000, 1800], N = 12, GAPMS = 800;
+    const w = flow($('lc-flow'), {
+      servers: [
+        { name: 'Server A', sub: '1 s per request' },
+        { name: 'Server B', sub: 'GC pause · 5 s per request' },
+        { name: 'Server C', sub: '1 s per request' },
+      ],
+      stat: (s) => `active ${s.active} · total ${s.total}`,
+    });
+    const run = (least) => async (w) => {
+      w.mark(1, 'sv-box-risk');
+      for (let k = 0; k < N; k++) {
+        const act = w.S.map((s) => s.active);
+        const s = least ? act.indexOf(Math.min(...act)) : k % 3;
+        w.lb(least ? 'least connections' : 'round robin',
+          `active ${act.join(' · ')}`, least ? `min → ${ABC[s]}` : `turn → ${ABC[s]}`);
+        w.send(s, { label: k + 1, dur: DUR[s], cls: s === 1 ? 'risk' : '' });
+        await w.sleep(GAPMS);
+      }
+      const b = w.S[1];
+      w.say(`Slow server B got <b>${b.total} of ${N}</b> requests · up to <b>${b.peak}</b> stuck on it at once.`);
+    };
+    drive('lc', w, [run(false), run(true)]);
+  }
+
+  // 3.5 / 3.6 IP hash. Hash values are shown so the audience can check the % N by hand.
+  const USERS = [
+    { tag: 'u1', name: 'u1', ip: '203.0.113.7', h: 17 },
+    { tag: 'u2', name: 'u2', ip: '198.51.100.4', h: 22 },
+    { tag: 'u3', name: 'u3', ip: '192.0.2.15', h: 9 },
+    { tag: 'u4', name: 'u4', ip: '203.0.113.80', h: 30 },
+    { tag: 'u5', name: 'u5', ip: '198.51.100.9', h: 14 },
+    { tag: 'u6', name: 'u6', ip: '192.0.2.61', h: 40 },
+  ];
+  const hashLine = (w, u, n, s, note = '') => w.lb(`${u.name}: hash = ${u.h}`, `${u.h} % ${n} = ${u.h % n} → ${ABC[s]}${note}`);
+  const sessions = (s) => `${s.sessions.size} session${s.sessions.size === 1 ? '' : 's'} · ${s.total} req`;
+
+  {
+    const OFFICE = { tag: 'of', name: 'office, 50 people', ip: '113.161.4.20', h: 27, hidden: true };
+    const w = flow($('ip-flow'), {
+      servers: ['Server A', 'Server B', 'Server C'].map((name) => ({ name })),
+      clients: [...USERS, OFFICE],
+      title: 'hash(ip) % 3',
+      stat: sessions,
+    });
+    const round = async (w, gap) => {
+      const res = [];
+      for (let u = 0; u < USERS.length; u++) {
+        const s = USERS[u].h % 3;
+        hashLine(w, USERS[u], 3, s);
+        res.push(await w.visit(u, s));
+        await w.sleep(gap);
+      }
+      return res;
+    };
+    drive('ip', w, [
+      async (w) => {
+        w.say('Round 1: each user gets a session on one server.');
+        await round(w, 100);
+        await w.sleep(500);
+        w.say('Round 2: same IP → same hash → same server.');
+        const res = await Promise.all(USERS.map(async (u, k) => {
+          await w.sleep(k * 450);
+          hashLine(w, u, 3, u.h % 3);
+          return w.visit(k, u.h % 3);
+        }));
+        w.say(`Round 2: <b>${res.filter((r) => r === 'hit').length} of 6</b> users found their session. ✓`);
+      },
+      async (w) => {
+        for (let u = 0; u < USERS.length; u++) await w.visit(u, USERS[u].h % 3, { instant: true });
+        w.showClient(6, true);
+        const s = OFFICE.h % 3;
+        for (let k = 0; k < 6; k++) {
+          hashLine(w, OFFICE, 3, s);
+          w.visit(6, s);
+          await w.sleep(400);
+        }
+        await w.sleep(900);
+        w.mark(s, 'sv-box-risk');
+        w.say('50 people, <b>1 IP</b>, 1 server. A takes the whole office.');
+      },
+    ]);
+  }
+
+  {
+    const w = flow($('ips-flow'), {
+      servers: [{ name: 'Server A' }, { name: 'Server B' }, { name: 'Server C' }, { name: 'Server D', sub: 'new', hidden: true }],
+      slots: 4,
+      clients: USERS,
+      title: 'hash(ip) % N',
+      stat: sessions,
+    });
+    const setup = async (w) => {
+      for (let u = 0; u < USERS.length; u++) await w.visit(u, USERS[u].h % 3, { instant: true });
+    };
+    const count = (res, r) => res.filter((x) => x === r).length;
+    drive('ips', w, [
+      async (w) => {
+        await setup(w);
+        w.lb('N = 3', 'sessions in place');
+        w.say('3 servers, 2 users each. Every session lives on one server.');
+      },
+      async (w) => {
+        await setup(w);
+        w.show(3, true);
+        await w.sleep(700);
+        const res = [];
+        for (let u = 0; u < USERS.length; u++) {
+          const s = USERS[u].h % 4;
+          hashLine(w, USERS[u], 4, s);
+          res.push(await w.visit(u, s));
+          await w.sleep(150);
+        }
+        w.say(`Add D: <b>${count(res, 'lost')} of 6</b> users moved to a server without their session. Logged out.`);
+      },
+      async (w) => {
+        await setup(w);
+        w.mark(1, 'sv-box-risk');
+        w.sub(1, 'down');
+        await w.sleep(700);
+        const res = [];
+        for (let u = 0; u < USERS.length; u++) {
+          let s = USERS[u].h % 3;
+          const down = s === 1;
+          if (down) s = 2;
+          hashLine(w, USERS[u], 3, s, down ? ' (B↓)' : '');
+          res.push(await w.visit(u, s));
+          await w.sleep(150);
+        }
+        w.say(`B dies: its <b>${count(res, 'lost')}</b> users lose their sessions. The other ${count(res, 'hit')} are fine.`);
+      },
+    ]);
+  }
+
 
   // ---------- 3.4 simulator ----------
   // Same arrivals and same per-request work for every mode; only the pick changes.

@@ -1,6 +1,6 @@
 # Load Balancing — slide deck
 
-HTML slides for a talk about load balancing: where it happens (DNS, L4, L7, client-side), how a balancer picks a backend, what it does when one fails, and how to design a balancer tier that survives losing a region.
+HTML slides for a talk about load balancing: local load balancing inside a data center, global load balancing across regions, how a balancer picks a server, and a live NGINX demo.
 
 Presenters: **Truc Le** and **Khanh Do**.
 
@@ -21,6 +21,21 @@ Then open <http://localhost:8000>.
 
 You can also use the **Live Server** extension in VS Code, or `npx serve presentation`.
 
+## Export to PDF
+
+Every slide prints at its last step, including the request animations.
+
+- **Browser:** open the deck, press `Cmd+P` / `Ctrl+P`, choose *Save as PDF*, margins *None*.
+- **Headless**, with the server running on port 8000:
+
+  ```bash
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu \
+    --virtual-time-budget=8000 --no-pdf-header-footer --print-to-pdf=load-balancing.pdf \
+    "http://localhost:8000/?print"
+  ```
+
+The PDF uses whichever theme is active (Tokyo Night by default; press `T` first for Day).
+
 ## Keyboard shortcuts
 
 | Key | Action |
@@ -35,5 +50,7 @@ You can also use the **Live Server** extension in VS Code, or `npx serve present
 
 ## Interactive slides
 
-- **3.4 · One slow pod, four algorithms** — switch between round robin, random, least connections and power of two choices on the same simulated traffic.
-- **3.5 · Hash-based** — add a fourth cache node and compare how many keys move with `hash % N` vs. consistent hashing.
+- **3.2 – 3.6 · Round robin, weighted round robin, least connections, IP hash** — animated requests; press `→` to move to the next scenario, or click ↻ Replay.
+- **4.4 · Live** — sends real requests to NGINX from [`demo/`](../demo/) (`npm start` in `demo/` first) and animates which server answered; press `S` to send 6. Without NGINX it replays a recording.
+- **Appendix · One slow pod, four algorithms** — switch between round robin, random, least connections and power of two choices on the same simulated traffic.
+- **Appendix · Hash-based** — add a fourth cache node and compare how many keys move with `hash % N` vs. consistent hashing.

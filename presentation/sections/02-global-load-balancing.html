@@ -1,39 +1,40 @@
-<!-- ============ SECTION 6 — SYSTEM DESIGN ============ -->
-<section class="slide divider" data-section="divider-06">
-  <div class="divider-num">06</div>
-  <div class="section-tag"><i></i>SECTION 6</div>
-  <h2>System design</h2>
-  <p class="lead">Putting it together: an API in two regions at 200,000 requests a second, where losing a whole region is not an outage.</p>
-  <div class="foot"><span>32 / 39</span><span>act vi · system design</span></div>
+<!-- ============ SECTION 2 — GLOBAL LOAD BALANCING ============ -->
+<section class="slide divider" data-section="divider-02">
+  <div class="divider-num">02</div>
+  <div class="section-tag"><i></i>SECTION 2</div>
+  <h2>Global load balancing (GSLB)</h2>
+  <p class="lead">Between regions and continents: DNS-based routing (GeoDNS), and what happens when a whole region goes dark: active-active vs. active-passive.</p>
+  <div class="foot"><span>14 / 40</span><span>section 2 · global load balancing</span></div>
 </section>
 
-<section class="slide" data-section="requirements">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>6.1 · Requirements</div>
-  <h2>A worked example</h2>
-  <div class="trio">
-    <div class="card lift" style="align-items:flex-start;">
-      <div class="big" style="font-size:56px;">200</div>
-      <div class="big-unit">thousand req/s peak, global</div>
-    </div>
-    <div class="card lift" style="align-items:flex-start;">
-      <div class="big" style="font-size:56px;">2</div>
-      <div class="big-unit">regions, active-active</div>
-    </div>
-    <div class="card lift" style="align-items:flex-start;">
-      <div class="big" style="font-size:56px;">99.99</div>
-      <div class="big-unit">% availability · 4.3 min / month</div>
-    </div>
+<section class="slide" data-section="dns-lb">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>2.1 · DNS</div>
+  <h2>Return several IPs and let the client pick. Cheap, but clients keep a dead IP until the TTL runs out.</h2>
+  <div class="split code-left">
+    <pre class="code"><span class="c">$ dig +short api.shop.vn</span>
+10.0.1.11
+10.0.1.12
+10.0.1.13
+<span class="c"># resolver rotates the order on each lookup</span>
+
+<span class="c">$ dig api.shop.vn | grep TTL</span>
+api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
+
+<span class="c"># 12:00:00  10.0.1.12 dies</span>
+<span class="c"># 12:00:00  record removed from the zone</span>
+<span class="hl">12:04:59  clients still send to 10.0.1.12</span>  <span class="chip risk">5 min of errors</span></pre>
+    <ul class="points tight">
+      <li><span class="chip ok">good at</span> Sending users to the nearest <b>region</b>: Route 53 latency or geo routing.</li>
+      <li><span class="chip risk">bad at</span> Reacting fast. Resolvers, OS caches and JVMs cache the answer for the TTL, some for longer.</li>
+      <li data-step="1">No health, no load info: the client can't tell a busy IP from an idle one.</li>
+      <li data-step="1">Use DNS to pick a <b>region</b>, then a real balancer inside it to pick a <b>server</b>.</li>
+    </ul>
   </div>
-  <ul class="points tight" data-step="1">
-    <li><b>Region loss:</b> Singapore or Tokyo can disappear; the other must carry 100% within 2 minutes.</li>
-    <li><b>Pod loss:</b> invisible to users. <b>Deploys:</b> 20 times a day, zero errors.</li>
-    <li><b>Traffic:</b> REST from web and mobile, gRPC between 30 internal services, WebSockets for live order status.</li>
-  </ul>
-  <div class="foot"><span>33 / 39</span><span>system design · requirements</span></div>
+  <div class="foot"><span>15 / 40</span><span>dns load balancing · ttl</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>6.2 · Architecture</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.2 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
     <svg viewBox="0 0 1120 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
@@ -64,28 +65,11 @@
       </g>
     </svg>
   </div>
-  <div class="foot"><span>34 / 39</span><span>system design · architecture</span></div>
-</section>
-
-<section class="slide" data-section="lb-spof">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>6.3 · Who balances the balancer?</div>
-  <h2>A single balancer is a single point of failure with a nicer name</h2>
-  <div class="body meter" style="justify-content:center;">
-    <table class="tbl">
-      <thead><tr><th>Pattern</th><th>How it works</th><th>Failover</th><th>Watch out for</th></tr></thead>
-      <tbody>
-        <tr><td class="name">Active-passive<span>keepalived · VRRP</span></td><td>Two nodes share one floating IP; the standby takes it when heartbeats stop</td><td class="num">~1–3 s</td><td>Half the hardware sits idle; split brain if both think they're primary</td></tr>
-        <tr><td class="name">Active-active<span>ECMP · anycast</span></td><td>Routers spread flows over N balancer nodes that all announce the same IP</td><td class="num">seconds (BGP)</td><td>A node change can move existing flows: pair it with consistent hashing (Maglev)</td></tr>
-        <tr><td class="name">Managed<span>ALB · NLB · GCLB</span></td><td>The cloud runs a fleet across AZs and scales it for you</td><td class="num">handled for you</td><td>ALB scales up gradually: a flash sale from zero can see 5xx for minutes</td></tr>
-        <tr><td class="name">Client-side<span>gRPC · mesh</span></td><td>No central balancer; every caller has the pod list</td><td class="num">instant, per call</td><td>Every client must refresh the pod list; one bug is replicated in every service</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="foot"><span>35 / 39</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>16 / 40</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="region-failover">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>6.4 · Losing a region</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>2.3 · Losing a region</div>
   <h2>DNS failover is bounded by the TTL. Anycast is bounded by BGP.</h2>
   <div class="split code-left">
     <pre class="code"><span class="c"># Singapore goes dark at 10:00:00</span>
@@ -105,11 +89,11 @@
       <li data-step="1"><span class="chip risk">the real trap</span> Failover moves the traffic, not the capacity. If Tokyo can't take 100% <b>right now</b>, you've turned one region outage into two.</li>
     </ul>
   </div>
-  <div class="foot"><span>36 / 39</span><span>global balancing · dns vs. anycast</span></div>
+  <div class="foot"><span>17 / 40</span><span>global balancing · dns vs. anycast</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>6.5 · Capacity</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.4 · Capacity</div>
   <h2>Size each region for the whole world, then add room to lose a node</h2>
   <div class="split" style="align-items:start;">
     <div class="stack">
@@ -122,5 +106,5 @@
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>37 / 39</span><span>system design · capacity</span></div>
+  <div class="foot"><span>18 / 40</span><span>system design · capacity</span></div>
 </section>

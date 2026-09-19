@@ -39,7 +39,13 @@
     slide.querySelectorAll('[data-step]').forEach((n) => n.classList.toggle('shown', Number(n.dataset.step) <= step));
     // data-hide-at="N": the "before" picture that step N replaces fades out when N is reached.
     slide.querySelectorAll('[data-hide-at]').forEach((n) => n.classList.toggle('gone', Number(n.dataset.hideAt) <= step));
-    if (slideChanged) countUp(slide);
+    if (slideChanged) {
+      countUp(slide);
+      // Shell hooks: the page tint follows the slide's part, and js/backdrop.js moves into it.
+      if (slide.dataset.part) document.body.dataset.part = slide.dataset.part;
+      else delete document.body.dataset.part;
+      document.dispatchEvent(new CustomEvent('deck:slide', { detail: slide }));
+    }
     bar.style.width = `${((current + 1) / slides.length) * 100}%`;
     pager.textContent = `${current + 1} / ${slides.length}`;
     history.replaceState(null, '', `#${current + 1}.${step}`);
@@ -62,6 +68,16 @@
     else if (current > 0) go(current - 1, maxStep(slides[current - 1]));
   }
 
+  // The progress rail is painted with each slide's own accent, so its color says which part you're in.
+  function paintProgress() {
+    const n = slides.length;
+    const stops = slides.map((s, i) => {
+      const c = getComputedStyle(s).getPropertyValue('--accent').trim();
+      return `${c} ${((i / n) * 100).toFixed(3)}% ${(((i + 1) / n) * 100).toFixed(3)}%`;
+    });
+    bar.style.backgroundImage = `linear-gradient(90deg, ${stops.join(', ')})`;
+  }
+
   function fit() {
     const s = Math.min((innerWidth - 32) / 1280, (innerHeight - 40) / 720);
     deck.style.setProperty('--s', Math.max(0.2, s).toFixed(4));
@@ -82,11 +98,12 @@
     if (saved) document.documentElement.dataset.theme = saved;
   }
   function toggleTheme() {
-    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-    const current = document.documentElement.dataset.theme || (isDark ? 'dark' : 'light');
+    // Tokyo Night is dark by default; only data-theme="light" switches to Day.
+    const current = document.documentElement.dataset.theme || 'dark';
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem('lb-theme', next); } catch { /* private mode: theme just won't persist */ }
+    paintProgress();
   }
 
   document.addEventListener('keydown', (e) => {
@@ -119,6 +136,7 @@
   addEventListener('resize', fit);
   addEventListener('hashchange', fromHash);
   applyStoredTheme();
+  paintProgress();
   fit();
   render(true);
   fromHash();

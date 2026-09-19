@@ -1,10 +1,10 @@
-<!-- ============ SECTION 1 — INTRODUCTION ============ -->
-<section class="slide divider" data-section="divider-01">
-  <div class="divider-num">01</div>
-  <div class="section-tag"><i></i>SECTION 1</div>
+<!-- ============ INTRODUCTION ============ -->
+<section class="slide divider" data-section="divider-00">
+  <div class="divider-num">00</div>
+  <div class="section-tag"><i></i>INTRODUCTION</div>
   <h2>Introduction</h2>
   <p class="lead">Why adding servers doesn't help on its own, and the three jobs a load balancer does for you.</p>
-  <div class="foot"><span>3 / 39</span><span>act i · introduction</span></div>
+  <div class="foot"><span>3 / 40</span><span>introduction</span></div>
 </section>
 
 <section class="slide" data-section="one-server">
@@ -54,7 +54,7 @@
     </svg>
     <figcaption>More servers only help if something splits the traffic. Clients know one hostname; something behind that name has to pick a server for every request.</figcaption>
   </div>
-  <div class="foot"><span>4 / 39</span><span>why load balancing exists</span></div>
+  <div class="foot"><span>4 / 40</span><span>why load balancing exists</span></div>
 </section>
 
 <section class="slide" data-section="what-is-lb">
@@ -78,7 +78,7 @@
       <li data-step="1">Clients never learn the backend IPs. You can add, remove, or restart pods without anyone changing config.</li>
     </ul>
   </div>
-  <div class="foot"><span>5 / 39</span><span>definition · listener, pool, algorithm, health</span></div>
+  <div class="foot"><span>5 / 40</span><span>definition · listener, pool, algorithm, health</span></div>
 </section>
 
 <section class="slide" data-section="scale-up-out">
@@ -101,7 +101,7 @@
   <ul class="points tight" data-step="1">
     <li>If a user's cart lives in pod memory, the next request lands on another pod and the cart is empty. Put session state in Redis or the DB first.</li>
   </ul>
-  <div class="foot"><span>6 / 39</span><span>vertical vs. horizontal scaling</span></div>
+  <div class="foot"><span>6 / 40</span><span>vertical vs. horizontal scaling</span></div>
 </section>
 
 <section class="slide" data-section="three-jobs">
@@ -128,5 +128,5 @@
     </div>
   </div>
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
-  <div class="foot"><span>7 / 39</span><span>spread · route around failure · hide change</span></div>
+  <div class="foot"><span>7 / 40</span><span>spread · route around failure · hide change</span></div>
 </section>
