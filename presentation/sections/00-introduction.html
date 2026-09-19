@@ -3,8 +3,69 @@
   <div class="divider-num">00</div>
   <div class="section-tag"><i></i>INTRODUCTION</div>
   <h2>Introduction</h2>
-  <p class="lead">Why adding servers doesn't help on its own, and the three jobs a load balancer does for you.</p>
-  <div class="foot"><span>3 / 40</span><span>introduction</span></div>
+  <p class="lead">The three ways one server fails you — capacity, availability, operability — what a load balancer is, and the words people mix up.</p>
+  <div class="foot"><span>3 / 42</span><span>introduction</span></div>
+</section>
+
+<section class="slide" data-section="three-axes">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>The pain</div>
+  <h2>One server fails on three separate axes, not one</h2>
+  <div class="trio">
+    <div class="card lift">
+      <div class="k">① Capacity</div>
+      <div class="t">You run out of machine</div>
+      <p>CPU, RAM, file descriptors, concurrent connections. A 64 vCPU box still has one NIC, and the next size up costs more per core.</p>
+      <svg class="mini" viewBox="0 0 300 96" role="img" aria-label="p99 latency flat until the connection ceiling, then a cliff">
+        <path d="M12 82 H288" class="sv-axis"/>
+        <path d="M200 8 V86" class="sv-limit"/>
+        <path d="M12 74 C 80 72, 150 66, 196 52 C 206 40, 212 24, 214 12" class="sv-risk-line"/>
+        <text x="12" y="22" class="sv-lbl-sm">p99</text>
+        <text x="288" y="22" text-anchor="end" class="sv-risk">ceiling</text>
+        <text x="12" y="94" class="sv-lbl-sm">4k req/s</text>
+        <text x="288" y="94" text-anchor="end" class="sv-lbl-sm">9k req/s</text>
+      </svg>
+      <div class="chip risk" style="align-self:flex-start">queue builds → timeouts cascade</div>
+    </div>
+    <div class="card lift">
+      <div class="k">② Availability</div>
+      <div class="t">Change you did not ask for</div>
+      <p>One crash, one kernel panic, one AZ losing power = 100% down. Running 3 instances fixes nothing until something notices the dead one.</p>
+      <svg class="mini" viewBox="0 0 300 96" role="img" aria-label="Three instances, one dead, traffic still sent to it">
+        <rect x="8" y="34" width="74" height="30" rx="8" class="sv-box"/>
+        <text x="45" y="53" text-anchor="middle" class="sv-lbl-sm">users</text>
+        <path d="M84 49 L134 20" class="sv-line-soft"/>
+        <path d="M84 49 H134" class="sv-risk-line"/>
+        <path d="M84 49 L134 78" class="sv-line-soft"/>
+        <rect x="138" y="6" width="90" height="28" rx="8" class="sv-box"/>
+        <text x="183" y="24" text-anchor="middle" class="sv-lbl-sm">pod-a</text>
+        <rect x="138" y="35" width="90" height="28" rx="8" class="sv-box-risk"/>
+        <text x="183" y="53" text-anchor="middle" class="sv-lbl-sm">pod-b</text>
+        <path d="M232 39 L252 59 M252 39 L232 59" class="sv-strike"/>
+        <rect x="138" y="64" width="90" height="28" rx="8" class="sv-box"/>
+        <text x="183" y="82" text-anchor="middle" class="sv-lbl-sm">pod-c</text>
+      </svg>
+      <div class="chip risk" style="align-self:flex-start">3 instances = 3 ways to fail</div>
+    </div>
+    <div class="card lift">
+      <div class="k">③ Operability</div>
+      <div class="t">Change you <em>did</em> ask for</div>
+      <p>Deploys, patches, config rollouts, rollbacks. With one server each one is an outage, and you do this every week — not once a year.</p>
+      <svg class="mini" viewBox="0 0 300 96" role="img" aria-label="Deploy on one server: 90 seconds of 502s with no rollback">
+        <rect x="8" y="30" width="96" height="26" rx="7" class="sv-box"/>
+        <text x="56" y="47" text-anchor="middle" class="sv-lbl-sm">v1 serving</text>
+        <rect x="104" y="30" width="80" height="26" rx="7" class="sv-box-risk"/>
+        <text x="144" y="47" text-anchor="middle" class="sv-risk">502 502</text>
+        <rect x="184" y="30" width="96" height="26" rx="7" class="sv-box"/>
+        <text x="232" y="47" text-anchor="middle" class="sv-lbl-sm">v2 serving</text>
+        <path d="M104 66 H184" class="sv-limit"/>
+        <text x="144" y="84" text-anchor="middle" class="sv-risk">90 s</text>
+        <text x="8" y="20" class="sv-lbl-sm">restart to deploy</text>
+      </svg>
+      <div class="chip risk" style="align-self:flex-start">no canary, no rollback path</div>
+    </div>
+  </div>
+  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">Capacity is <em>how much</em> you can serve. Availability is surviving change you did not ask for. Operability is making change you did ask for, safely. Most of your changes are planned — that is why operability bites even a service that fits on one box.</p>
+  <div class="foot"><span>4 / 42</span><span>capacity · availability · operability</span></div>
 </section>
 
 <section class="slide" data-section="one-server">
@@ -54,31 +115,153 @@
     </svg>
     <figcaption>More servers only help if something splits the traffic. Clients know one hostname; something behind that name has to pick a server for every request.</figcaption>
   </div>
-  <div class="foot"><span>4 / 40</span><span>why load balancing exists</span></div>
+  <div class="foot"><span>5 / 42</span><span>why load balancing exists</span></div>
 </section>
 
 <section class="slide" data-section="what-is-lb">
   <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>What a load balancer is</div>
   <h2>For each request, pick one healthy backend from a pool. Skip the ones that are down.</h2>
-  <div class="split code-left">
-    <pre class="code"><span class="c"># pool: api  ·  algorithm: round robin</span>
+  <div class="body" style="gap:18px;">
+    <div class="chart meter" style="padding:14px 20px 8px;">
+      <svg viewBox="0 0 1000 214" role="img" aria-label="Anatomy of a load balancer: listener, algorithm, pool and health checks">
+        <defs>
+          <marker id="arrow-anat" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+        </defs>
 
-12:00:01.010  GET /orders/81   → pod-a  200  <span class="c">42 ms</span>
-12:00:01.013  GET /orders/82   → pod-b  200  <span class="c">39 ms</span>
-12:00:01.020  POST /cart       → pod-c  200  <span class="c">51 ms</span>
-12:00:01.024  GET /orders/83   → pod-a  200  <span class="c">40 ms</span>
-<span class="hl">12:00:01.500  health  pod-b    → timeout ×3 → DOWN</span>
-12:00:01.502  GET /orders/84   → pod-c  200  <span class="c"># pod-b skipped</span>
-12:00:01.509  GET /orders/85   → pod-a  200</pre>
-    <ul class="points tight">
-      <li><span class="chip hot">listener</span> The address clients connect to: <code>api.shop.vn:443</code>.</li>
-      <li><span class="chip hot">pool</span> The backends it may send to: pods, VMs, IPs.</li>
-      <li><span class="chip hot">algorithm</span> How it picks one: next in line, least busy, or by hash.</li>
-      <li><span class="chip hot">health</span> Which backends are allowed to be picked right now.</li>
-      <li data-step="1">Clients never learn the backend IPs. You can add, remove, or restart pods without anyone changing config.</li>
-    </ul>
+        <rect x="0" y="52" width="104" height="56" rx="10" class="sv-box"/>
+        <text x="52" y="85" text-anchor="middle" class="sv-lbl">clients</text>
+        <path d="M106 80 H150" class="sv-line" marker-end="url(#arrow-anat)"/>
+
+        <rect x="156" y="40" width="216" height="80" rx="12" class="sv-box-hot"/>
+        <text x="174" y="68" class="sv-hot">① listener</text>
+        <text x="174" y="98" class="sv-lbl">api.shop.vn:443</text>
+        <text x="156" y="146" class="sv-lbl-sm">the one address clients</text>
+        <text x="156" y="166" class="sv-lbl-sm">connect to</text>
+
+        <path d="M374 80 H418" class="sv-line" marker-end="url(#arrow-anat)"/>
+
+        <rect x="424" y="40" width="200" height="80" rx="12" class="sv-box-hot"/>
+        <text x="442" y="68" class="sv-hot">② algorithm</text>
+        <text x="442" y="98" class="sv-lbl">round robin</text>
+        <text x="424" y="146" class="sv-lbl-sm">how it picks one of</text>
+        <text x="424" y="166" class="sv-lbl-sm">them, per request</text>
+
+        <path d="M626 74 L688 28" class="sv-line" marker-end="url(#arrow-anat)"/>
+        <path d="M626 86 L688 158" class="sv-line" marker-end="url(#arrow-anat)"/>
+        <path d="M626 80 L688 93" class="sv-line-soft" stroke-dasharray="5 4"/>
+
+        <rect x="694" y="4" width="246" height="48" rx="10" class="sv-box"/>
+        <text x="710" y="26" class="sv-lbl">pod-a</text>
+        <text x="710" y="43" class="sv-lbl-sm">10.0.1.11</text>
+        <text x="924" y="33" text-anchor="end" class="sv-ok">up</text>
+
+        <rect x="694" y="60" width="246" height="48" rx="10" class="sv-box-risk"/>
+        <text x="710" y="82" class="sv-lbl">pod-b</text>
+        <text x="710" y="99" class="sv-lbl-sm">10.0.1.12</text>
+        <text x="924" y="89" text-anchor="end" class="sv-risk">down</text>
+        <path d="M648 74 L668 94 M668 74 L648 94" class="sv-strike"/>
+
+        <rect x="694" y="116" width="246" height="48" rx="10" class="sv-box"/>
+        <text x="710" y="138" class="sv-lbl">pod-c</text>
+        <text x="710" y="155" class="sv-lbl-sm">10.0.1.13</text>
+        <text x="924" y="145" text-anchor="end" class="sv-ok">up</text>
+
+        <text x="694" y="192" class="sv-hot">③ pool</text>
+        <text x="762" y="192" class="sv-lbl-sm">the backends it may send to</text>
+        <text x="694" y="212" class="sv-hot">④ health</text>
+        <text x="772" y="212" class="sv-lbl-sm">who may be picked right now</text>
+      </svg>
+    </div>
+    <div class="split code-left" style="gap:34px; align-items:center;">
+      <pre class="code" style="font-size:13.5px;"><span class="c"># pool: api · algorithm: round robin</span>
+12:00:01.010  GET /orders/81  → pod-a  200  <span class="c">42 ms</span>
+12:00:01.013  GET /orders/82  → pod-b  200  <span class="c">39 ms</span>
+<span class="hl">12:00:01.500  health  pod-b   → timeout ×3 → DOWN</span>
+12:00:01.502  GET /orders/84  → pod-c  200  <span class="c"># pod-b skipped</span>
+12:00:01.509  GET /orders/85  → pod-a  200</pre>
+      <ul class="points tight">
+        <li>Health checks decide <b>who is allowed</b>; the algorithm picks <b>which one</b> of those.</li>
+        <li data-step="1">Clients never learn the backend IPs, so you can add, remove or restart pods without anyone changing config.</li>
+      </ul>
+    </div>
   </div>
-  <div class="foot"><span>5 / 40</span><span>definition · listener, pool, algorithm, health</span></div>
+  <div class="foot"><span>6 / 42</span><span>definition · listener, pool, algorithm, health</span></div>
+</section>
+
+<section class="slide" data-section="proxy-vocabulary">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>Vocabulary that gets confused</div>
+  <h2>Forward proxy, reverse proxy, load balancer: same machinery, different direction</h2>
+  <div class="chart meter" style="flex:1; min-height:0; justify-content:center;">
+    <svg viewBox="0 0 1000 272" role="img" aria-label="Forward proxy sits in front of clients, reverse proxy in front of one server, load balancer in front of many and picks one">
+      <defs>
+        <marker id="arrow-vocab" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+      </defs>
+
+      <!-- forward proxy -->
+      <text x="0" y="24" class="sv-lbl">Forward proxy</text>
+      <text x="0" y="46" class="sv-lbl-sm">acts for the client</text>
+      <text x="0" y="66" class="sv-lbl-sm">corporate egress, VPN, crawler</text>
+      <rect x="250" y="20" width="110" height="44" rx="10" class="sv-box"/>
+      <text x="305" y="47" text-anchor="middle" class="sv-lbl-sm">clients</text>
+      <path d="M362 42 H430" class="sv-line" marker-end="url(#arrow-vocab)"/>
+      <rect x="440" y="20" width="130" height="44" rx="10" class="sv-box"/>
+      <text x="505" y="47" text-anchor="middle" class="sv-lbl-sm">proxy</text>
+      <path d="M572 40 L700 20" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M572 42 H700" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M572 44 L700 64" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <rect x="710" y="8" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="710" y="32" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="710" y="56" width="150" height="22" rx="7" class="sv-box"/>
+      <text x="872" y="47" class="sv-lbl-sm">many origins</text>
+
+      <path d="M0 90 H1000" class="sv-grid"/>
+
+      <!-- reverse proxy -->
+      <text x="0" y="126" class="sv-lbl">Reverse proxy</text>
+      <text x="0" y="148" class="sv-lbl-sm">acts for the server</text>
+      <text x="0" y="168" class="sv-lbl-sm">TLS, cache, WAF, one upstream</text>
+      <rect x="250" y="101" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="250" y="127" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="250" y="153" width="150" height="22" rx="7" class="sv-box"/>
+      <text x="325" y="143" text-anchor="middle" class="sv-lbl-sm">clients</text>
+      <path d="M402 112 L488 134" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M402 138 H488" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M402 164 L488 142" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <rect x="498" y="116" width="130" height="44" rx="10" class="sv-box"/>
+      <text x="563" y="143" text-anchor="middle" class="sv-lbl-sm">proxy</text>
+      <path d="M630 138 H700" class="sv-line" marker-end="url(#arrow-vocab)"/>
+      <rect x="710" y="116" width="150" height="44" rx="10" class="sv-box"/>
+      <text x="785" y="143" text-anchor="middle" class="sv-lbl-sm">one origin</text>
+
+      <path d="M0 186 H1000" class="sv-grid"/>
+
+      <!-- load balancer -->
+      <text x="0" y="222" class="sv-lbl">Load balancer</text>
+      <text x="0" y="244" class="sv-lbl-sm">reverse proxy that also picks</text>
+      <text x="0" y="264" class="sv-lbl-sm">N origins, one decision per request</text>
+      <rect x="250" y="197" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="250" y="223" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="250" y="249" width="150" height="22" rx="7" class="sv-box"/>
+      <text x="325" y="239" text-anchor="middle" class="sv-lbl-sm">clients</text>
+      <path d="M402 208 L488 230" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M402 234 H488" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M402 260 L488 238" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <rect x="498" y="212" width="130" height="44" rx="10" class="sv-box-hot"/>
+      <text x="563" y="240" text-anchor="middle" class="sv-hot">LB</text>
+      <path d="M630 232 L700 210" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <path d="M630 234 H700" class="sv-hot-line" marker-end="url(#arrow-vocab)"/>
+      <path d="M630 236 L700 258" class="sv-line-soft" marker-end="url(#arrow-vocab)"/>
+      <rect x="710" y="198" width="150" height="22" rx="7" class="sv-box"/>
+      <rect x="710" y="224" width="150" height="22" rx="7" class="sv-box-hot"/>
+      <rect x="710" y="250" width="150" height="22" rx="7" class="sv-box"/>
+      <text x="872" y="240" class="sv-lbl-sm">N origins</text>
+    </svg>
+  </div>
+  <p class="caption" style="margin:0; font-size:16.5px;">Every load balancer is a reverse proxy; a reverse proxy with one upstream is not. NGINX, HAProxy and Envoy are all three, by config.</p>
+  <ul class="points tight" data-step="1">
+    <li>To the client the LB <em>is</em> the server; to the backend it <em>is</em> the client — the backend sees the LB's IP, not the user's. Pass the real one in <code>X-Forwarded-For</code> (L7) or PROXY protocol (L4).</li>
+  </ul>
+  <div class="foot"><span>7 / 42</span><span>forward proxy · reverse proxy · load balancer</span></div>
 </section>
 
 <section class="slide" data-section="scale-up-out">
@@ -101,7 +284,7 @@
   <ul class="points tight" data-step="1">
     <li>If a user's cart lives in pod memory, the next request lands on another pod and the cart is empty. Put session state in Redis or the DB first.</li>
   </ul>
-  <div class="foot"><span>6 / 40</span><span>vertical vs. horizontal scaling</span></div>
+  <div class="foot"><span>8 / 42</span><span>vertical vs. horizontal scaling</span></div>
 </section>
 
 <section class="slide" data-section="three-jobs">
@@ -128,5 +311,5 @@
     </div>
   </div>
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
-  <div class="foot"><span>7 / 40</span><span>spread · route around failure · hide change</span></div>
+  <div class="foot"><span>9 / 42</span><span>spread · route around failure · hide change</span></div>
 </section>

@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: east-west traffic between services, software vs. hardware balancers, and the sidecar proxy.</p>
-  <div class="foot"><span>8 / 40</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>10 / 42</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7">
@@ -37,7 +37,7 @@
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>9 / 40</span><span>l4 vs. l7</span></div>
+  <div class="foot"><span>11 / 42</span><span>l4 vs. l7</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
@@ -64,7 +64,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
     </ul>
   </div>
-  <div class="foot"><span>10 / 40</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>12 / 42</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
@@ -117,7 +117,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>11 / 40</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>13 / 42</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
@@ -158,7 +158,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>12 / 40</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>14 / 42</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <section class="slide" data-section="lb-spof">
@@ -175,5 +175,5 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>13 / 40</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>15 / 42</span><span>high availability for the balancer itself</span></div>
 </section>

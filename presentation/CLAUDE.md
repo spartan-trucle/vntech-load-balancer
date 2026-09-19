@@ -15,6 +15,7 @@ sections/NN-*.html  slide content — one file per section, most edits happen he
 sections/99-thanks.html  closing slide: Kahoot QR + PIN typed in on stage (not a numbered section)
 tools/renumber.py   rewrites every footer page number ("12 / 39") in SECTIONS order
 load-balancer-outline.md  talk outline + speaker split (source material, not rendered)
+notes/speaker-script.md   per-slide speaking script (source material, not rendered)
 ```
 
 ## How the page is assembled
