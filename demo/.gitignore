@@ -1,3 +1,4 @@
 node_modules/
 .run/
 nginx/generated/
+package-lock.json
