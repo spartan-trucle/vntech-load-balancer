@@ -4,11 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Load Balancing</title>
-<meta name="description" content="A systems talk on load balancing: where it happens, how a balancer picks a backend, what it does when one fails, and how to design one that is not a single point of failure." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23081112'/%3E%3Cpath d='M6 12h4m0 0 6-5m-6 5h6m-6 0 6 5' stroke='%233fc7d4' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+<meta name="description" content="A systems talk on load balancing: inside a data center, across regions, how a balancer picks a server, and a live NGINX demo." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231a1b26'/%3E%3Cpath d='M6 12h4m0 0 6-5m-6 5h6m-6 0 6 5' stroke='%237aa2f7' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/deck.css" />
 </head>
 <body>
@@ -84,7 +84,9 @@
 <div class="progress"><i></i></div>
 <div class="pager"></div>
 
+<script src="js/vendor/qrcode.js"></script>
 <script src="js/charts-lib.js"></script>
+<script src="js/backdrop.js"></script>
 <script>
 // Sections are fetched, so the deck needs HTTP (GitHub Pages or a local server), not file://.
 // Order here is slide order. Each section's inline <script> (its charts) runs after all
@@ -93,13 +95,12 @@
   const SECTIONS = [
     '00-cover',
     '00-outline',
-    '01-introduction',
-    '02-layers',
+    '00-introduction',
+    '01-local-load-balancing',
+    '02-global-load-balancing',
     '03-algorithms',
-    '04-health-and-failure',
-    '05-connections-and-state',
-    '06-system-design',
-    '07-takeaways',
+    '04-demo',
+    '99-thanks',
   ];
   // Cache-bust the stylesheet too: a cached deck.css leaves new slides (e.g. the outline) unstyled.
   document.querySelector('link[href="css/deck.css"]').href = `css/deck.css?v=${Date.now()}`;

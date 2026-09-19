@@ -9,7 +9,10 @@ index.html          shell: <head>, SVG icon sprite (#ic-*), empty #deck, section
 css/deck.css        all styles; color tokens on :root, redefined for dark mode
 js/charts-lib.js    shared SVG helpers, exposed as window.Charts
 js/deck.js          presenter engine: keys, data-step reveals, overview, theme
+js/backdrop.js      ambient packet network behind the active slide (moved in on 'deck:slide')
+js/vendor/qrcode.js qrcode-generator 1.4.4 (MIT), used by the Kahoot QR on the last slide
 sections/NN-*.html  slide content — one file per section, most edits happen here
+sections/99-thanks.html  closing slide: Kahoot QR + PIN typed in on stage (not a numbered section)
 tools/renumber.py   rewrites every footer page number ("12 / 39") in SECTIONS order
 load-balancer-outline.md  talk outline + speaker split (source material, not rendered)
 ```
@@ -92,6 +95,9 @@ Chart code lives in the same section file as its slide, in one trailing `<script
 
 ## Styling
 
+- Theme is Tokyo Night (default, dark) with Tokyo Night Day behind `data-theme="light"`. Each part of the talk has its own hue: `sections/00-outline.html` tags slides with `data-part="00".."04"` and `deck.css` ("section colors") swaps `--accent` / `--accent2`; derived tokens are recomputed with `color-mix()`.
+- The "shell" block at the end of `deck.css` is purely visual (surface glow, top-rule packet, icon tiles, glows, progress colors). `deck.js` fires `deck:slide` with the active slide and sets `body[data-part]`; `js/backdrop.js` listens. Keep ambient motion to that network and the one rule sweep per slide.
+
 - All CSS is in `css/deck.css`, grouped by `/* ---------- name ---------- */` markers.
 - Change colors via the tokens at the top (`:root`), and update the dark overrides under both the `prefers-color-scheme` query and `[data-theme='dark']`.
 - Slides are laid out on a fixed 1280×720 canvas and scaled by `deck.js` (`--s`). Size things for that canvas.
@@ -124,9 +130,11 @@ Headless check without a browser window:
 
 ## Interactive slides
 
-- **3.4 simulator** (`03-algorithms.html`, `simulate()`): 480 req/s for 10 s into 4 pods × 4 workers, pod-d 3× slower. Arrivals and per-request work come from `rng(7)`, so every algorithm sees the same traffic; only the pick differs.
-- **3.5 hashing** (`hashChart()`): 60 keys, `hash % N` vs. a ring with 150 virtual nodes per server.
-- **3.6 ring** (`ringChart()`): hand-placed angles, not real hashes, so the picture stays readable.
+- **3.2–3.6 request-flow animations** (`03-algorithms.html`, `Charts.flow()` + `drive()`): one balancer (or clients → hash box) and 3–4 servers; coins are requests. `drive()` watches the slide's `.active` class and its highest shown `data-step` and replays phase *k* from a clean state, so `→` / `←` drive the animation and the ↻ Replay button reruns the current phase. Phases: round robin (even counts → uneven work), weighted RR 3:1:1 (naive burst → NGINX smooth), least connections (round robin vs least conn with server B 5× slower), IP hash (two rounds → office NAT), IP hash when servers change (add D → B dies). IP hash uses fixed hash values shown on screen so `% N` can be checked by hand.
+- **4.4 live demo** (`04-demo.html`): uses `Charts.flow()` against the real NGINX in `../demo/` (`X-Upstream`, `X-LB`, `/__lb`, `/__health`). Falls back to a recorded round robin when `localhost:8000` doesn't answer. `flow()` is shared with section 3, so it lives in `charts-lib.js`.
+- **Appendix simulator** (`simulate()`): 480 req/s for 10 s into 4 pods × 4 workers, pod-d 3× slower. Arrivals and per-request work come from `rng(7)`, so every algorithm sees the same traffic; only the pick differs.
+- **Appendix hashing** (`hashChart()`): 60 keys, `hash % N` vs. a ring with 150 virtual nodes per server.
+- **Appendix ring** (`ringChart()`): hand-placed angles, not real hashes, so the picture stays readable.
 
 ## Known issues
 

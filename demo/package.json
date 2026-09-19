@@ -1,0 +1,23 @@
+{
+  "name": "lb-demo",
+  "private": true,
+  "description": "The crashed server: three Node backends behind NGINX, for the load balancing talk",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node src/cli.ts up",
+    "stop": "node src/cli.ts down",
+    "status": "node src/cli.ts status",
+    "algo": "node src/cli.ts algo",
+    "crash": "node src/cli.ts crash",
+    "revive": "node src/cli.ts revive",
+    "slow": "node src/cli.ts slow",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "typescript": "^5.9.3"
+  }
+}
