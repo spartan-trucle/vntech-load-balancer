@@ -508,6 +508,11 @@ body.overview [data-hide-at] { opacity: 0; }
 .flow-ctl .readout { margin: 0; }
 .quad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-items: stretch; }
 .quad .card .t { font-size: 30px; }
+/* decision cards sharing a slide with a gotcha list: tighter than a standalone trio */
+.pick .card { padding: 18px; gap: 9px; }
+.pick .card p { font-size: 15.5px; }
+.pick .card .code { font-size: 12.5px; padding: 10px 12px; }
+.points.pick-notes li { padding: 6px 0; font-size: 15.5px; }
 /* self-check grid: four question cards on one slide, so the type steps down a notch */
 .qa .card { padding: 18px; gap: 8px; }
 .qa .card .t { font-size: 20px; }

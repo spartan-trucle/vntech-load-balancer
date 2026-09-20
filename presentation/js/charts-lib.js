@@ -137,8 +137,9 @@
     svg.setAttribute('viewBox', viewBox);
     const clk = clock();
     const api = { sleep: clk.sleep, later: clk.later, virtual: clk.virtual };
-    api.layer = el('g', {}, svg);
     Object.assign(api, draw(svg, api) || {});
+    // appended after draw(), so what a phase draws paints on top of the fixed scenery
+    api.layer = el('g', {}, svg);
     api.reset = () => { clk.cancel(); api.layer.replaceChildren(); api.clear && api.clear(); };
     api.snapshot = (phase) => { api.reset(); clk.snapshot(phase, api); };
     return api;

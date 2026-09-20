@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: what an L4 balancer and an L7 balancer actually do to your traffic, how they check that a backend is alive, and how to choose.</p>
-  <div class="foot"><span>10 / 56</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>10 / 55</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="osi-stack">
@@ -78,7 +78,7 @@
       <li data-step="2">Layers 5 and 6 barely exist in practice — TCP/IP folds them into TLS. Every choice in this section is really "L4 or L7?".</li>
     </ul>
   </div>
-  <div class="foot"><span>11 / 56</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+  <div class="foot"><span>11 / 55</span><span>osi model · l4 = nlb, l7 = alb</span></div>
 </section>
 
 <section class="slide" data-section="packet-vs-request">
@@ -96,7 +96,7 @@
       <li data-step="2">One request can span many packets; one packet can hold the tail of one request and the head of the next. Nothing on the wire marks where a request begins.</li>
     </ul>
   </div>
-  <div class="foot"><span>12 / 56</span><span>a packet is not a request</span></div>
+  <div class="foot"><span>12 / 55</span><span>a packet is not a request</span></div>
 </section>
 
 <section class="slide" data-section="l4-mechanics">
@@ -113,7 +113,7 @@
       <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 56</span><span>l4 · one decision per connection</span></div>
+  <div class="foot"><span>13 / 55</span><span>l4 · one decision per connection</span></div>
 </section>
 
 <section class="slide" data-section="l7-mechanics">
@@ -130,24 +130,25 @@
       <li data-step="2"><span class="chip hot">retry</span> It still holds the request in memory, so when a pod dies it writes the same bytes to another one. The client never learns anything went wrong.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 56</span><span>l7 · one decision per request</span></div>
+  <div class="foot"><span>14 / 55</span><span>l7 · one decision per request</span></div>
 </section>
 
 <section class="slide" data-section="lb-is-a-program">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>1.5 · The balancer is just a program</div>
-  <h2>"Holds the request" means bytes on a heap — and that heap has a hard limit</h2>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>1.5 · Where your request waits</div>
+  <h2>An L7 balancer keeps a copy of your request in memory — and memory runs out</h2>
   <div class="split">
     <div class="body">
-      <div class="chart meter"><svg id="prog-flow" role="img" aria-label="An L7 proxy buffering requests on its heap until a large upload passes the buffer limit"></svg></div>
+      <div class="chart meter"><svg id="prog-flow" role="img" aria-label="A balancer keeping a copy of each request in memory until one is too big to keep"></svg></div>
       <div class="flow-ctl"><div class="seg"><button id="prog-replay">↻ Replay</button></div><p class="readout" id="prog-readout"></p></div>
     </div>
     <ul class="points tight">
-      <li>No magic appliance. NGINX, HAProxy and Envoy are Linux processes with an RSS you can read in <code>top</code>; an ALB is Amazon's fleet of the same thing; a mesh sidecar is Envoy in a pod next to yours.</li>
-      <li data-step="1">A pure L4 balancer can live <b>in the kernel</b> — IPVS, or eBPF/XDP at the NIC. The packet never reaches userspace and nothing is allocated beyond a table row. That is the order-of-magnitude gap in cost.</li>
-      <li data-step="2"><span class="chip risk">gotcha</span> Past the buffer limit the proxy streams instead of holding, so there is no copy left. Retries stop working silently, on a balancer configured to retry.</li>
+      <li>The balancer is an ordinary program, like the ones you write. It reads the request in, decides where it goes, writes it out. While it decides, the request sits in its memory.</li>
+      <li data-step="1"><span class="chip">the limit</span> 10,000 requests at once × 64 KB is 640 MB. At 10 MB each it would be 100 GB — so every balancer caps how much of a request it will keep.</li>
+      <li data-step="2"><span class="chip risk">gotcha</span> Over the cap it stops keeping a copy and just passes the bytes along. Now there is nothing to re-send, so <b>retries quietly stop working</b> — and a big upload to a pod that dies fails.</li>
+      <li data-step="2">An L4 balancer never keeps anything: it forwards each packet and forgets it. That is why it costs so much less, and why it could never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>15 / 56</span><span>buffers · heap · why l4 is cheap</span></div>
+  <div class="foot"><span>15 / 55</span><span>memory · size limit · why retries stop</span></div>
 </section>
 
 <section class="slide" data-section="health-checks">
@@ -164,7 +165,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> Never check the database inside <code>/healthz</code>. A 2 s DB blip fails every pod at once and turns "degraded" into "100% down". Keep the check shallow.</li>
     </ul>
   </div>
-  <div class="foot"><span>16 / 56</span><span>active · passive · flapping · panic mode</span></div>
+  <div class="foot"><span>16 / 55</span><span>active · passive · flapping · panic mode</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7">
@@ -177,73 +178,59 @@
         <tr><td class="name">Decides</td><td>Once per connection, at the SYN</td><td>Once per request, many per connection</td></tr>
         <tr><td class="name">Can see</td><td>src/dst IP, ports, TCP flags, SNI</td><td>Method, path, host, headers, cookies, body</td></tr>
         <tr><td class="name">TLS</td><td>Passes it through; backend holds the cert</td><td>Terminates it; the balancer holds the cert</td></tr>
-        <tr><td class="name">Retries</td><td><b>Impossible</b> — kept no copy of the bytes</td><td>Yes, while the request still fits in the buffer</td></tr>
+        <tr><td class="name">Retries</td><td><b>Impossible</b> — kept no copy of the request</td><td>Yes, while the request is small enough to keep</td></tr>
         <tr><td class="name">Per-request metrics</td><td>None: no status codes, no latency</td><td>5xx rate, p99, per route</td></tr>
-        <tr><td class="name">Cost</td><td>Very low; can run in the kernel or on the NIC</td><td>~10× more: parse, buffer, re-originate</td></tr>
+        <tr><td class="name">Cost</td><td>Very low: forward the packet and forget it</td><td>~10× more: parse, keep, re-send</td></tr>
         <tr><td class="name">Protocols</td><td>Anything over TCP/UDP — Postgres, Redis, MQTT, game UDP</td><td>Mostly the HTTP family</td></tr>
-        <tr><td class="name">On AWS</td><td>NLB · also IPVS, Katran, HAProxy <code>mode tcp</code></td><td>ALB · also Envoy, NGINX, HAProxy <code>mode http</code></td></tr>
+        <tr><td class="name">On AWS</td><td>NLB · also IPVS, HAProxy <code>mode tcp</code></td><td>ALB · also Envoy, NGINX, HAProxy <code>mode http</code></td></tr>
       </tbody>
     </table>
-    <ul class="points tight" data-step="1">
-      <li><b>Most real architectures use both.</b> A cheap stateless L4 layer at the edge absorbs the connections and spreads them over a fleet of L7 proxies that do the smart routing behind it. That is roughly what every hyperscaler does.</li>
-    </ul>
   </div>
-  <div class="foot"><span>17 / 56</span><span>l4 vs. l7 · the comparison</span></div>
+  <div class="foot"><span>17 / 55</span><span>l4 vs. l7 · the comparison</span></div>
 </section>
 
-<section class="slide" data-section="nlb-alb-practice">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.8 · NLB and ALB in practice</div>
-  <h2>The layer mapping is the easy part. These four defaults are what actually bite.</h2>
-  <div class="body" style="gap:16px;">
-    <table class="tbl dense">
-      <thead><tr><th></th><th>NLB · L4</th><th>ALB · L7</th></tr></thead>
-      <tbody>
-        <tr><td class="name">Algorithm</td><td>Flow hash on the 5-tuple, <b>not configurable</b></td><td>Round robin, or least outstanding requests</td></tr>
-        <tr><td class="name">Client IP</td><td>Preserved: the pod sees the real one</td><td>Replaced → read <code>X-Forwarded-For</code></td></tr>
-        <tr><td class="name">Idle timeout</td><td class="num">350 s, fixed · ~100 µs added</td><td class="num">60 s, configurable · ~1–4 ms added</td></tr>
-        <tr><td class="name">Sudden 10× spike</td><td>Absorbs it</td><td>Scales up gradually: 5xx for minutes from cold</td></tr>
-      </tbody>
-    </table>
-    <ul class="points tight">
-      <li data-step="1"><span class="chip risk">1</span> <b>An NLB does terminate TLS</b> if you give it a TLS listener — and still balances by flow hash. Decrypting and parsing are separate abilities.</li>
-      <li data-step="1"><span class="chip risk">2</span> <b>ALB does not retry.</b> A 5xx from your pod reaches the user. Retries come from a mesh sidecar or the client.</li>
-      <li data-step="2"><span class="chip risk">3</span> <b>ALB defaults to round robin.</b> Least outstanding requests is off by default — one config change, usually worth making.</li>
-      <li data-step="2"><span class="chip risk">4</span> <b>Cross-zone is on and free for ALB, off and billed for NLB.</b> Off means an AZ with 1 pod gets as much traffic as an AZ with 5.</li>
+<section class="slide" data-section="l4-l7-choose">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.8 · So which one do you pick?</div>
+  <h2>Pick by what the balancer needs to know — then fix the defaults that bite</h2>
+  <div class="body" style="gap:14px;">
+    <div class="trio pick">
+      <div class="card">
+        <div class="k">pick L4 · NLB</div>
+        <p>It isn't HTTP: Postgres, Redis, Kafka, MQTT, game UDP.</p>
+        <p>You need a static IP, millions of idle connections, or TLS that reaches the backend untouched.</p>
+        <pre class="code">flow hash, not tunable
+client IP preserved
+idle 350 s · adds ~100 µs
+absorbs a 10× spike</pre>
+      </div>
+      <div class="card">
+        <div class="k">pick L7 · ALB</div>
+        <p>You route by path, host, header or cookie.</p>
+        <p>You want retries, canary weights, or p99 per route. Most web and API traffic starts here.</p>
+        <pre class="code">round robin by default
+client IP in X-Forwarded-For
+idle 60 s · adds ~1–4 ms
+needs warm-up for a spike</pre>
+      </div>
+      <div class="card">
+        <div class="k">use both</div>
+        <p>A cheap L4 layer at the edge absorbs the connections; a fleet of L7 proxies behind it does the routing.</p>
+        <p>What every hyperscaler runs — and what slide 20 shows on EKS.</p>
+        <pre class="code">NLB → Envoy fleet → pods</pre>
+      </div>
+    </div>
+    <ul class="points tight pick-notes">
+      <li data-step="1"><span class="chip risk">1</span> <b>An NLB does terminate TLS</b> with a TLS listener — and still balances by flow hash.</li>
+      <li data-step="1"><span class="chip risk">2</span> <b>ALB defaults to round robin.</b> Least outstanding requests is off until you turn it on.</li>
+      <li data-step="2"><span class="chip risk">3</span> <b>ALB never retries</b> — that has to come from a mesh sidecar or your own client.</li>
+      <li data-step="2"><span class="chip risk">4</span> <b>NLB cross-zone is off and billed</b> (ALB: on and free). Off, an AZ with 1 pod takes as much as one with 5.</li>
     </ul>
   </div>
-  <div class="foot"><span>18 / 56</span><span>aws · the defaults that bite</span></div>
-</section>
-
-<section class="slide" data-section="l4-l7-selfcheck">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>1.9 · Check yourself</div>
-  <h2>If you can answer these four, the rest of the talk is about which backend to pick</h2>
-  <div class="two qa" style="gap:20px; align-content:center;">
-    <div class="card">
-      <div class="k">question 1</div>
-      <div class="t">Why can an L7 balancer retry when an L4 one cannot?</div>
-      <p data-step="1">L7 still holds the parsed request, on a second connection it owns, so it writes the same bytes to another pod. L4 kept no copy and shares one end-to-end connection with the client: nothing to re-send, nowhere to send it.</p>
-    </div>
-    <div class="card">
-      <div class="k">question 2</div>
-      <div class="t">What can an L4 balancer route on if TLS is passed through untouched?</div>
-      <p data-step="2">The <code>SNI</code> hostname, which the client sends in the clear during the handshake. Per-domain routing with no private key on the balancer. Nothing below that: no path, no header, no cookie.</p>
-    </div>
-    <div class="card">
-      <div class="k">question 3</div>
-      <div class="t">Why does checking the database inside <code>/healthz</code> make outages worse?</div>
-      <p data-step="3">It ties every pod's health to one shared dependency. A brief DB hiccup fails all probes at once, the balancer ejects 100% of the fleet, and degraded becomes a total outage.</p>
-    </div>
-    <div class="card">
-      <div class="k">question 4</div>
-      <div class="t">You enabled retries on your L7 proxy. Why did a 10 MB upload still fail?</div>
-      <p data-step="4">It passed the buffer limit, so the proxy switched to streaming the body straight through. There was no copy left in memory to re-send. Retries are only as long as the buffer.</p>
-    </div>
-  </div>
-  <div class="foot"><span>19 / 56</span><span>self-check · before the algorithms</span></div>
+  <div class="foot"><span>18 / 55</span><span>when to use which · aws defaults</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.10 · What L7 buys you</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.9 · What L7 buys you</div>
   <h2>One address, many pools. Route by path, header, or weight.</h2>
   <div class="split code-left">
     <pre class="code"><span class="c"># NGINX-style, one listener on :443</span>
@@ -266,11 +253,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
     </ul>
   </div>
-  <div class="foot"><span>20 / 56</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>19 / 55</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.11 · The path on AWS EKS</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.10 · The path on AWS EKS</div>
   <h2>Four hops pick a destination before a request reaches a pod</h2>
   <div class="body" style="gap:16px;">
     <div class="chart">
@@ -319,11 +306,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>21 / 56</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>20 / 55</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.12 · Client-side balancing</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.11 · Client-side balancing</div>
   <h2>For service-to-service calls, the caller can pick the backend itself and skip a hop</h2>
   <div class="split">
     <div class="chart meter">
@@ -360,11 +347,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>22 / 56</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>21 / 55</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <section class="slide" data-section="lb-spof">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.13 · Who balances the balancer?</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.12 · Who balances the balancer?</div>
   <h2>A single balancer is a single point of failure with a nicer name</h2>
   <div class="body meter" style="justify-content:center;">
     <table class="tbl">
@@ -377,7 +364,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>23 / 56</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>22 / 55</span><span>high availability for the balancer itself</span></div>
 </section>
 
 <script>
@@ -655,27 +642,27 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
     ]);
   }
 
-  // ---------- 1.5 the balancer is just a program ----------
+  // ---------- 1.5 where your request waits ----------
   {
     const CELLS = 8, CW = 74, CH = 40, CX = 36, CY = 150;
     const w = scene($('prog-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
       box(fixed, 0, 60, W, 210, 'sv-box');
-      txt(fixed, 20, 40, 'sv-lbl', 'envoy · one Linux process');
+      txt(fixed, 20, 40, 'sv-lbl', 'the balancer');
       const rss = txt(fixed, W, 40, 'sv-hot', '', 'end');
-      txt(fixed, 20, 92, 'sv-lbl-sm', 'heap · one buffer per request in flight');
+      txt(fixed, 20, 92, 'sv-lbl-sm', 'memory · one slot per request it is handling');
       const cells = [];
       for (let i = 0; i < CELLS; i++) {
         const x = CX + i * (CW + 8);
         cells.push({ x: x + CW / 2, box: box(fixed, x, CY, CW, CH, 'sv-box'), lbl: txt(fixed, x + CW / 2, CY + 25, 'sv-lbl-sm', '', 'middle') });
       }
-      // a buffer past the limit is drawn tall enough to cross the limit line
+      // a request too big to keep is drawn tall enough to cross the limit line
       const over = (c, on) => {
         c.box.setAttribute('y', on ? CY - 22 : CY);
         c.box.setAttribute('height', on ? CH + 52 : CH);
       };
       line(fixed, `M20 ${CY + CH + 22} H${W - 20}`, 'sv-limit');
-      txt(fixed, 20, CY + CH + 42, 'sv-risk', 'buffer limit · 64 KB per request');
+      txt(fixed, 20, CY + CH + 42, 'sv-risk', 'size limit · 64 KB kept per request');
       const mode = txt(fixed, 20, CY + CH + 74, 'sv-lbl-sm', '');
       return {
         rss, cells, mode, over,
@@ -688,40 +675,40 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
 
     steps('prog', w, [
       async (w) => {
-        w.mode.textContent = 'mode: buffering — a copy of every request is held';
+        w.mode.textContent = 'keeping a copy of every request';
         for (let i = 0; i < CELLS; i++) {
           w.cells[i].box.setAttribute('class', 'sv-box-hot');
           w.cells[i].lbl.textContent = '64 KB';
-          w.rss.textContent = `${(i + 1) * 8} K requests in flight · ${(i + 1) * 512} MB`;
+          w.rss.textContent = `${(i + 1) * 8},000 requests at once · ${(i + 1) * 512} MB`;
           await w.sleep(280);
         }
-        w.say('"Holds the request" is literal: <strong>read socket A into memory, decide, write socket B</strong>. Same as your own code.');
+        w.say('Every request being handled takes a slot. <strong>8,000 at once is already half a gigabyte.</strong>');
       },
       async (w) => {
-        w.mode.textContent = 'mode: buffering';
+        w.mode.textContent = 'keeping a copy of every request';
         for (let i = 0; i < CELLS - 1; i++) { w.cells[i].box.setAttribute('class', 'sv-box-hot'); w.cells[i].lbl.textContent = '64 KB'; }
-        w.rss.textContent = '56 K requests in flight · 3.6 GB';
+        w.rss.textContent = '56,000 requests at once · 3.6 GB';
         await w.sleep(500);
         const c = w.cells[CELLS - 1];
         c.box.setAttribute('class', 'sv-box-risk');
         w.over(c, true);
         c.lbl.textContent = '10 MB';
-        w.say('One 10 MB upload arrives. <strong>10,000 × 10 MB would be an OOM</strong>, so the limit exists.');
+        w.say('Then a 10 MB upload arrives. <strong>10,000 of those would be 100 GB</strong> — which is why the limit exists.');
         await w.sleep(900);
-        c.lbl.textContent = 'streaming';
-        w.mode.textContent = 'mode: streaming — bytes pass straight through, nothing is kept';
-        w.say('Past the limit it <strong>stops keeping a copy</strong> and streams the body through as it arrives.');
+        c.lbl.textContent = '10 MB';
+        w.mode.textContent = 'too big to keep · passing the bytes straight through';
+        w.say('Over the cap it <strong>stops keeping a copy</strong> and just passes the bytes along as they arrive.');
       },
       async (w) => {
         for (let i = 0; i < CELLS - 1; i++) { w.cells[i].box.setAttribute('class', 'sv-box-hot'); w.cells[i].lbl.textContent = '64 KB'; }
         const c = w.cells[CELLS - 1];
-        c.box.setAttribute('class', 'sv-box-risk'); w.over(c, true); c.lbl.textContent = 'streaming';
-        w.mode.textContent = 'mode: streaming · retry_on: 5xx, reset · the pod dies mid-upload';
-        w.rss.textContent = '56 K requests in flight · 3.6 GB';
+        c.box.setAttribute('class', 'sv-box-risk'); w.over(c, true); c.lbl.textContent = '10 MB';
+        w.mode.textContent = 'not keeping a copy · and the pod dies mid-upload';
+        w.rss.textContent = '56,000 requests at once · 3.6 GB';
         await w.sleep(700);
-        const r = card(w.layer, 150, 30, 'sv-box-risk', 'retry → nothing to send', 'sv-risk');
-        put(r, W / 2, CY + CH + 100);
-        w.say('Retries are configured. They still fail: <strong>the copy they would re-send no longer exists</strong>.');
+        // right-aligned on the mode line, so it cannot land on top of it
+        txt(w.layer, W, CY + CH + 74, 'sv-risk', 'retry → nothing to send', 'end');
+        w.say('Retries are switched on. They still fail: <strong>there is no copy left to re-send</strong>.');
       },
     ]);
   }

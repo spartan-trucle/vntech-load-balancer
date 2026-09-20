@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 2</div>
   <h2>Global load balancing</h2>
   <p class="lead">Between regions and continents. A local balancer picks a backend for traffic that already reached it; a global one has to change where the client sends traffic in the first place.</p>
-  <div class="foot"><span>24 / 56</span><span>section 2 · global load balancing</span></div>
+  <div class="foot"><span>23 / 55</span><span>section 2 · global load balancing</span></div>
 </section>
 
 <section class="slide" data-section="local-cant-fix">
@@ -21,7 +21,7 @@
       <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
-  <div class="foot"><span>25 / 56</span><span>the two problems with no in-region answer</span></div>
+  <div class="foot"><span>24 / 55</span><span>the two problems with no in-region answer</span></div>
 </section>
 
 <section class="slide" data-section="three-levers">
@@ -41,7 +41,7 @@
       <li data-step="1">Redirection costs a whole extra round trip and is rarely used. Everything else in global load balancing is lever 1, lever 2, or both together.</li>
     </ul>
   </div>
-  <div class="foot"><span>26 / 56</span><span>name resolution · routing · redirection</span></div>
+  <div class="foot"><span>25 / 55</span><span>name resolution · routing · redirection</span></div>
 </section>
 
 <section class="slide" data-section="gslb-dns">
@@ -58,7 +58,7 @@
       <li data-step="2"><span class="chip risk">omission</span> It never sees <b>load</b>. A region that is healthy but saturated keeps its full share, because a health check answers "is it up", not "can it take more".</li>
     </ul>
   </div>
-  <div class="foot"><span>27 / 56</span><span>gslb · one hostname, many answers</span></div>
+  <div class="foot"><span>26 / 55</span><span>gslb · one hostname, many answers</span></div>
 </section>
 
 <section class="slide" data-section="dns-stale">
@@ -75,7 +75,7 @@
       <li data-step="2"><span class="chip ok">do</span> Make the slowness harmless. Never cut the old address off: let it proxy onward, or answer <code>503</code> + <code>Retry-After</code>. Users can see <b>zero errors</b> during a failover that still takes five minutes.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 56</span><span>ttl · caching layers · the failover formula</span></div>
+  <div class="foot"><span>27 / 55</span><span>ttl · caching layers · the failover formula</span></div>
 </section>
 
 <section class="slide" data-section="anycast">
@@ -92,7 +92,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN, address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
-  <div class="foot"><span>29 / 56</span><span>anycast · bgp · withdraw to fail over</span></div>
+  <div class="foot"><span>28 / 55</span><span>anycast · bgp · withdraw to fail over</span></div>
 </section>
 
 <section class="slide" data-section="edge-proxy">
@@ -109,7 +109,7 @@
       <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>30 / 56</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+  <div class="foot"><span>29 / 55</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
 </section>
 
 <section class="slide" data-section="global-compare">
@@ -132,7 +132,7 @@
       <li data-step="2"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>31 / 56</span><span>comparing the three levers</span></div>
+  <div class="foot"><span>30 / 55</span><span>comparing the three levers</span></div>
 </section>
 
 <section class="slide" data-section="global-selfcheck">
@@ -155,7 +155,7 @@
       <p data-step="3">Because the client's target never changes. DNS needs every client to re-resolve, so you wait out detection <i>plus</i> TTL <i>plus</i> whatever the client caches on its own. Anycast keeps the same IP and changes the <b>route</b> to it — a BGP withdrawal reconverges in seconds and no client learns anything new.</p>
     </div>
   </div>
-  <div class="foot"><span>32 / 56</span><span>self-check · global</span></div>
+  <div class="foot"><span>31 / 55</span><span>self-check · global</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
@@ -190,7 +190,7 @@
       </g>
     </svg>
   </div>
-  <div class="foot"><span>33 / 56</span><span>system design · architecture</span></div>
+  <div class="foot"><span>32 / 55</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
@@ -208,7 +208,7 @@
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>34 / 56</span><span>system design · capacity</span></div>
+  <div class="foot"><span>33 / 55</span><span>system design · capacity</span></div>
 </section>
 
 <script>

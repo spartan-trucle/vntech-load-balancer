@@ -42,15 +42,14 @@ Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
 - **1.2 Packet ≠ request:** một request trải trên nhiều packet; muốn thấy "request" phải ráp lại byte stream rồi parse. Ví von bưu điện: L3 địa chỉ nhà, L4 số căn hộ + "phong bì 3/7", L7 lá thư bên trong.
 - **1.3 L4 hoạt động thế nào:** chọn backend đúng 1 lần ở gói SYN, ghi vào connection table, các packet sau chỉ tra bảng. TLS đi xuyên qua (chỉ đọc được SNI). Không giữ bản sao byte → **không retry được**; restart LB là mất bảng, reset hết connection.
 - **1.4 L7 hoạt động thế nào:** thực chất là **2 TCP connection** dán lại bằng code. Terminate TLS, đọc nguyên request vào memory, quyết định, ghi sang connection thứ hai. 2 request trên cùng 1 connection có thể về 2 pod khác nhau. Pod chết → gửi lại request cho pod khác, client không biết gì.
-- **1.5 LB cũng chỉ là một chương trình:** NGINX/HAProxy/Envoy là process Linux có RSS; "giữ request" = buffer trên heap. 10.000 × 64 KB = 640 MB. Quá buffer limit → chuyển sang streaming → **retry im lặng ngừng hoạt động**. L4 thuần có thể chạy trong kernel (IPVS, eBPF/XDP) nên rẻ hơn một bậc.
+- **1.5 Request nằm ở đâu trong lúc chờ:** LB là một chương trình bình thường — đọc request vào **bộ nhớ**, quyết định, ghi ra. 10.000 request cùng lúc × 64 KB = 640 MB; nếu mỗi cái 10 MB thì thành 100 GB, nên LB nào cũng có mức trần. Vượt trần → không giữ bản sao nữa, chỉ chuyển byte đi → **retry im lặng ngừng hoạt động**. L4 không giữ gì cả nên rẻ hơn hẳn, và cũng vì thế không bao giờ retry được.
 - **1.6 Health check:** active (probe theo timer, `5s × 3 lần fail ≈ 15s lỗi`) vs passive (outlier detection). Chạy cả hai. Gotcha: **đừng check DB trong `/healthz`** — DB nấc 2 giây là rớt hết pod cùng lúc; panic mode dưới 50% healthy thì bỏ qua health.
-- **1.7 So sánh L4 vs L7:** mọi khác biệt đều bắt nguồn từ "một connection hay hai". Thực tế thường dùng **cả hai**: L4 ở biên, fleet L7 phía sau.
-- **1.8 NLB vs ALB trong thực tế:** NLB *có* terminate TLS nhưng vẫn hash 5-tuple; ALB **không** retry; ALB mặc định round robin (least outstanding requests phải bật tay); cross-zone bật+free ở ALB, tắt+tính tiền ở NLB.
-- **1.9 Tự kiểm tra:** 4 câu hỏi chốt lại phần này.
-- **1.10 L7 routing:** `/api` và `/ws` về pool khác nhau, canary 5% theo weight, header `X-Canary` cho QA.
-- **1.11 Đường đi trên EKS:** Route 53 → ALB → Ingress controller → (Service/kube-proxy cho call nội bộ) → Pod.
-- **1.12 Client-side LB / sidecar:** gRPC `round_robin` + headless Service, hoặc service mesh sidecar. Bớt 1 hop, nhưng mọi client phải tự cập nhật danh sách pod.
-- **1.13 Ai cân bằng cho LB:** active-passive (VRRP), active-active (ECMP/anycast + Maglev), managed (ALB), client-side.
+- **1.7 So sánh L4 vs L7:** mọi khác biệt đều bắt nguồn từ một câu hỏi — **LB có giữ request lại không, hay chỉ chuyển packet?**
+- **1.8 Chọn cái nào:** **L4/NLB** khi không phải HTTP (Postgres, Redis, Kafka, MQTT, UDP), cần static IP, hàng triệu connection idle, hoặc TLS phải tới thẳng backend. **L7/ALB** khi route theo path/host/header/cookie, cần retry, canary weight, p99 theo route — phần lớn traffic web/API, mặc định chọn cái này. **Cả hai** khi lớn: L4 ở biên, fleet L7 phía sau. 4 default cắn người: NLB *có* terminate TLS nhưng vẫn hash 5-tuple; ALB mặc định round robin; ALB **không** retry; cross-zone tắt + tính tiền ở NLB (bật + free ở ALB).
+- **1.9 L7 routing:** `/api` và `/ws` về pool khác nhau, canary 5% theo weight, header `X-Canary` cho QA.
+- **1.10 Đường đi trên EKS:** Route 53 → ALB → Ingress controller → (Service/kube-proxy cho call nội bộ) → Pod.
+- **1.11 Client-side LB / sidecar:** gRPC `round_robin` + headless Service, hoặc service mesh sidecar. Bớt 1 hop, nhưng mọi client phải tự cập nhật danh sách pod.
+- **1.12 Ai cân bằng cho LB:** active-passive (VRRP), active-active (ECMP/anycast + Maglev), managed (ALB), client-side.
 - **Còn thiếu:** software vs hardware LB.
 
 ## 2. Global Load Balancing — GSLB (Truc)
