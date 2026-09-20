@@ -10,9 +10,9 @@ number on a slide, change it here too.
 ## Before you start
 
 - Open the deck over HTTP (`cd presentation && python3 -m http.server 8000`), press `F` for fullscreen.
-- Keys: `→` / `←` step, `O` overview, `T` light theme, `S` sends live demo requests on slide 41.
+- Keys: `→` / `←` step, `O` overview, `T` light theme, `S` sends live demo requests on slide 48.
 - For section 4: `cd demo && npm install && npm start` in a second terminal, before the talk.
-- Check slide 41 shows a green `live · <algorithm>` chip, not `recorded`.
+- Check slide 48 shows a green `live · <algorithm>` chip, not `recorded`.
 
 ## Timing
 
@@ -20,21 +20,22 @@ number on a slide, change it here too.
 |---|---|---|---|
 | Cover + outline | 1–2 | Trúc | 2 min |
 | 00 Introduction | 3–9 | Trúc | 10 min |
-| 01 Local load balancing | 10–16 | Trúc | 11 min |
-| 02 Global load balancing | 17–21 | Trúc | 8 min |
-| 03 Algorithms | 22–31 | Khánh | 15 min |
-| 03 Appendix (only if time / Q&A) | 32–36 | Khánh | 0–8 min |
-| 04 Demo | 37–42 | Khánh | 10 min |
-| Thank you + Kahoot | 43 | both | 3 min |
+| 01 Local load balancing | 10–23 | Trúc | 18 min |
+| 02 Global load balancing | 24–28 | Trúc | 8 min |
+| 03 Algorithms | 29–38 | Khánh | 15 min |
+| 03 Appendix (only if time / Q&A) | 39–43 | Khánh | 0–8 min |
+| 04 Demo | 44–49 | Khánh | 10 min |
+| Thank you + Kahoot | 50 | both | 3 min |
 
-Running long? Skip the appendix (32–36) and slide 21. Never skip 41 — the live demo is the
-part people remember.
+Running long? Skip the appendix (39–43) and slide 28. Section 1 is the other place to cut:
+slides 15, 18 and 19 each stand alone, so drop them in that order. Never skip 48 — the live
+demo is the part people remember.
 
 ---
 
 # Part 0 — Introduction (Trúc)
 
-### 1 / 43 · Cover — Load Balancing
+### 1 / 50 · Cover — Load Balancing
 **Say:** Hi, I'm Trúc, this is Khánh. Today: load balancing. Not the definition — the
 decisions. Ten servers are only faster than one if something sends each request to a server
 that is up and not already busy. That "something" is what we're talking about for the next
@@ -42,17 +43,17 @@ hour.
 **Point at the picture:** pod-c is failing. The balancer noticed and split its share between
 the other two. Everything today is a variation on that picture.
 
-### 2 / 43 · Outline
+### 2 / 50 · Outline
 **Say:** Four parts. I take the first two: where balancing happens inside one data center,
 then between regions. Khánh takes how a server actually gets picked, and a live demo where we
 kill a server on stage.
 **Land on:** Ask questions whenever — don't save them all for the end.
 
-### 3 / 43 · Divider 00 — Introduction
+### 3 / 50 · Divider 00 — Introduction
 **Say:** Start with the problem, not the definition. Why does one server stop being enough,
 and what exactly do you get when you put a balancer in front?
 
-### 4 / 43 · One server fails on three separate axes
+### 4 / 50 · One server fails on three separate axes
 **Say:** People lump this under "scaling". It's three different problems.
 - **Capacity** — you run out of machine. CPU, RAM, file descriptors, usually connections
   first. Latency is flat, flat, flat, then it's a cliff. A 64 vCPU box still has one NIC.
@@ -67,7 +68,7 @@ for. Operability is making change you did ask for, safely.
 **Land on:** Most of your changes are planned. That's why operability bites even a service
 that fits comfortably on one box.
 
-### 5 / 43 · Three servers, but every user still hits the first one
+### 5 / 50 · Three servers, but every user still hits the first one
 **Say:** Concrete version. Ten thousand users, three servers. DNS points `api.shop.vn` at
 10.0.1.11, so server-1 is at 100% CPU with a p99 of 4.2 seconds, and servers 2 and 3 are at
 3%. You paid for three machines and you're using one.
@@ -76,7 +77,7 @@ milliseconds.
 **Land on:** More servers only help if something splits the traffic. Clients know one
 hostname; something behind that name has to pick a server for every request.
 
-### 6 / 43 · What a load balancer is
+### 6 / 50 · What a load balancer is
 **Say:** Four words you'll hear all day, so let's fix them now.
 - **listener** — the port the balancer holds open, `:443` with the certificate. Clients
   connect here, never to a pod.
@@ -90,7 +91,7 @@ times, marks it down — and the very next request goes to pod-c. Nobody got an 
 anyone changing config.
 **Land on:** Health decides who's allowed. The algorithm picks which one of those.
 
-### 7 / 43 · Forward proxy, reverse proxy, load balancer
+### 7 / 50 · Forward proxy, reverse proxy, load balancer
 **Say:** These three get used interchangeably and they're not the same.
 - **Forward proxy** sits in front of the *clients* and hides who they are — corporate egress,
   VPN, a crawler. Many origins on the far side.
@@ -106,7 +107,7 @@ the backend the LB *is* the client. Your backend sees the balancer's IP, not the
 the real one in `X-Forwarded-For`, or PROXY protocol at L4, *before* you rate-limit or log by
 IP.
 
-### 8 / 43 · Scale up vs scale out
+### 8 / 50 · Scale up vs scale out
 **Say:** Two ways to get more capacity. Up: 4 vCPU to 64. No code change, and that's the
 appeal — but there's a biggest instance type, the price per core gets worse near the top, and
 it's still one power cord. Out: sixteen small pods. Add as traffic grows, lose one without an
@@ -115,7 +116,7 @@ outage. Needs a balancer, and needs an app that keeps no user state in memory.
 request lands on another pod and the cart is empty. Session in Redis or the DB *first*, then
 scale out.
 
-### 9 / 43 · Three jobs
+### 9 / 50 · Three jobs
 **Say:** So what do you actually get? Three things. Spread the load — 600 req/s across three
 pods is about 200 each, not 600 on one. Route around failure — health checks pull a bad
 backend in seconds and put it back when it recovers. Hide change — drain a pod, replace it,
@@ -129,11 +130,11 @@ them done better.
 
 # Part 1 — Local load balancing (Trúc)
 
-### 10 / 43 · Divider 01
+### 10 / 50 · Divider 01
 **Say:** Zoom into one data center. East-west traffic between your own services, and the
 choice that shapes everything else: which layer does the balancer work at?
 
-### 11 / 43 · Back to the OSI model
+### 11 / 50 · Back to the OSI model
 **Say:** Quick reset on the OSI model, because the next ten slides all hang off it. Seven
 layers. A load balancer only ever sits on two of them: layer 4, transport — TCP, UDP, ports —
 and layer 7, application — HTTP, gRPC, headers, cookies.
@@ -144,18 +145,107 @@ Same split outside AWS: HAProxy `mode tcp` and kube-proxy at L4, NGINX and Envoy
 a balancer. Layers 5 and 6 barely exist in practice; TCP/IP folds them into TLS.
 **Land on:** Whenever someone asks "NLB or ALB?", they are asking "layer 4 or layer 7?".
 
-### 12 / 43 · L4 sees IPs and ports, L7 reads the request
-**Say:** One request on screen. An L4 balancer sees the TCP/IP header: source IP and port,
-destination IP and port. That's it. It picks a backend at connection setup and shovels bytes.
-**→ 1:** An L7 balancer terminates TLS and reads the rest: method, path, `Host`, cookies,
-headers. Now it can decide per *request*, not per connection.
-**Table:** L4 balances connections, L7 balances requests — even many on one connection. L4 is
-cheap, millions of connections; L7 parses everything, so more CPU per request. NLB and
-kube-proxy on one side, ALB, Envoy, NGINX on the other.
-**Land on:** The difference isn't "faster or slower", it's *what the balancer is allowed to
-know*.
+### 12 / 50 · A packet is not a request
+**Say:** Before we can compare L4 and L7 we have to agree on what is actually on the wire.
+Seven packets arriving in order. Nothing on the wire marks where a request starts or ends.
+**→ 1:** Open one packet up. IP header, TCP header, payload. An L4 balancer reads the two
+headers — addresses and ports — and stops. It never touches the payload. Postal analogy: L3 is
+the street address, L4 is the apartment number plus "envelope 3 of 7, open in order", L7 is the
+letter inside. The postal service never reads the letter.
+**→ 2:** Here is the same traffic once somebody *has* read it: one TCP connection, opened once,
+carrying three requests. L4 chose a backend when this pipe opened. L7 chooses three times.
+**Land on:** Reassembling the stream and parsing it is real work. **That work is the whole
+difference**, and everything else follows from it.
 
-### 13 / 43 · One address, many pools
+### 13 / 50 · How an L4 balancer works
+**Say:** Watch the SYN. The balancer hashes the four-tuple, picks pod-b, and writes a row in its
+connection table. Then packets 2, 3, 4, 5 arrive — and they carry no hint about where they
+should go, so all they can do is look up the row. One decision, made once, at connection setup.
+**→ 1:** TLS. Encrypted bytes forward exactly like plain ones, because it was never going to
+read them anyway. The one L7-ish thing it gets is the SNI hostname, sent in the clear during
+the handshake — that's how an L4 balancer does per-domain routing while holding no private key.
+**→ 2:** pod-b dies mid-stream. The balancer kept no copy of the bytes and shares one
+end-to-end connection with the client, so there is nothing to re-send and nowhere to send it.
+The client gets a reset.
+**Land on:** And notice the table is *state*. Restart the balancer and every live connection
+resets with it.
+
+### 14 / 50 · How an L7 balancer works
+**Say:** Completely different machine. It finishes the handshake with the client on conn A,
+reads the whole request into memory, decides, then writes it onto its *own* connection to
+pod-a. Two TCP connections glued together by a program. Second request on the same client
+connection goes to pod-c — an L4 balancer could never do that, it already committed the pipe.
+**→ 1:** TLS is not optional here. No decryption means no HTTP to parse, so the private key and
+cert rotation move to the balancer, and the hop to the pod is plaintext unless you re-encrypt.
+**→ 2:** Now pod-b dies. The proxy still has the bytes in memory, so it writes the same request
+to pod-c on a fresh connection. The user sees one slightly slower 200.
+**Land on:** "It holds the request" is the sentence that explains retries, canaries, per-request
+metrics — everything on the L7 side of the table.
+
+### 15 / 50 · The balancer is just a program
+**Say:** Say that sentence out loud: it holds the request in memory. That means a heap, exactly
+like the services you write. NGINX, HAProxy, Envoy are Linux processes with an RSS you can read
+in `top`. An ALB is Amazon's fleet of the same thing. A mesh sidecar is Envoy in a pod next to
+yours. Each request in flight costs a buffer: 10,000 concurrent × 64 KB is 640 MB.
+**→ 1:** Which is why the limit exists — 10,000 × 10 MB is an OOM. A 10 MB upload arrives, goes
+past the limit, and the proxy switches to *streaming*: bytes pass straight through, nothing is
+kept.
+**→ 2:** And now retries are dead. Still configured, still enabled, but the copy they would
+re-send no longer exists. This is the bug people spend an afternoon on.
+**Land on:** A pure L4 balancer can live in the kernel — IPVS, eBPF at the NIC — and allocates
+nothing but a table row. **That** is the order-of-magnitude difference in cost.
+
+### 16 / 50 · Health checks
+**Say:** Both kinds of balancer have to answer "is this backend alive". Active probes on a
+timer: `GET /healthz` every 5 seconds. pod-c starts failing — one failure is not enough to act
+on, it could be a blip. Three in a row, and it's out.
+**Do the arithmetic on screen:** 5 seconds × 3 failures is up to 15 seconds of real errors
+before ejection, plus whatever was already in flight. Tighten the interval and you buy speed
+with false positives. Sane default: 5 s, 3 out, 2 back in.
+**→ 1:** Passive, or outlier detection: watch real traffic and eject on errors. Free, and it
+catches what active misses — `/healthz` cheerfully returning 200 while every real request 500s.
+Run both.
+**→ 2:** The gotcha. Put a database check inside `/healthz` and a two-second DB blip fails every
+pod at the same instant. Degraded just became 100% down. Then panic mode: below 50% healthy,
+good balancers ignore health entirely and balance across everyone, because at that point the
+signal is likelier broken than the fleet.
+**Land on:** Keep the balancer's check shallow — *is this process able to serve* — and put
+dependency checks on a separate endpoint that only pages you.
+
+### 17 / 50 · L4 vs. L7, side by side
+**Say:** Now the comparison, and every row falls out of one thing: one connection, or two. Per
+connection vs. per request. Ports vs. paths and headers. Passthrough vs. termination. Retries
+impossible vs. possible. No status codes vs. p99 per route. And roughly a 10× cost gap.
+**→ 1:** The answer in practice is usually "both". A cheap stateless L4 layer at the edge
+absorbs the connections and spreads them over a fleet of L7 proxies doing the smart routing.
+That is roughly what every hyperscaler runs, and it is the shape of slide 21.
+**Land on:** Pick L4 when it isn't HTTP or you need raw throughput and a static IP. Pick L7 when
+you want routing, retries and per-request numbers — which is most web and API traffic.
+
+### 18 / 50 · NLB and ALB in practice
+**Say:** NLB is L4, ALB is L7 — that part is easy. These four are the ones that cost people a
+day.
+**→ 1:** One: an NLB *does* terminate TLS if you give it a TLS listener. It decrypts and still
+balances by flow hash, because it never parses HTTP. Decrypting and understanding are separate
+abilities. Two: an ALB does not retry — a 5xx from your pod reaches the user.
+**→ 2:** Three: ALB defaults to round robin; least outstanding requests is the setting that
+copes with uneven request cost and it is off by default. Four: cross-zone is on and free for
+ALB, off and billed for NLB — which is how an AZ with one pod ends up taking the same traffic
+as an AZ with five.
+**Land on:** Also note NLB's algorithm is not configurable at all. Everything in section 3 about
+choosing an algorithm applies to your ALB, not your NLB.
+
+### 19 / 50 · Check yourself
+**Say:** Four questions. Take them one at a time and let the room answer before you reveal.
+**→ 1:** Retries: L7 still holds the parsed request on a connection it owns. L4 kept no copy.
+**→ 2:** Passthrough: SNI, and nothing below it.
+**→ 3:** Deep health checks: they correlate every pod to one dependency.
+**→ 4:** The 10 MB upload: past the buffer limit the proxy streams, so there is no copy to
+re-send.
+**Land on:** If those four land, you know what a balancer *can* know. The rest of the talk is
+about how it picks.
+
+### 20 / 50 · One address, many pools
 **Say:** This is what you buy with L7. One listener on 443. `/api` goes to the API pool,
 `/ws` to the socket pool, `/static` to the CDN origin — they scale separately, on different
 pod types. Canary: 5% of `/api` to v2 by weight; watch the error rate, then 25, then 100.
@@ -163,7 +253,7 @@ Internal testers send `X-Canary: true` and always get v2.
 **→ 1:** An L4 balancer can do none of this. It never sees the path. It picks a server for the
 whole connection and that's the end of its involvement.
 
-### 14 / 43 · The path on AWS EKS
+### 21 / 50 · The path on AWS EKS
 **Say:** In practice it's not one balancer, it's four hops. Route 53 picks a region. The ALB
 picks a node or pod IP. The ingress controller picks a pod. The Service, through kube-proxy,
 handles pod-to-pod calls. Four things that each have their own algorithm and their own idea of
@@ -174,7 +264,7 @@ pod IPs, the Service is only used for internal calls. And there it balances conn
 requests. Remember that when we get to gRPC.
 **Land on:** When load looks uneven, first ask *which* of these four made the decision.
 
-### 15 / 43 · Client-side balancing
+### 22 / 50 · Client-side balancing
 **Say:** For service-to-service calls you can drop the middle box. A gRPC client with
 `round_robin` plus a headless Service opens one connection per pod and spreads calls itself. A
 service mesh does the same with a sidecar next to every pod — your code calls localhost.
@@ -184,7 +274,7 @@ from a headless Service or a registry.
 **→ 2:** The cost: every client needs the pod list and has to refresh it. A stale list sends
 calls to pods that no longer exist, and now that bug lives in every service instead of one.
 
-### 16 / 43 · Who balances the balancer?
+### 23 / 50 · Who balances the balancer?
 **Say:** Everything in front of your app is now a single point of failure with a nicer name.
 Four answers. Active-passive with VRRP: a floating IP, one to three seconds to fail over, half
 your hardware idle, and split brain if both think they're primary. Active-active with ECMP or
@@ -197,11 +287,11 @@ from zero can 5xx for minutes. Client-side: no central balancer at all.
 
 # Part 2 — Global load balancing (Trúc)
 
-### 17 / 43 · Divider 02
+### 24 / 50 · Divider 02
 **Say:** Now between regions. Different problem: the thing making the decision is usually
 DNS, and DNS can't see health or load.
 
-### 18 / 43 · DNS: return several IPs and let the client pick
+### 25 / 50 · DNS: return several IPs and let the client pick
 **Say:** Cheapest possible balancing — put three A records on the name, the resolver rotates
 them. Fine until something dies. Look at the timeline: 10.0.1.12 dies at 12:00, you pull the
 record immediately, and clients keep sending to it until 12:05, because the TTL was 300
@@ -211,14 +301,14 @@ idle one.
 **Land on:** Use DNS to pick a *region*, then a real balancer inside that region to pick a
 *server*.
 
-### 19 / 43 · Architecture
+### 26 / 50 · Architecture
 **Say:** Put the whole stack together. Route 53 with latency routing and health checks, TTL
 60 seconds, picks Singapore or Tokyo. Inside a region: NLB at L4 across three AZs for cheap,
 stateless entry; an Envoy fleet doing TLS and L7 routing; then thirty services, each with a
 sidecar doing per-call gRPC balancing. Four layers, and each one exists because the layer
 above it can't see what it sees.
 
-### 20 / 43 · Losing a region
+### 27 / 50 · Losing a region
 **Say:** Singapore goes dark at ten o'clock. Health check needs three failures — thirty
 seconds. New lookups get Tokyo only. TTL expires for most resolvers at 10:01:30. A few clients
 that ignore TTLs are still hitting Singapore at 10:05. Meanwhile Tokyo's p99 goes from 90 to
@@ -226,7 +316,7 @@ that ignore TTLs are still hitting Singapore at 10:05. Meanwhile Tokyo's p99 goe
 **→ 1:** Here's the trap. Failover moves the *traffic*, not the *capacity*. If Tokyo can't
 take 100% right now, you've just turned a one-region outage into a two-region outage.
 
-### 21 / 43 · Capacity
+### 28 / 50 · Capacity
 **Say:** So size for it. Peak 200,000 req/s globally. If one region is down the survivor takes
 all of it. Measure your own node — say an Envoy node does 25,000 req/s at 60% CPU. That's
 eight nodes, times 1.5 to survive losing one AZ of three, so twelve per region, normally
@@ -241,11 +331,11 @@ watch p99 and 5xx.
 
 # Part 3 — Algorithms (Khánh)
 
-### 22 / 43 · Divider 03
+### 29 / 50 · Divider 03
 **Say:** I'm Khánh. One question for every algorithm on the next ten slides: what does the
 balancer actually look at? Order, configured capacity, live load, or who the client is.
 
-### 23 / 43 · What is a load balancing algorithm?
+### 30 / 50 · What is a load balancing algorithm?
 **Say:** First, separate two things people merge. Health checks decide which servers are
 *allowed*. The algorithm picks one *of those*, for this request, using whatever information it
 has. Static means fixed rules, blind to what servers are doing right now. Dynamic means it
@@ -255,7 +345,7 @@ connection counts → least connections, the only dynamic one. Client IP → IP 
 **Land on:** For each one ask two questions: what does it know, and what does it *ignore*? The
 ignored part is always where it breaks.
 
-### 24 / 43 · Round robin
+### 31 / 50 · Round robin
 **Say:** Next server in the list, wrap around. One counter, `i++ % N`. Default in NGINX,
 HAProxy and ALB. Watch: six requests, two each. Perfectly even — by count.
 **→ 1 (replay):** Same six requests, but now they're real: `/export` takes three seconds,
@@ -264,7 +354,7 @@ milliseconds of work and B has ten.
 **Land on:** Round robin counts requests, not work. Use it when servers are the same size and
 requests cost about the same.
 
-### 25 / 43 · Weighted round robin
+### 32 / 50 · Weighted round robin
 **Say:** Server A is three times bigger, so give it weight 3. Naive implementation walks a
 fixed list, `A A A B C` — right ratio, but A gets three in a row while B and C idle.
 **→ 1:** NGINX does it smoothly: add the weight to each server's counter, pick the max,
@@ -273,7 +363,7 @@ subtract the total. You get `A B A C A`. Same 6-2-2, no bursts.
 Set it wrong and you've configured an overload.
 **Use it for:** mixed instance sizes during a migration, or a canary split.
 
-### 26 / 43 · Least connections
+### 33 / 50 · Least connections
 **Say:** Now something that reads live state. Server B is in a GC pause — five seconds per
 request instead of one. Round robin still sends it every third request and they pile up: four
 of twelve, four stuck at once.
@@ -284,7 +374,7 @@ connections, so it gets flooded the moment it joins — that's what slow start i
 **Use it for:** request times that vary a lot, or long-lived connections — WebSockets,
 uploads, DB proxies.
 
-### 27 / 43 · IP hash
+### 34 / 50 · IP hash
 **Say:** Different goal: send the same client to the same server, with no table anywhere.
 `hash(ip) % N`. The hash values are on screen — check my arithmetic. Round one, everyone gets
 a session. Round two, same IP, same hash, same server: six of six find their session.
@@ -292,7 +382,7 @@ a session. Round two, same IP, same hash, same server: six of six find their ses
 hash. They all land on server A. And NGINX `ip_hash` only uses the first three octets of IPv4,
 so a whole /24 shares a server. Mobile users change IP and lose affinity anyway.
 
-### 28 / 43 · IP hash when servers change
+### 35 / 50 · IP hash when servers change
 **Say:** The bigger problem. Three servers, sessions in place.
 **→ 1:** Add server D. `% 3` becomes `% 4`, and most users — three quarters of them — land on
 a server that has never seen their session. Alex Xu calls this the rehashing problem, chapter
@@ -301,7 +391,7 @@ five. Every one of those is a logout.
 **→ 3:** Consistent hashing fixes the *scale* part — only about 1/N of users move. In NGINX
 that's `hash $remote_addr consistent`. There's a full walkthrough in the appendix.
 
-### 29 / 43 · Sticky sessions: stateful vs stateless
+### 36 / 50 · Sticky sessions: stateful vs stateless
 **Say:** Step back. IP hash only matters because the server is holding the session in RAM.
 That's the actual bug. Alex Xu, chapter one: with stateful servers every request from a client
 must go back to the same server — sticky sessions do that, but now adding or removing servers
@@ -313,13 +403,13 @@ DB. The web tier becomes stateless and any server can serve anyone.
 **→ 2:** Still want affinity? Use it as a *cache hint* — losing it should cost a cache miss,
 not a logout.
 
-### 30 / 43 · Algorithms, compared
+### 37 / 50 · Algorithms, compared
 **Say:** Whole section in one table. Read down the two rows that matter: only least
 connections knows current load. Only IP hash gives affinity. Nothing here does both — that's
 not an accident of this table, it's the actual state of the four classics.
 **Land on:** So pick by what your traffic needs, and be honest about what you're giving up.
 
-### 31 / 43 · How to choose
+### 38 / 50 · How to choose
 **Say:** Four questions. Whose turn is it — round robin, identical servers. Who is bigger —
 weighted, mixed sizes and canaries. Who is least busy right now — least connections, uneven
 request times. Who is this client — IP hash, when a user must stay on one server.
@@ -328,10 +418,10 @@ stateless instead. That's usually the cheaper fix.
 
 ## Appendix — only if there's time or someone asks
 
-### 32 / 43 · Divider — Beyond the four
+### 39 / 50 · Divider — Beyond the four
 **Say:** Two things worth knowing if you want to go further.
 
-### 33 / 43 · Power of two choices
+### 40 / 50 · Power of two choices
 **Say:** Scanning 200 pods for the true minimum is O(n) per request. Pick two at random,
 send to the less busy one — O(1), and you still avoid the worst pod, because a stuck pod only
 wins when it's compared with something even worse.
@@ -341,19 +431,19 @@ pairs break that up.
 **→ 2:** Near least-connections quality at round-robin cost. Envoy's `LEAST_REQUEST` does this
 by default. Good default for L7.
 
-### 34 / 43 · One slow pod, four algorithms
+### 41 / 50 · One slow pod, four algorithms
 **Say:** Simulation: 480 req/s for ten seconds into four pods, pod-d three times slower.
 Identical arrivals and identical work for all four modes — only the pick changes. Click
 through: round robin keeps feeding pod-d until its queue explodes; random is no better; least
 connections and power-of-two keep it flat. Watch the p99 readout change.
 
-### 35 / 43 · Hash-based
+### 42 / 50 · Hash-based
 **Say:** Sixty cache keys, three nodes. Add a fourth with plain `hash % 4` and most keys move
 — every red dot is a cache miss that goes to the DB. Switch to consistent hashing and only the
 keys that belong to D move, and they all move *to* D.
 **Land on:** Hash when locality matters: a per-user cache, a shard, a WebSocket room.
 
-### 36 / 43 · Consistent hashing, the ring
+### 43 / 50 · Consistent hashing, the ring
 **Say:** Nodes and keys on one ring. A key belongs to the first node clockwise.
 **→ 1:** Add D — only the keys between C and D change owner. Everything else stays put, about
 1/N moved.
@@ -364,26 +454,26 @@ keys that belong to D move, and they all move *to* D.
 
 # Part 4 — Demo: the crashed server (Khánh)
 
-### 37 / 43 · Divider 04
+### 44 / 50 · Divider 04
 **Say:** Let's make it real. Three servers, NGINX in front, and at some point I'm going to
 kill one while requests are flowing.
 
-### 38 / 43 · Setup
+### 45 / 50 · Setup
 **Say:** Three Node servers on 8001, 8002, 8003 that do nothing but say their own name — so
 every response tells you who answered. NGINX on 8000 in front. `npm start` brings all four
 up, `npm run status` shows who's alive and which algorithm is loaded.
 
-### 39 / 43 · NGINX as the balancer
+### 46 / 50 · NGINX as the balancer
 **Say:** The whole config: one `upstream` block, three servers, no algorithm line — and no
 algorithm line *means* round robin. Six curls.
 **→ 1:** 8001, 8002, 8003, then wrap around. That's the entire idea of round robin, in
 production software.
 
-### 40 / 43 · Guess first
+### 47 / 50 · Guess first
 **Say:** Before I run anything — you guess. Each of these is one line in the upstream block.
 (Take answers from the room for each row before revealing it.)
 **→ 1:** `weight=4` → `8001 8001 8002 8001 8003 8001`. Smooth weighted round robin, 4:1:1 —
-the interleaving we saw on slide 25.
+the interleaving we saw on slide 32.
 **→ 2:** `least_conn` → still round robin order, because every request finishes instantly, all
 counts tie at zero, and NGINX breaks ties with round robin. Least connections needs *slow*
 requests to differ from round robin.
@@ -392,7 +482,7 @@ office NAT problem, live.
 **→ 4:** Crash 8002 → traffic splits between 8001 and 8003, and the client sees no error at
 all. Why is the next two slides.
 
-### 41 / 43 · Live
+### 48 / 50 · Live
 **Say:** These are real requests from this slide to NGINX on 8000. Press `S` for six,
 `Shift+S` for twelve. The balancer box shows the live algorithm from `X-LB`, and every server
 NGINX tried from `X-Upstream`.
@@ -405,7 +495,7 @@ NGINX tried from `X-Upstream`.
 **If it won't connect:** the slide says `recorded` and replays a round robin — narrate that
 and keep going, don't debug on stage.
 
-### 42 / 43 · Why nobody saw the crash
+### 49 / 50 · Why nobody saw the crash
 **Say:** Here's the mechanism. Connection refused counts as a failure, so NGINX passes the
 request to the next server — `proxy_next_upstream error timeout`, and that's the default.
 The client gets one slightly slower 200 instead of a 502.
@@ -415,9 +505,9 @@ seconds, then NGINX tries it again.
 checking. NGINX only finds out when a real request fails — a real user paid for that
 discovery. Active health checks probe on a timer instead.
 **→ 3:** Try the same thing with `ip_hash` and the users who were on 8002 move to another
-server. If sessions lived in memory, they just got logged out. Which is exactly slide 29.
+server. If sessions lived in memory, they just got logged out. Which is exactly slide 36.
 
-### 43 / 43 · Thank you + Kahoot
+### 50 / 50 · Thank you + Kahoot
 **Say:** That's us. Questions first, then a short Kahoot on what the balancer knows: order,
 capacity, load, client identity. Scan the QR or go to kahoot.it — PIN is on screen.
 
@@ -425,14 +515,14 @@ capacity, load, client identity. Scan the QR or go to kahoot.it — PIN is on sc
 
 ## Questions you should expect
 
-- **"Isn't the load balancer itself a single point of failure?"** → Slide 16. Short answer:
+- **"Isn't the load balancer itself a single point of failure?"** → Slide 23. Short answer:
   yes, which is why it runs as a pair or a fleet, and why managed ones exist.
-- **"Why not just use DNS round robin?"** → Slide 18. No health, no load, and TTL means a dead
+- **"Why not just use DNS round robin?"** → Slide 25. No health, no load, and TTL means a dead
   IP keeps getting traffic for minutes.
-- **"We use gRPC and one pod gets all the load."** → Slide 14 plus 3.5: gRPC multiplexes
+- **"We use gRPC and one pod gets all the load."** → Slide 21 plus 3.5: gRPC multiplexes
   everything onto one connection, so an L4 balancer picks a pod once and never revisits.
   Balance per request at L7, or per call in the client / mesh.
-- **"Which algorithm should we use?"** → Slide 31. Start with round robin, move to least
+- **"Which algorithm should we use?"** → Slide 38. Start with round robin, move to least
   connections when request times vary, and treat sticky sessions as a smell.
-- **"How fast is failover really?"** → Slide 20: detection plus TTL plus stragglers, so
+- **"How fast is failover really?"** → Slide 27: detection plus TTL plus stragglers, so
   minutes for DNS, seconds for anycast.

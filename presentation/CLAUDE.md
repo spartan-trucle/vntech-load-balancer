@@ -89,10 +89,20 @@ Chart code lives in the same section file as its slide, in one trailing `<script
 
 - Keep the IIFE wrapper so function names don't collide between sections.
 - Only destructure the helpers actually used.
-- `window.Charts`: `el(tag, attrs, parent, text)`, `scale(d0, d1, r0, r1)`, `fmt(n, digits)`, `$(id)`, `rng(seed)` (deterministic — use it instead of `Math.random` so charts look identical on every load), `histogram({...})` (mode-switch histogram, currently unused). For a mode switch, follow the `.seg` + readout pattern in `03-algorithms.html` (the simulator and the hashing chart).
+- `window.Charts`: `el(tag, attrs, parent, text)`, `scale(d0, d1, r0, r1)`, `fmt(n, digits)`, `$(id)`, `rng(seed)` (deterministic — use it instead of `Math.random` so charts look identical on every load), `histogram({...})` (mode-switch histogram, currently unused), plus the animation trio below. For a mode switch, follow the `.seg` + readout pattern in `03-algorithms.html` (the simulator and the hashing chart).
 - Draw marks, ticks and labels from one `scale`. Set `viewBox` on the SVG rather than fixed pixel sizes.
 - Colors come from `sv-*` classes in `css/deck.css` (`sv-axis`, `sv-grid`, `sv-mark`, `sv-bar`, `sv-hot`, `sv-lbl`, `sv-lbl-sm`, `sv-tick`, …). Never hard-code colors — both themes must work.
 - Only move a helper into `charts-lib.js` when a second section needs it.
+
+### Stepped animations
+
+Sections 1 and 3 both animate, so the machinery is shared:
+
+- `clock()` — `later` / `sleep` on wall time, and `snapshot(phase, api)` swaps in a virtual clock that runs a whole phase synchronously, so print/PDF captures its end state.
+- `steps(id, widget, phases)` — binds a widget to one slide: phase *k* plays when the highest shown `data-step` is *k*, every phase replays from a clean state (so `←` works), and the ↻ button reruns the current one. Needs `#<id>-flow`, `#<id>-readout` and `#<id>-replay` on the slide, and a widget exposing `reset` / `later` / `snapshot`.
+- `scene(svg, viewBox, draw)` — for a hand-drawn picture that isn't a balancer-and-servers flow. `draw()` lays out the fixed parts once and returns the handles the phases use; anything a phase draws goes in `api.layer`, which `reset()` wipes. Return a `clear()` handle to undo changes a phase made to a fixed node.
+- Cards that slide get `class="pkt-fly"` and are moved by setting `style.transform`; call `move()` (which forces layout first) rather than assigning the transform directly, or the transition won't run.
+- `.readout b` is the deck's large numeral style. Use `<strong>` for emphasis in a readout, `<b>` only for numbers.
 
 ## Styling
 
@@ -131,7 +141,8 @@ Headless check without a browser window:
 
 ## Interactive slides
 
-- **3.2–3.6 request-flow animations** (`03-algorithms.html`, `Charts.flow()` + `drive()`): one balancer (or clients → hash box) and 3–4 servers; coins are requests. `drive()` watches the slide's `.active` class and its highest shown `data-step` and replays phase *k* from a clean state, so `→` / `←` drive the animation and the ↻ Replay button reruns the current phase. Phases: round robin (even counts → uneven work), weighted RR 3:1:1 (naive burst → NGINX smooth), least connections (round robin vs least conn with server B 5× slower), IP hash (two rounds → office NAT), IP hash when servers change (add D → B dies). IP hash uses fixed hash values shown on screen so `% N` can be checked by hand.
+- **1.2–1.6 mechanics animations** (`01-local-load-balancing.html`, `Charts.scene()` + `steps()`): 1.2 builds three stacked rows one per step (packets on a wire → the anatomy of one packet → three requests on one connection), and each phase redraws the earlier rows instantly so the picture accumulates. 1.3 walks a packet through an L4 connection table (SYN decision → TLS passthrough → the backend dying with no copy to re-send); 1.4 does the same for an L7 proxy's two connections (per-request routing → TLS termination → retry); 1.5 fills a heap with 64 KB buffers until one crosses the limit line and the proxy flips to streaming; 1.6 runs probe rounds (active ejection → passive outlier detection → a deep check taking the whole fleet out, then panic mode).
+- **3.2–3.6 request-flow animations** (`03-algorithms.html`, `Charts.flow()` + `Charts.steps()`): one balancer (or clients → hash box) and 3–4 servers; coins are requests. `steps()` watches the slide's `.active` class and its highest shown `data-step` and replays phase *k* from a clean state, so `→` / `←` drive the animation and the ↻ Replay button reruns the current phase. Phases: round robin (even counts → uneven work), weighted RR 3:1:1 (naive burst → NGINX smooth), least connections (round robin vs least conn with server B 5× slower), IP hash (two rounds → office NAT), IP hash when servers change (add D → B dies). IP hash uses fixed hash values shown on screen so `% N` can be checked by hand.
 - **4.4 live demo** (`04-demo.html`): uses `Charts.flow()` against the real NGINX in `../demo/` (`X-Upstream`, `X-LB`, `/__lb`, `/__health`). Falls back to a recorded round robin when `localhost:8000` doesn't answer. `flow()` is shared with section 3, so it lives in `charts-lib.js`.
 - **Appendix simulator** (`simulate()`): 480 req/s for 10 s into 4 pods × 4 workers, pod-d 3× slower. Arrivals and per-request work come from `rng(7)`, so every algorithm sees the same traffic; only the pick differs.
 - **Appendix hashing** (`hashChart()`): 60 keys, `hash % N` vs. a ring with 150 virtual nodes per server.

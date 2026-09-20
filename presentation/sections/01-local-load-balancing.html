@@ -3,8 +3,8 @@
   <div class="divider-num">01</div>
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
-  <p class="lead">Inside one data center: east-west traffic between services, software vs. hardware balancers, and the sidecar proxy.</p>
-  <div class="foot"><span>10 / 43</span><span>section 1 · local load balancing</span></div>
+  <p class="lead">Inside one data center: what an L4 balancer and an L7 balancer actually do to your traffic, how they check that a backend is alive, and how to choose.</p>
+  <div class="foot"><span>10 / 50</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="osi-stack">
@@ -78,44 +78,172 @@
       <li data-step="2">Layers 5 and 6 barely exist in practice — TCP/IP folds them into TLS. Every choice in this section is really "L4 or L7?".</li>
     </ul>
   </div>
-  <div class="foot"><span>11 / 43</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+  <div class="foot"><span>11 / 50</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+</section>
+
+<section class="slide" data-section="packet-vs-request">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-pipe"/></svg>1.2 · What is actually on the wire</div>
+  <h2>A packet is not a request. Turning one into the other is the whole L4 / L7 difference.</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="pkt-flow" role="img" aria-label="Packets arriving on a wire, the anatomy of one packet, and three HTTP requests sharing one TCP connection"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="pkt-replay">↻ Replay</button></div><p class="readout" id="pkt-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li>Think of the post. <span class="chip">L3</span> is the street address on the envelope: which machine.</li>
+      <li><span class="chip hot">L4</span> is the apartment number, plus "this is envelope 3 of 7, open them in order".</li>
+      <li data-step="1"><span class="chip hot">L7</span> is the letter inside. The postal service never reads it — and reading it is real work somebody has to do.</li>
+      <li data-step="2">One request can span many packets; one packet can hold the tail of one request and the head of the next. Nothing on the wire marks where a request begins.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>12 / 50</span><span>a packet is not a request</span></div>
+</section>
+
+<section class="slide" data-section="l4-mechanics">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-plug"/></svg>1.3 · How an L4 balancer works</div>
+  <h2>It chooses once, at the SYN, writes the choice in a table, then just shovels packets</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="l4-flow" role="img" aria-label="An L4 balancer picking a backend at the SYN packet and forwarding the rest through a connection table"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="l4-replay">↻ Replay</button></div><p class="readout" id="l4-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">state</span> One row per flow: <code>(src ip, src port, dst ip, dst port) → pod</code>. Packets 2..N carry no routing hint, so the table is the only memory of the choice.</li>
+      <li data-step="1"><span class="chip hot">tls</span> Encrypted bytes forward exactly like plain ones — it was never going to read them. The one L7-ish signal it gets is <code>SNI</code>, sent in the clear during the handshake, which is how L4 does per-domain routing while holding no keys.</li>
+      <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>13 / 50</span><span>l4 · one decision per connection</span></div>
+</section>
+
+<section class="slide" data-section="l7-mechanics">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-search"/></svg>1.4 · How an L7 balancer works</div>
+  <h2>It is two TCP connections glued together by a program that read your request</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="l7-flow" role="img" aria-label="An L7 proxy terminating the client connection, holding the request, and writing it to a second connection"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="l7-replay">↻ Replay</button></div><p class="readout" id="l7-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip hot">per request</span> Two requests on the same client connection can land on two different pods. An L4 balancer cannot do that — it already committed the whole pipe.</li>
+      <li data-step="1"><span class="chip">tls</span> It <b>must</b> decrypt: no plaintext, no HTTP to parse. So the private key and cert rotation move to the balancer, and the hop to the pod is plaintext unless you re-encrypt.</li>
+      <li data-step="2"><span class="chip hot">retry</span> It still holds the request in memory, so when a pod dies it writes the same bytes to another one. The client never learns anything went wrong.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>14 / 50</span><span>l7 · one decision per request</span></div>
+</section>
+
+<section class="slide" data-section="lb-is-a-program">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>1.5 · The balancer is just a program</div>
+  <h2>"Holds the request" means bytes on a heap — and that heap has a hard limit</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="prog-flow" role="img" aria-label="An L7 proxy buffering requests on its heap until a large upload passes the buffer limit"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="prog-replay">↻ Replay</button></div><p class="readout" id="prog-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li>No magic appliance. NGINX, HAProxy and Envoy are Linux processes with an RSS you can read in <code>top</code>; an ALB is Amazon's fleet of the same thing; a mesh sidecar is Envoy in a pod next to yours.</li>
+      <li data-step="1">A pure L4 balancer can live <b>in the kernel</b> — IPVS, or eBPF/XDP at the NIC. The packet never reaches userspace and nothing is allocated beyond a table row. That is the order-of-magnitude gap in cost.</li>
+      <li data-step="2"><span class="chip risk">gotcha</span> Past the buffer limit the proxy streams instead of holding, so there is no copy left. Retries stop working silently, on a balancer configured to retry.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>15 / 50</span><span>buffers · heap · why l4 is cheap</span></div>
+</section>
+
+<section class="slide" data-section="health-checks">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-pulse"/></svg>1.6 · Health checks</div>
+  <h2>The balancer has to keep asking "are you alive?" — and the answer is never instant</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="hc-flow" role="img" aria-label="Active probes ejecting a failing pod, passive outlier detection, and a deep health check taking every pod out at once"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="hc-replay">↻ Replay</button></div><p class="readout" id="hc-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">active</span> Probe on a timer. <code>interval 5s × 3 failures = ~15 s of errors</code> before ejection — plus the request already in flight. Sane default: 5 s, 3 out, 2 back in.</li>
+      <li data-step="1"><span class="chip hot">passive</span> Watch real traffic and eject on errors. Free, and it catches the case active misses: <code>/healthz</code> returns 200 while every real request 500s. Run both.</li>
+      <li data-step="2"><span class="chip risk">gotcha</span> Never check the database inside <code>/healthz</code>. A 2 s DB blip fails every pod at once and turns "degraded" into "100% down". Keep the check shallow.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>16 / 50</span><span>active · passive · flapping · panic mode</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.2 · L4 vs. L7</div>
-  <h2>An L4 balancer sees IPs and ports. An L7 balancer reads the HTTP request.</h2>
-  <div class="body" style="gap:18px;">
-    <div class="chart meter">
-      <svg viewBox="0 0 1100 150" role="img" aria-label="What an L4 and an L7 balancer can see in one request">
-        <rect x="0" y="20" width="1100" height="110" rx="10" class="sv-box"/>
-        <rect x="12" y="32" width="330" height="86" rx="8" class="sv-box-hot"/>
-        <text x="28" y="58" class="sv-hot">TCP / IP header</text>
-        <text x="28" y="84" class="sv-lbl">src 113.161.4.20:51422</text>
-        <text x="28" y="104" class="sv-lbl">dst 52.77.10.8:443</text>
-        <rect x="354" y="32" width="734" height="86" rx="8" class="sv-box"/>
-        <text x="370" y="58" class="sv-lbl-sm">payload · encrypted until TLS is terminated</text>
-        <text x="370" y="84" class="sv-lbl" data-step="1">GET /api/orders/81  Host: api.shop.vn</text>
-        <text x="370" y="104" class="sv-lbl" data-step="1">Cookie: sid=9f2…  X-Canary: true  Authorization: Bearer …</text>
-        <text x="177" y="146" text-anchor="middle" class="sv-hot">L4 stops here</text>
-        <text x="721" y="146" text-anchor="middle" class="sv-hot" data-step="1">L7 terminates TLS and reads all of it</text>
-      </svg>
-    </div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>1.7 · L4 vs. L7, side by side</div>
+  <h2>Every row below falls out of one thing: one connection, or two</h2>
+  <div class="body meter" style="justify-content:center;">
     <table class="tbl dense">
       <thead><tr><th></th><th>L4 · transport</th><th>L7 · application</th></tr></thead>
       <tbody>
-        <tr><td class="name">Balances</td><td>Connections</td><td>Requests, even many on one connection</td></tr>
-        <tr><td class="name">Can route by</td><td>IP, port</td><td>Path, host, header, cookie, method</td></tr>
-        <tr><td class="name">TLS</td><td>Passes it through</td><td>Terminates it; can re-encrypt to the pod</td></tr>
-        <tr><td class="name">Cost</td><td>Very low, millions of connections</td><td>Parses every request; more CPU per request</td></tr>
-        <tr><td class="name">Examples</td><td>AWS NLB, HAProxy <code>mode tcp</code>, kube-proxy</td><td>AWS ALB, Envoy, NGINX, HAProxy <code>mode http</code></td></tr>
+        <tr><td class="name">Decides</td><td>Once per connection, at the SYN</td><td>Once per request, many per connection</td></tr>
+        <tr><td class="name">Can see</td><td>src/dst IP, ports, TCP flags, SNI</td><td>Method, path, host, headers, cookies, body</td></tr>
+        <tr><td class="name">TLS</td><td>Passes it through; backend holds the cert</td><td>Terminates it; the balancer holds the cert</td></tr>
+        <tr><td class="name">Retries</td><td><b>Impossible</b> — kept no copy of the bytes</td><td>Yes, while the request still fits in the buffer</td></tr>
+        <tr><td class="name">Per-request metrics</td><td>None: no status codes, no latency</td><td>5xx rate, p99, per route</td></tr>
+        <tr><td class="name">Cost</td><td>Very low; can run in the kernel or on the NIC</td><td>~10× more: parse, buffer, re-originate</td></tr>
+        <tr><td class="name">Protocols</td><td>Anything over TCP/UDP — Postgres, Redis, MQTT, game UDP</td><td>Mostly the HTTP family</td></tr>
+        <tr><td class="name">On AWS</td><td>NLB · also IPVS, Katran, HAProxy <code>mode tcp</code></td><td>ALB · also Envoy, NGINX, HAProxy <code>mode http</code></td></tr>
       </tbody>
     </table>
+    <ul class="points tight" data-step="1">
+      <li><b>Most real architectures use both.</b> A cheap stateless L4 layer at the edge absorbs the connections and spreads them over a fleet of L7 proxies that do the smart routing behind it. That is roughly what every hyperscaler does.</li>
+    </ul>
   </div>
-  <div class="foot"><span>12 / 43</span><span>l4 vs. l7</span></div>
+  <div class="foot"><span>17 / 50</span><span>l4 vs. l7 · the comparison</span></div>
+</section>
+
+<section class="slide" data-section="nlb-alb-practice">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.8 · NLB and ALB in practice</div>
+  <h2>The layer mapping is the easy part. These four defaults are what actually bite.</h2>
+  <div class="body" style="gap:16px;">
+    <table class="tbl dense">
+      <thead><tr><th></th><th>NLB · L4</th><th>ALB · L7</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Algorithm</td><td>Flow hash on the 5-tuple, <b>not configurable</b></td><td>Round robin, or least outstanding requests</td></tr>
+        <tr><td class="name">Client IP</td><td>Preserved: the pod sees the real one</td><td>Replaced → read <code>X-Forwarded-For</code></td></tr>
+        <tr><td class="name">Idle timeout</td><td class="num">350 s, fixed · ~100 µs added</td><td class="num">60 s, configurable · ~1–4 ms added</td></tr>
+        <tr><td class="name">Sudden 10× spike</td><td>Absorbs it</td><td>Scales up gradually: 5xx for minutes from cold</td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight">
+      <li data-step="1"><span class="chip risk">1</span> <b>An NLB does terminate TLS</b> if you give it a TLS listener — and still balances by flow hash. Decrypting and parsing are separate abilities.</li>
+      <li data-step="1"><span class="chip risk">2</span> <b>ALB does not retry.</b> A 5xx from your pod reaches the user. Retries come from a mesh sidecar or the client.</li>
+      <li data-step="2"><span class="chip risk">3</span> <b>ALB defaults to round robin.</b> Least outstanding requests is off by default — one config change, usually worth making.</li>
+      <li data-step="2"><span class="chip risk">4</span> <b>Cross-zone is on and free for ALB, off and billed for NLB.</b> Off means an AZ with 1 pod gets as much traffic as an AZ with 5.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>18 / 50</span><span>aws · the defaults that bite</span></div>
+</section>
+
+<section class="slide" data-section="l4-l7-selfcheck">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>1.9 · Check yourself</div>
+  <h2>If you can answer these four, the rest of the talk is about which backend to pick</h2>
+  <div class="two qa" style="gap:20px; align-content:center;">
+    <div class="card">
+      <div class="k">question 1</div>
+      <div class="t">Why can an L7 balancer retry when an L4 one cannot?</div>
+      <p data-step="1">L7 still holds the parsed request, on a second connection it owns, so it writes the same bytes to another pod. L4 kept no copy and shares one end-to-end connection with the client: nothing to re-send, nowhere to send it.</p>
+    </div>
+    <div class="card">
+      <div class="k">question 2</div>
+      <div class="t">What can an L4 balancer route on if TLS is passed through untouched?</div>
+      <p data-step="2">The <code>SNI</code> hostname, which the client sends in the clear during the handshake. Per-domain routing with no private key on the balancer. Nothing below that: no path, no header, no cookie.</p>
+    </div>
+    <div class="card">
+      <div class="k">question 3</div>
+      <div class="t">Why does checking the database inside <code>/healthz</code> make outages worse?</div>
+      <p data-step="3">It ties every pod's health to one shared dependency. A brief DB hiccup fails all probes at once, the balancer ejects 100% of the fleet, and degraded becomes a total outage.</p>
+    </div>
+    <div class="card">
+      <div class="k">question 4</div>
+      <div class="t">You enabled retries on your L7 proxy. Why did a 10 MB upload still fail?</div>
+      <p data-step="4">It passed the buffer limit, so the proxy switched to streaming the body straight through. There was no copy left in memory to re-send. Retries are only as long as the buffer.</p>
+    </div>
+  </div>
+  <div class="foot"><span>19 / 50</span><span>self-check · before the algorithms</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.3 · What L7 buys you</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.10 · What L7 buys you</div>
   <h2>One address, many pools. Route by path, header, or weight.</h2>
   <div class="split code-left">
     <pre class="code"><span class="c"># NGINX-style, one listener on :443</span>
@@ -138,11 +266,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 43</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>20 / 50</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.4 · The path on AWS EKS</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.11 · The path on AWS EKS</div>
   <h2>Four hops pick a destination before a request reaches a pod</h2>
   <div class="body" style="gap:16px;">
     <div class="chart">
@@ -191,11 +319,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 43</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>21 / 50</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.5 · Client-side balancing</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.12 · Client-side balancing</div>
   <h2>For service-to-service calls, the caller can pick the backend itself and skip a hop</h2>
   <div class="split">
     <div class="chart meter">
@@ -232,11 +360,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>15 / 43</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>22 / 50</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <section class="slide" data-section="lb-spof">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.6 · Who balances the balancer?</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.13 · Who balances the balancer?</div>
   <h2>A single balancer is a single point of failure with a nicer name</h2>
   <div class="body meter" style="justify-content:center;">
     <table class="tbl">
@@ -249,5 +377,444 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>16 / 43</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>23 / 50</span><span>high availability for the balancer itself</span></div>
 </section>
+
+<script>
+(() => {
+  const { el, $, scene, steps } = window.Charts;
+
+  // ---------- shared drawing helpers for the 1.2 – 1.6 mechanics scenes ----------
+  const W = 720, H = 330;
+  const box = (p, x, y, w, h, cls) => el('rect', { x, y, width: w, height: h, rx: 10, class: cls }, p);
+  const txt = (p, x, y, cls, t, anchor) =>
+    el('text', anchor ? { x, y, class: cls, 'text-anchor': anchor } : { x, y, class: cls }, p, t);
+  const line = (p, d, cls) => el('path', { d, class: cls }, p);
+
+  // A card that slides: only its transform is animated, so the browser can keep it on one layer.
+  const card = (p, w, h, cls, label, lcls) => {
+    const g = el('g', { class: 'pkt-fly' }, p);
+    el('rect', { x: -w / 2, y: -h / 2, width: w, height: h, rx: 6, class: cls }, g);
+    if (label) txt(g, 0, 4, lcls || 'sv-lbl-sm', label, 'middle');
+    return g;
+  };
+  const put = (g, x, y) => { g.style.transform = `translate(${x}px, ${y}px)`; };
+  // Force layout first so the transition starts from where the node is, not where it was created.
+  const move = (w, g, x, y) => { if (!w.virtual()) void g.getBoundingClientRect(); put(g, x, y); };
+  const fade = (w, g) => { g.classList.add('pkt-gone'); w.later(() => g.remove(), 400); };
+
+  // ---------- 1.2 a packet is not a request ----------
+  // Three stacked rows, built up one per step: bytes on the wire, inside one packet, requests.
+  {
+    const w = scene($('pkt-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const rows = [0, 1, 2].map(() => el('g', {}, svg));
+      return { rows, clear() { rows.forEach((r) => r.replaceChildren()); } };
+    });
+
+    // row 0 — packets travelling left to right along one wire
+    async function wire(w, animate) {
+      const g = w.rows[0], y = 46;
+      txt(g, 0, 14, 'sv-lbl-sm', 'on the wire · bytes, in order');
+      line(g, `M0 ${y} H${W}`, 'sv-line-soft');
+      txt(g, 0, y + 34, 'sv-lbl-sm', 'client');
+      txt(g, W, y + 34, 'sv-lbl-sm', 'balancer', 'end');
+      for (let i = 0; i < 7; i++) {
+        const c = card(g, 78, 28, 'sv-box-hot', `pkt ${i + 1}`, 'sv-hot');
+        put(c, animate ? -50 : 60 + i * 96, y);
+        if (animate) { move(w, c, 60 + i * 96, y); await w.sleep(120); }
+      }
+      if (animate) { await w.sleep(700); w.say('Seven packets. <strong>Nothing on the wire says where a request starts or ends.</strong>'); }
+    }
+
+    // row 1 — one packet opened up: headers an L4 balancer reads, payload it never touches
+    async function anatomy(w, animate) {
+      const g = w.rows[1], y = 128, h = 58;
+      txt(g, 0, y - 8, 'sv-lbl-sm', 'inside one packet');
+      const parts = [
+        [0, 150, 'sv-box-hot', 'IP header · L3', 'src IP · dst IP'],
+        [158, 190, 'sv-box-hot', 'TCP header · L4', 'ports · seq · SYN/FIN'],
+        [356, W - 356, 'sv-box', 'payload · L7 lives here', 'could be half a header, or TLS ciphertext'],
+      ];
+      for (const [x, bw, cls, head, sub] of parts) {
+        const p = el('g', { class: 'pkt-fly' }, g);
+        box(p, x, y, bw, h, cls);
+        txt(p, x + 12, y + 22, cls === 'sv-box-hot' ? 'sv-hot' : 'sv-lbl', head);
+        txt(p, x + 12, y + 44, 'sv-lbl-sm', sub);
+        if (animate) { p.classList.add('pkt-gone'); await w.sleep(260); p.classList.remove('pkt-gone'); }
+      }
+      const b = el('g', {}, g);
+      line(b, `M0 ${y + h + 8} H348`, 'sv-hot-line');
+      txt(b, 174, y + h + 26, 'sv-hot', 'an L4 balancer reads these and stops', 'middle');
+      line(b, `M356 ${y + h + 8} H${W}`, 'sv-dash');
+      txt(b, (356 + W) / 2, y + h + 26, 'sv-lbl-sm', '…and never touches this', 'middle');
+      if (animate) { await w.sleep(500); w.say('Reading past the ports means reassembling the stream and parsing it. <strong>That work is the difference.</strong>'); }
+    }
+
+    // row 2 — one connection, three requests: what L7 sees once it has done that work
+    async function requests(w, animate) {
+      const g = w.rows[2], y = 252, h = 56;
+      txt(g, 0, y - 8, 'sv-lbl-sm', 'one TCP connection, opened once, kept for minutes');
+      box(g, 0, y, W, h, 'sv-box');
+      const names = ['GET /users', 'POST /orders', 'GET /products'];
+      for (let i = 0; i < names.length; i++) {
+        const c = card(g, 190, 32, 'sv-box-hot', names[i], 'sv-hot');
+        put(c, animate ? -110 : 110 + i * 210, y + h / 2);
+        if (animate) { move(w, c, 110 + i * 210, y + h / 2); await w.sleep(320); }
+      }
+      if (animate) {
+        await w.sleep(600);
+        w.say('<strong>L4 chose once</strong>, when this pipe opened. <strong>L7 chooses three times</strong> — once per request inside it.');
+      }
+    }
+
+    steps('pkt', w, [
+      async (w) => { await wire(w, true); },
+      async (w) => { await wire(w, false); await anatomy(w, true); },
+      async (w) => { await wire(w, false); await anatomy(w, false); await requests(w, true); },
+    ]);
+  }
+
+  // ---------- 1.3 how an L4 balancer works ----------
+  {
+    const PODS = ['pod-a', 'pod-b', 'pod-c'];
+    const w = scene($('l4-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      box(fixed, 0, 130, 108, 70, 'sv-box');
+      txt(fixed, 54, 160, 'sv-lbl', 'client', 'middle');
+      txt(fixed, 54, 180, 'sv-lbl-sm', '113.161.4.20', 'middle');
+      const lb = box(fixed, 190, 96, 250, 138, 'sv-box-hot');
+      txt(fixed, 206, 124, 'sv-hot', 'L4 balancer');
+      txt(fixed, 206, 148, 'sv-lbl-sm', 'connection table');
+      const rowBox = box(fixed, 206, 158, 218, 34, 'sv-box');
+      const row = txt(fixed, 216, 180, 'sv-code', '');
+      const note = txt(fixed, 206, 214, 'sv-lbl-sm', '');
+      const pods = PODS.map((name, i) => {
+        const y = 30 + i * 108;
+        const g = el('g', {}, fixed);
+        const b = box(g, 500, y, 220, 64, 'sv-box');
+        txt(g, 516, y + 28, 'sv-lbl', name);
+        const sub = txt(g, 516, y + 48, 'sv-lbl-sm', '');
+        line(fixed, `M440 165 C468 165 476 ${y + 32} 498 ${y + 32}`, 'sv-line-soft');
+        return { y: y + 32, b, sub };
+      });
+      return {
+        lb, row, rowBox, note, pods,
+        clear() {
+          row.textContent = ''; note.textContent = '';
+          rowBox.setAttribute('class', 'sv-box');
+          pods.forEach((p) => { p.b.setAttribute('class', 'sv-box'); p.sub.textContent = ''; });
+        },
+      };
+    });
+
+    // one packet: client → balancer → pod, with the table row flashing as it is consulted
+    async function hop(w, label, cls, target, { decide = false } = {}) {
+      const c = card(w.layer, 84, 28, cls, label, cls === 'sv-box-risk' ? 'sv-risk' : 'sv-hot');
+      put(c, 60, 165);
+      move(w, c, 300, 165);
+      await w.sleep(420);
+      if (decide) { w.note.textContent = 'hash 4-tuple → pod-b · write row'; await w.sleep(700); }
+      w.rowBox.setAttribute('class', 'sv-box-hot');
+      w.later(() => w.rowBox.setAttribute('class', 'sv-box'), 400);
+      move(w, c, 592, w.pods[target].y);
+      await w.sleep(420);
+      fade(w, c);
+    }
+
+    steps('l4', w, [
+      async (w) => {
+        w.pods[1].b.setAttribute('class', 'sv-box-hot');
+        await hop(w, 'SYN', 'sv-box-hot', 1, { decide: true });
+        w.row.textContent = ':51422 → pod-b';
+        w.pods[1].sub.textContent = 'this whole connection';
+        w.say('<strong>One decision, at the SYN.</strong> The choice is now a row in a table.');
+        for (let i = 2; i <= 5; i++) { await hop(w, `pkt ${i}`, 'sv-box', 1); }
+        w.say('Packets 2..N carry no hint about where to go. <strong>They just follow the row.</strong>');
+      },
+      async (w) => {
+        w.row.textContent = ':51422 → pod-b';
+        w.pods[1].b.setAttribute('class', 'sv-box-hot');
+        w.note.textContent = 'SNI: api.shop.vn ← all it can read';
+        await hop(w, '🔒 TLS', 'sv-box', 1);
+        await hop(w, '🔒 TLS', 'sv-box', 1);
+        w.say('Encrypted bytes forward <strong>exactly like plain ones</strong> — it was never going to read them anyway.');
+      },
+      async (w) => {
+        w.row.textContent = ':51422 → pod-b';
+        w.pods[1].b.setAttribute('class', 'sv-box-hot');
+        await hop(w, 'pkt 6', 'sv-box', 1);
+        w.pods[1].b.setAttribute('class', 'sv-box-risk');
+        w.pods[1].sub.textContent = 'died mid-stream';
+        w.note.textContent = 'no copy kept · nothing to re-send';
+        await w.sleep(400);
+        const c = card(w.layer, 84, 28, 'sv-box-risk', 'pkt 7', 'sv-risk');
+        put(c, 60, 165); move(w, c, 300, 165);
+        await w.sleep(600);
+        w.rowBox.setAttribute('class', 'sv-box-risk');
+        w.row.textContent = ':51422 → ✗';
+        move(w, c, 60, 165);
+        await w.sleep(500);
+        w.say('The client gets a <strong>connection reset</strong>. Recovery is entirely the client’s problem.');
+      },
+    ]);
+  }
+
+  // ---------- 1.4 how an L7 balancer works ----------
+  {
+    const PODS = ['pod-a', 'pod-b', 'pod-c'];
+    const w = scene($('l7-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      box(fixed, 0, 130, 100, 70, 'sv-box');
+      txt(fixed, 50, 170, 'sv-lbl', 'client', 'middle');
+      box(fixed, 196, 88, 236, 154, 'sv-box-hot');
+      txt(fixed, 212, 116, 'sv-hot', 'L7 proxy');
+      const state = txt(fixed, 212, 138, 'sv-lbl-sm', '');
+      const slotBox = box(fixed, 212, 150, 204, 44, 'sv-box');
+      const slot = txt(fixed, 222, 177, 'sv-code', '');
+      const note = txt(fixed, 212, 222, 'sv-lbl-sm', '');
+      line(fixed, 'M102 165 H194', 'sv-line-soft');
+      txt(fixed, 148, 152, 'sv-lbl-sm', 'conn A', 'middle');
+      const pods = PODS.map((name, i) => {
+        const y = 30 + i * 108;
+        const g = el('g', {}, fixed);
+        const b = box(g, 500, y, 220, 64, 'sv-box');
+        txt(g, 516, y + 28, 'sv-lbl', name);
+        const sub = txt(g, 516, y + 48, 'sv-lbl-sm', '');
+        line(fixed, `M434 165 C464 165 472 ${y + 32} 498 ${y + 32}`, 'sv-line-soft');
+        return { y: y + 32, b, sub };
+      });
+      txt(fixed, 466, 152, 'sv-lbl-sm', 'conn B', 'middle');
+      return {
+        state, slot, slotBox, note, pods,
+        clear() {
+          state.textContent = ''; slot.textContent = ''; note.textContent = '';
+          slotBox.setAttribute('class', 'sv-box');
+          pods.forEach((p) => { p.b.setAttribute('class', 'sv-box'); p.sub.textContent = ''; });
+        },
+      };
+    });
+
+    // a request travels conn A → the proxy's memory → conn B → a pod, and the reply comes back
+    async function request(w, label, target, { hold = null, reply = '200' } = {}) {
+      const a = card(w.layer, 96, 28, 'sv-box-hot', label, 'sv-hot');
+      put(a, 50, 165); move(w, a, 300, 165);
+      await w.sleep(450);
+      a.remove();
+      w.slotBox.setAttribute('class', 'sv-box-hot');
+      w.slot.textContent = hold || label;
+      await w.sleep(450);
+      const b = card(w.layer, 96, 28, 'sv-box-hot', label, 'sv-hot');
+      put(b, 314, 165); move(w, b, 592, w.pods[target].y);
+      w.pods[target].b.setAttribute('class', 'sv-box-hot');
+      await w.sleep(500);
+      if (reply) {
+        fade(w, b);
+        w.pods[target].sub.textContent = reply;
+        w.slotBox.setAttribute('class', 'sv-box');
+        w.slot.textContent = '';
+      }
+      return b;
+    }
+
+    steps('l7', w, [
+      async (w) => {
+        w.state.textContent = 'reads the request into memory';
+        await request(w, 'GET /orders/81', 0);
+        w.say('It finished the handshake, read the request, <strong>then opened its own connection</strong> to pod-a.');
+        await w.sleep(300);
+        await request(w, 'POST /pay', 2);
+        w.note.textContent = 'same conn A · different pod';
+        w.say('Second request, <strong>same client connection, different pod</strong>. An L4 balancer already committed the whole pipe.');
+      },
+      async (w) => {
+        w.state.textContent = 'TLS terminated here · the cert lives here';
+        const a = card(w.layer, 96, 28, 'sv-box', '🔒 ciphertext');
+        put(a, 50, 165); move(w, a, 300, 165);
+        await w.sleep(500); a.remove();
+        w.slotBox.setAttribute('class', 'sv-box-hot');
+        w.slot.textContent = 'GET /orders/81';
+        w.note.textContent = 'conn B: plaintext unless re-encrypted';
+        await w.sleep(400);
+        await request(w, 'GET /orders/81', 0, { hold: 'GET /orders/81' });
+        w.say('No decryption, <strong>no HTTP to parse</strong>. So the private key and cert rotation move to the balancer.');
+      },
+      async (w) => {
+        w.state.textContent = 'still holding the request';
+        const b = await request(w, 'GET /orders/81', 1, { reply: null });
+        w.pods[1].b.setAttribute('class', 'sv-box-risk');
+        w.pods[1].sub.textContent = 'dead';
+        b.classList.add('pkt-gone');
+        w.later(() => b.remove(), 400);
+        await w.sleep(500);
+        w.say('pod-b died. But <strong>the proxy still has the bytes</strong>.');
+        await w.sleep(400);
+        await request(w, 'GET /orders/81', 2);
+        w.note.textContent = 'retried on a fresh conn B';
+        w.say('Same request, written to pod-c on a new connection. <strong>The client never learns anything went wrong.</strong>');
+      },
+    ]);
+  }
+
+  // ---------- 1.5 the balancer is just a program ----------
+  {
+    const CELLS = 8, CW = 74, CH = 40, CX = 36, CY = 150;
+    const w = scene($('prog-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      box(fixed, 0, 60, W, 210, 'sv-box');
+      txt(fixed, 20, 40, 'sv-lbl', 'envoy · one Linux process');
+      const rss = txt(fixed, W, 40, 'sv-hot', '', 'end');
+      txt(fixed, 20, 92, 'sv-lbl-sm', 'heap · one buffer per request in flight');
+      const cells = [];
+      for (let i = 0; i < CELLS; i++) {
+        const x = CX + i * (CW + 8);
+        cells.push({ x: x + CW / 2, box: box(fixed, x, CY, CW, CH, 'sv-box'), lbl: txt(fixed, x + CW / 2, CY + 25, 'sv-lbl-sm', '', 'middle') });
+      }
+      // a buffer past the limit is drawn tall enough to cross the limit line
+      const over = (c, on) => {
+        c.box.setAttribute('y', on ? CY - 22 : CY);
+        c.box.setAttribute('height', on ? CH + 52 : CH);
+      };
+      line(fixed, `M20 ${CY + CH + 22} H${W - 20}`, 'sv-limit');
+      txt(fixed, 20, CY + CH + 42, 'sv-risk', 'buffer limit · 64 KB per request');
+      const mode = txt(fixed, 20, CY + CH + 74, 'sv-lbl-sm', '');
+      return {
+        rss, cells, mode, over,
+        clear() {
+          rss.textContent = ''; mode.textContent = '';
+          cells.forEach((c) => { c.box.setAttribute('class', 'sv-box'); c.lbl.textContent = ''; over(c, false); });
+        },
+      };
+    });
+
+    steps('prog', w, [
+      async (w) => {
+        w.mode.textContent = 'mode: buffering — a copy of every request is held';
+        for (let i = 0; i < CELLS; i++) {
+          w.cells[i].box.setAttribute('class', 'sv-box-hot');
+          w.cells[i].lbl.textContent = '64 KB';
+          w.rss.textContent = `${(i + 1) * 8} K requests in flight · ${(i + 1) * 512} MB`;
+          await w.sleep(280);
+        }
+        w.say('"Holds the request" is literal: <strong>read socket A into memory, decide, write socket B</strong>. Same as your own code.');
+      },
+      async (w) => {
+        w.mode.textContent = 'mode: buffering';
+        for (let i = 0; i < CELLS - 1; i++) { w.cells[i].box.setAttribute('class', 'sv-box-hot'); w.cells[i].lbl.textContent = '64 KB'; }
+        w.rss.textContent = '56 K requests in flight · 3.6 GB';
+        await w.sleep(500);
+        const c = w.cells[CELLS - 1];
+        c.box.setAttribute('class', 'sv-box-risk');
+        w.over(c, true);
+        c.lbl.textContent = '10 MB';
+        w.say('One 10 MB upload arrives. <strong>10,000 × 10 MB would be an OOM</strong>, so the limit exists.');
+        await w.sleep(900);
+        c.lbl.textContent = 'streaming';
+        w.mode.textContent = 'mode: streaming — bytes pass straight through, nothing is kept';
+        w.say('Past the limit it <strong>stops keeping a copy</strong> and streams the body through as it arrives.');
+      },
+      async (w) => {
+        for (let i = 0; i < CELLS - 1; i++) { w.cells[i].box.setAttribute('class', 'sv-box-hot'); w.cells[i].lbl.textContent = '64 KB'; }
+        const c = w.cells[CELLS - 1];
+        c.box.setAttribute('class', 'sv-box-risk'); w.over(c, true); c.lbl.textContent = 'streaming';
+        w.mode.textContent = 'mode: streaming · retry_on: 5xx, reset · the pod dies mid-upload';
+        w.rss.textContent = '56 K requests in flight · 3.6 GB';
+        await w.sleep(700);
+        const r = card(w.layer, 150, 30, 'sv-box-risk', 'retry → nothing to send', 'sv-risk');
+        put(r, W / 2, CY + CH + 100);
+        w.say('Retries are configured. They still fail: <strong>the copy they would re-send no longer exists</strong>.');
+      },
+    ]);
+  }
+
+  // ---------- 1.6 health checks ----------
+  {
+    const PODS = ['pod-a', 'pod-b', 'pod-c'];
+    const w = scene($('hc-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      box(fixed, 0, 120, 200, 90, 'sv-box-hot');
+      txt(fixed, 16, 150, 'sv-hot', 'balancer');
+      const clock = txt(fixed, 16, 176, 'sv-code', 't = 0 s');
+      const healthy = txt(fixed, 16, 198, 'sv-lbl-sm', '3 / 3 healthy');
+      const pods = PODS.map((name, i) => {
+        const y = 24 + i * 106;
+        const g = el('g', {}, fixed);
+        const b = box(g, 330, y, 250, 72, 'sv-box');
+        txt(g, 348, y + 30, 'sv-lbl', name);
+        const sub = txt(g, 348, y + 52, 'sv-lbl-sm', '');
+        const marks = txt(g, 564, y + 30, 'sv-hot', '', 'end');
+        line(fixed, `M202 165 C258 165 268 ${y + 36} 328 ${y + 36}`, 'sv-line-soft');
+        return { y: y + 36, b, sub, marks, hits: '' };
+      });
+      return {
+        clock, healthy, pods,
+        clear() {
+          clock.textContent = 't = 0 s'; healthy.textContent = '3 / 3 healthy';
+          pods.forEach((p) => { p.b.setAttribute('class', 'sv-box'); p.sub.textContent = ''; p.marks.textContent = ''; p.hits = ''; });
+        },
+      };
+    });
+
+    // one probe round: a GET /healthz card reaches every pod and comes back pass or fail
+    async function probe(w, failing, label) {
+      for (const [i, p] of w.pods.entries()) {
+        const c = card(w.layer, 116, 26, 'sv-box', label || 'GET /healthz');
+        put(c, 170, 165); move(w, c, 424, p.y);
+        w.later(() => {
+          const ok = !failing.includes(i);
+          p.hits += ok ? '✓' : '✗';
+          p.marks.textContent = p.hits;
+          p.marks.setAttribute('class', ok ? 'sv-hot' : 'sv-risk');
+          fade(w, c);
+        }, 430);
+      }
+      await w.sleep(700);
+    }
+
+    steps('hc', w, [
+      async (w) => {
+        for (let t = 0; t < 5; t++) {
+          w.clock.textContent = `t = ${t * 5} s`;
+          await probe(w, t >= 2 ? [2] : []);
+          if (t === 1) w.say('Every 5 seconds, a probe to each pod. All green.');
+          if (t === 2) w.say('pod-c starts failing. <strong>One failure is not enough to act on</strong> — it could be a blip.');
+        }
+        w.pods[2].b.setAttribute('class', 'sv-box-risk');
+        w.pods[2].sub.textContent = 'ejected · 3 failures in a row';
+        w.healthy.textContent = '2 / 3 healthy';
+        w.say('<strong>5 s × 3 = up to 15 seconds of real errors</strong> before it is out. Tighten the interval and you trade false positives for speed.');
+      },
+      async (w) => {
+        w.clock.textContent = 'probes green';
+        w.pods[2].sub.textContent = '/healthz says 200';
+        await probe(w, []);
+        w.say('Active probes are all green. <strong>But the probe path is not the real request path.</strong>');
+        await w.sleep(400);
+        for (let t = 0; t < 3; t++) {
+          const c = card(w.layer, 116, 26, 'sv-box-risk', 'GET /orders → 500', 'sv-risk');
+          put(c, 170, 165); move(w, c, 424, w.pods[2].y);
+          await w.sleep(400); fade(w, c);
+        }
+        w.pods[2].b.setAttribute('class', 'sv-box-risk');
+        w.pods[2].sub.textContent = 'ejected by outlier detection';
+        w.healthy.textContent = '2 / 3 healthy';
+        w.say('<strong>Passive</strong> watches real traffic instead. It costs nothing — but you learn by hurting users first.');
+      },
+      async (w) => {
+        w.clock.textContent = 'deep check';
+        w.pods.forEach((p) => { p.sub.textContent = '/healthz also pings the DB'; });
+        await probe(w, [], 'GET /healthz');
+        await w.sleep(300);
+        w.say('The database hiccups for two seconds…');
+        await probe(w, [0, 1, 2]);
+        w.pods.forEach((p) => { p.b.setAttribute('class', 'sv-box-risk'); p.sub.textContent = 'unhealthy'; });
+        w.healthy.textContent = '0 / 3 healthy';
+        w.say('<strong>Every pod fails the same probe at the same instant.</strong> Degraded just became 100% down.');
+        await w.sleep(1100);
+        w.pods.forEach((p) => { p.b.setAttribute('class', 'sv-box-hot'); p.sub.textContent = 'serving anyway'; });
+        w.healthy.textContent = 'panic · health ignored';
+        w.say('Which is why good balancers <strong>give up on health below 50%</strong>: the signal is likelier broken than the whole fleet.');
+      },
+    ]);
+  }
+})();
+</script>
