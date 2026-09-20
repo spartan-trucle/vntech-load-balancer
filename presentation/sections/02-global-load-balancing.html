@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 2</div>
   <h2>Global load balancing</h2>
   <p class="lead">Between regions and continents. A local balancer picks a backend for traffic that already reached it; a global one has to change where the client sends traffic in the first place.</p>
-  <div class="foot"><span>23 / 55</span><span>section 2 · global load balancing</span></div>
+  <div class="foot"><span>22 / 54</span><span>section 2 · global load balancing</span></div>
 </section>
 
 <section class="slide" data-section="local-cant-fix">
@@ -21,27 +21,78 @@
       <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
-  <div class="foot"><span>24 / 55</span><span>the two problems with no in-region answer</span></div>
+  <div class="foot"><span>23 / 54</span><span>the two problems with no in-region answer</span></div>
 </section>
 
 <section class="slide" data-section="three-levers">
   <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>2.2 · The three levers</div>
   <h2>A global balancer is not a box you put traffic through. It makes the client choose.</h2>
-  <div class="body meter" style="justify-content:center; gap:20px;">
-    <table class="tbl">
+  <div class="body" style="gap:14px;">
+    <table class="tbl compact">
       <thead><tr><th>Lever</th><th>What it actually does</th><th>When the choice happens</th></tr></thead>
       <tbody>
-        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td>Your nameserver hands back a different address depending on where the user is and which regions are healthy</td><td class="num">before connecting</td></tr>
-        <tr><td class="name">Routing<span>anycast · BGP</span></td><td>The same IP is announced from many locations, and the internet's routing system delivers each user to the nearest one</td><td class="num">during connecting</td></tr>
+        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td>Your nameserver answers with a different address per user location and region health</td><td class="num">before connecting</td></tr>
+        <tr><td class="name">Routing<span>anycast · BGP</span></td><td>One IP announced from many places; the internet's routing picks the nearest</td><td class="num">during connecting</td></tr>
         <tr><td class="name">Redirection<span>HTTP 302</span></td><td>The app answers with a redirect to a region-specific hostname</td><td class="num">after connecting</td></tr>
       </tbody>
     </table>
+
+    <div class="chart meter" data-step="1">
+      <svg viewBox="0 0 1160 142" role="img" aria-label="The same request at three moments: asking DNS before connecting, the network choosing a PoP during connecting, and a 302 redirect after connecting">
+        <defs>
+          <marker id="arrow-lv" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker>
+        </defs>
+
+        <!-- 1 · before connecting -->
+        <rect x="0" y="0" width="368" height="142" rx="10" class="sv-box"/>
+        <text x="16" y="26" class="sv-hot">① before connecting</text>
+        <text x="16" y="46" class="sv-lbl-sm">no connection exists yet</text>
+        <rect x="16" y="62" width="76" height="34" rx="7" class="sv-box-hot"/>
+        <text x="54" y="84" text-anchor="middle" class="sv-lbl-sm">user</text>
+        <path d="M94 72 H210" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <text x="152" y="66" text-anchor="middle" class="sv-lbl-sm">api.shop.vn ?</text>
+        <rect x="216" y="62" width="76" height="34" rx="7" class="sv-box"/>
+        <text x="254" y="84" text-anchor="middle" class="sv-lbl-sm">DNS</text>
+        <path d="M214 90 H96" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <text x="152" y="110" text-anchor="middle" class="sv-hot">13.250.4.7</text>
+        <text x="16" y="130" class="sv-lbl-sm">the answer decides the region</text>
+
+        <!-- 2 · during connecting -->
+        <rect x="396" y="0" width="368" height="142" rx="10" class="sv-box"/>
+        <text x="412" y="26" class="sv-hot">② during connecting</text>
+        <text x="412" y="46" class="sv-lbl-sm">one address, many doors</text>
+        <rect x="412" y="66" width="76" height="34" rx="7" class="sv-box-hot"/>
+        <text x="450" y="88" text-anchor="middle" class="sv-lbl-sm">user</text>
+        <text x="450" y="116" text-anchor="middle" class="sv-hot">203.0.113.9</text>
+        <path d="M490 78 C540 78 546 62 596 62" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <path d="M490 88 C540 88 546 106 596 106" class="sv-line-soft" marker-end="url(#arrow-lv)"/>
+        <rect x="602" y="46" width="146" height="32" rx="7" class="sv-box-hot"/>
+        <text x="675" y="67" text-anchor="middle" class="sv-lbl-sm">PoP Singapore</text>
+        <rect x="602" y="90" width="146" height="32" rx="7" class="sv-box"/>
+        <text x="675" y="111" text-anchor="middle" class="sv-lbl-sm">PoP Frankfurt</text>
+        <text x="412" y="134" class="sv-lbl-sm">the network picks, not you</text>
+
+        <!-- 3 · after connecting -->
+        <rect x="792" y="0" width="368" height="142" rx="10" class="sv-box"/>
+        <text x="808" y="26" class="sv-hot">③ after connecting</text>
+        <text x="808" y="46" class="sv-lbl-sm">already talking to a server</text>
+        <rect x="808" y="62" width="76" height="34" rx="7" class="sv-box-hot"/>
+        <text x="846" y="84" text-anchor="middle" class="sv-lbl-sm">user</text>
+        <path d="M886 72 H1002" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <text x="944" y="66" text-anchor="middle" class="sv-lbl-sm">GET /</text>
+        <rect x="1008" y="62" width="136" height="34" rx="7" class="sv-box"/>
+        <text x="1076" y="84" text-anchor="middle" class="sv-lbl-sm">nearest server</text>
+        <path d="M1006 90 H888" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <text x="944" y="110" text-anchor="middle" class="sv-risk">302 → sg.shop.vn</text>
+        <text x="808" y="130" class="sv-risk">start over · +1 full round trip</text>
+      </svg>
+    </div>
+
     <ul class="points tight">
-      <li>A local balancer is a proxy <b>on the data path</b>: the client already sent traffic to it. A global balancer has to influence the decision <b>before any connection exists</b>.</li>
-      <li data-step="1">Redirection costs a whole extra round trip and is rarely used. Everything else in global load balancing is lever 1, lever 2, or both together.</li>
+      <li>A local balancer is already <b>on the data path</b>. A global one has to act <b>before the connection exists</b> — so ③ is rare, and real systems use ① and ②.</li>
     </ul>
   </div>
-  <div class="foot"><span>25 / 55</span><span>name resolution · routing · redirection</span></div>
+  <div class="foot"><span>24 / 54</span><span>name resolution · routing · redirection</span></div>
 </section>
 
 <section class="slide" data-section="gslb-dns">
@@ -58,7 +109,7 @@
       <li data-step="2"><span class="chip risk">omission</span> It never sees <b>load</b>. A region that is healthy but saturated keeps its full share, because a health check answers "is it up", not "can it take more".</li>
     </ul>
   </div>
-  <div class="foot"><span>26 / 55</span><span>gslb · one hostname, many answers</span></div>
+  <div class="foot"><span>25 / 54</span><span>gslb · one hostname, many answers</span></div>
 </section>
 
 <section class="slide" data-section="dns-stale">
@@ -75,7 +126,7 @@
       <li data-step="2"><span class="chip ok">do</span> Make the slowness harmless. Never cut the old address off: let it proxy onward, or answer <code>503</code> + <code>Retry-After</code>. Users can see <b>zero errors</b> during a failover that still takes five minutes.</li>
     </ul>
   </div>
-  <div class="foot"><span>27 / 55</span><span>ttl · caching layers · the failover formula</span></div>
+  <div class="foot"><span>26 / 54</span><span>ttl · caching layers · the failover formula</span></div>
 </section>
 
 <section class="slide" data-section="anycast">
@@ -92,7 +143,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN, address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 55</span><span>anycast · bgp · withdraw to fail over</span></div>
+  <div class="foot"><span>27 / 54</span><span>anycast · bgp · withdraw to fail over</span></div>
 </section>
 
 <section class="slide" data-section="edge-proxy">
@@ -109,7 +160,7 @@
       <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>29 / 55</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+  <div class="foot"><span>28 / 54</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
 </section>
 
 <section class="slide" data-section="global-compare">
@@ -132,7 +183,7 @@
       <li data-step="2"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>30 / 55</span><span>comparing the three levers</span></div>
+  <div class="foot"><span>29 / 54</span><span>comparing the three levers</span></div>
 </section>
 
 <section class="slide" data-section="global-selfcheck">
@@ -155,7 +206,7 @@
       <p data-step="3">Because the client's target never changes. DNS needs every client to re-resolve, so you wait out detection <i>plus</i> TTL <i>plus</i> whatever the client caches on its own. Anycast keeps the same IP and changes the <b>route</b> to it — a BGP withdrawal reconverges in seconds and no client learns anything new.</p>
     </div>
   </div>
-  <div class="foot"><span>31 / 55</span><span>self-check · global</span></div>
+  <div class="foot"><span>30 / 54</span><span>self-check · global</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
@@ -190,7 +241,7 @@
       </g>
     </svg>
   </div>
-  <div class="foot"><span>32 / 55</span><span>system design · architecture</span></div>
+  <div class="foot"><span>31 / 54</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
@@ -208,7 +259,7 @@
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>33 / 55</span><span>system design · capacity</span></div>
+  <div class="foot"><span>32 / 54</span><span>system design · capacity</span></div>
 </section>
 
 <script>
@@ -239,26 +290,71 @@
       return { rows, clear() { rows.forEach((r) => r.replaceChildren()); } };
     });
 
-    // row 0 — one region, with the thing that is supposed to route around failure sitting inside it
-    async function domain(w, animate) {
+    // row 0 — the balancer routing around a dead pod, then dying with the region itself
+    function region(w) {
       const g = w.rows[0];
-      txt(g, 0, 14, 'sv-lbl-sm', 'one region · us-east-1');
-      const region = box(g, 0, 24, 420, 96, 'sv-box');
-      const alb = box(g, 18, 40, 150, 64, 'sv-box-hot');
-      txt(g, 34, 66, 'sv-hot', 'ALB');
-      txt(g, 34, 86, 'sv-lbl-sm', 'picks a pod');
-      const pods = box(g, 184, 40, 218, 64, 'sv-box');
-      txt(g, 200, 66, 'sv-lbl', '3 AZs of pods');
-      const note = txt(g, 440, 78, 'sv-lbl-sm', '');
-      if (!animate) { region.setAttribute('class', 'sv-box-risk'); alb.setAttribute('class', 'sv-box-risk'); pods.setAttribute('class', 'sv-box-risk'); note.textContent = 'nothing in here is left to route around it'; return; }
+      txt(g, 0, 12, 'sv-lbl-sm', 'one region · us-east-1');
+      box(g, 0, 58, 86, 44, 'sv-box');
+      txt(g, 43, 85, 'sv-lbl-sm', 'user', 'middle');
+      const wall = box(g, 110, 22, 360, 124, 'sv-box');
+      const alb = box(g, 126, 58, 110, 52, 'sv-box-hot');
+      txt(g, 181, 82, 'sv-hot', 'ALB', 'middle');
+      txt(g, 181, 100, 'sv-lbl-sm', 'picks a pod', 'middle');
+      line(g, 'M88 80 H124', 'sv-line-soft');
+      const pods = ['pod-a', 'pod-b', 'pod-c'].map((name, i) => {
+        const y = 38 + i * 34;
+        const b = box(g, 252, y, 200, 28, 'sv-box');
+        txt(g, 266, y + 19, 'sv-lbl-sm', name);
+        const st = txt(g, 438, y + 19, 'sv-lbl-sm', '', 'end');
+        line(g, `M238 84 C258 84 244 ${y + 14} 250 ${y + 14}`, 'sv-line-soft');
+        return { y: y + 14, b, st };
+      });
+      const note = txt(g, 486, 76, 'sv-hot', '');
+      const note2 = txt(g, 486, 96, 'sv-lbl-sm', '');
+      return { wall, alb, pods, note, note2 };
+    }
+
+    // one request: user → ALB → pod, and back
+    async function call(w, r, i, { ok = true } = {}) {
+      const c = card(w.layer, 80, 24, ok ? 'sv-box-hot' : 'sv-box-risk', 'GET /', ok ? 'sv-hot' : 'sv-risk');
+      put(c, 43, 80); move(w, c, 181, 84);
+      await w.sleep(380);
+      move(w, c, 352, r.pods[i].y);
+      await w.sleep(380);
+      r.pods[i].st.textContent = '200';
+      r.pods[i].st.setAttribute('class', 'sv-hot');
+      fade(w, c);
+    }
+
+    async function domain(w, animate) {
+      const r = region(w);
+      const dead = () => {
+        r.wall.setAttribute('class', 'sv-box-risk');
+        r.alb.setAttribute('class', 'sv-box-risk');
+        r.pods.forEach((p) => { p.b.setAttribute('class', 'sv-box-risk'); p.st.textContent = ''; });
+        r.note.textContent = 'the ALB died with the region';
+        r.note2.textContent = 'nothing inside can route around that';
+      };
+      if (!animate) { dead(); return; }
+      await call(w, r, 1);
+      w.say('Normal day. The balancer picks a pod, the user gets a 200.');
+      await w.sleep(300);
+      r.pods[1].b.setAttribute('class', 'sv-box-risk');
+      r.pods[1].st.textContent = 'dead';
+      r.pods[1].st.setAttribute('class', 'sv-risk');
+      await w.sleep(500);
+      await call(w, r, 2);
+      w.say('pod-b dies and the balancer <strong>routes around it</strong>. That is the whole job.');
       await w.sleep(700);
-      region.setAttribute('class', 'sv-box-risk');
-      pods.setAttribute('class', 'sv-box-risk');
-      note.textContent = 'region loses its control plane';
-      await w.sleep(800);
-      alb.setAttribute('class', 'sv-box-risk');
-      note.textContent = 'nothing in here is left to route around it';
-      w.say('The balancer is <strong>inside the failure domain it protects</strong>. It cannot fail over itself.');
+      dead();
+      // the request now has nowhere to land, and nobody left to redirect it
+      const c = card(w.layer, 80, 24, 'sv-box-risk', 'GET /', 'sv-risk');
+      put(c, 43, 80); move(w, c, 128, 80);
+      await w.sleep(400);
+      move(w, c, 43, 80);
+      await w.sleep(400);
+      fade(w, c);
+      w.say('Now the whole region goes. <strong>The balancer went with it</strong> — it cannot route around itself.');
     }
 
     // row 1 — three round trips before your code runs

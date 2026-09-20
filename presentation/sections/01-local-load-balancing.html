@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: what an L4 balancer and an L7 balancer actually do to your traffic, how they check that a backend is alive, and how to choose.</p>
-  <div class="foot"><span>10 / 55</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>10 / 54</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="osi-stack">
@@ -78,7 +78,7 @@
       <li data-step="2">Layers 5 and 6 barely exist in practice — TCP/IP folds them into TLS. Every choice in this section is really "L4 or L7?".</li>
     </ul>
   </div>
-  <div class="foot"><span>11 / 55</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+  <div class="foot"><span>11 / 54</span><span>osi model · l4 = nlb, l7 = alb</span></div>
 </section>
 
 <section class="slide" data-section="packet-vs-request">
@@ -96,7 +96,7 @@
       <li data-step="2">One request can span many packets; one packet can hold the tail of one request and the head of the next. Nothing on the wire marks where a request begins.</li>
     </ul>
   </div>
-  <div class="foot"><span>12 / 55</span><span>a packet is not a request</span></div>
+  <div class="foot"><span>12 / 54</span><span>a packet is not a request</span></div>
 </section>
 
 <section class="slide" data-section="l4-mechanics">
@@ -113,7 +113,7 @@
       <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 55</span><span>l4 · one decision per connection</span></div>
+  <div class="foot"><span>13 / 54</span><span>l4 · one decision per connection</span></div>
 </section>
 
 <section class="slide" data-section="l7-mechanics">
@@ -130,7 +130,7 @@
       <li data-step="2"><span class="chip hot">retry</span> It still holds the request in memory, so when a pod dies it writes the same bytes to another one. The client never learns anything went wrong.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 55</span><span>l7 · one decision per request</span></div>
+  <div class="foot"><span>14 / 54</span><span>l7 · one decision per request</span></div>
 </section>
 
 <section class="slide" data-section="lb-is-a-program">
@@ -148,7 +148,7 @@
       <li data-step="2">An L4 balancer never keeps anything: it forwards each packet and forgets it. That is why it costs so much less, and why it could never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>15 / 55</span><span>memory · size limit · why retries stop</span></div>
+  <div class="foot"><span>15 / 54</span><span>memory · size limit · why retries stop</span></div>
 </section>
 
 <section class="slide" data-section="health-checks">
@@ -165,7 +165,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> Never check the database inside <code>/healthz</code>. A 2 s DB blip fails every pod at once and turns "degraded" into "100% down". Keep the check shallow.</li>
     </ul>
   </div>
-  <div class="foot"><span>16 / 55</span><span>active · passive · flapping · panic mode</span></div>
+  <div class="foot"><span>16 / 54</span><span>active · passive · flapping · panic mode</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7">
@@ -186,7 +186,7 @@
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>17 / 55</span><span>l4 vs. l7 · the comparison</span></div>
+  <div class="foot"><span>17 / 54</span><span>l4 vs. l7 · the comparison</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7-choose">
@@ -226,34 +226,76 @@ needs warm-up for a spike</pre>
       <li data-step="2"><span class="chip risk">4</span> <b>NLB cross-zone is off and billed</b> (ALB: on and free). Off, an AZ with 1 pod takes as much as one with 5.</li>
     </ul>
   </div>
-  <div class="foot"><span>18 / 55</span><span>when to use which · aws defaults</span></div>
+  <div class="foot"><span>18 / 54</span><span>when to use which · aws defaults</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
   <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.9 · What L7 buys you</div>
-  <h2>One address, many pools. Route by path, header, or weight.</h2>
-  <div class="split code-left">
-    <pre class="code"><span class="c"># NGINX-style, one listener on :443</span>
-location /api/          { proxy_pass http://api_pool; }
-location /ws/           { proxy_pass http://socket_pool; }
-location /static/       { proxy_pass http://cdn_origin; }
+  <h2>One hostname on the outside. Inside, you can send any request anywhere you like.</h2>
+  <div class="body" style="gap:18px;">
+    <div class="chart meter">
+      <svg viewBox="0 0 1160 210" role="img" aria-label="One address at the front, and an L7 balancer routing by path, by weight and by header into different pools">
+        <defs>
+          <marker id="arrow-l7r" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+        </defs>
 
-<span class="c"># canary: 5% of /api/ goes to v2</span>
-split_clients $request_id $api_version {
-  <span class="hl">5%   api_v2;</span>
-  *    api_v1;
-}
+        <rect x="0" y="72" width="190" height="66" rx="10" class="sv-box"/>
+        <text x="95" y="100" text-anchor="middle" class="sv-lbl">api.shop.vn</text>
+        <text x="95" y="122" text-anchor="middle" class="sv-lbl-sm">one address · one cert</text>
+        <path d="M192 105 H236" class="sv-line" marker-end="url(#arrow-l7r)"/>
 
-<span class="c"># internal testers always get v2</span>
-if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
+        <rect x="240" y="60" width="150" height="90" rx="10" class="sv-box-hot"/>
+        <text x="315" y="92" text-anchor="middle" class="sv-hot">L7 balancer</text>
+        <text x="315" y="114" text-anchor="middle" class="sv-lbl-sm">reads every</text>
+        <text x="315" y="132" text-anchor="middle" class="sv-lbl-sm">request</text>
+
+        <path d="M392 88 C440 88 450 34 496 34" class="sv-line" marker-end="url(#arrow-l7r)"/>
+        <path d="M392 105 C440 105 450 105 496 105" class="sv-line" marker-end="url(#arrow-l7r)"/>
+        <path d="M392 122 C440 122 450 176 496 176" class="sv-line" marker-end="url(#arrow-l7r)"/>
+
+        <text x="446" y="24" text-anchor="middle" class="sv-hot">/api</text>
+        <text x="446" y="96" text-anchor="middle" class="sv-hot">/ws</text>
+        <text x="434" y="168" text-anchor="middle" class="sv-hot">/static</text>
+
+        <rect x="500" y="6" width="240" height="56" rx="10" class="sv-box"/>
+        <text x="516" y="32" class="sv-lbl">api pool · 12 pods</text>
+        <text x="516" y="52" class="sv-lbl-sm">CPU-heavy, scales on load</text>
+
+        <rect x="500" y="77" width="240" height="56" rx="10" class="sv-box"/>
+        <text x="516" y="103" class="sv-lbl">socket pool · 4 pods</text>
+        <text x="516" y="123" class="sv-lbl-sm">long-lived, scales on count</text>
+
+        <rect x="500" y="148" width="240" height="56" rx="10" class="sv-box"/>
+        <text x="516" y="174" class="sv-lbl">CDN origin</text>
+        <text x="516" y="194" class="sv-lbl-sm">cheap, cached at the edge</text>
+
+        <path d="M744 34 H788" class="sv-dash"/>
+        <g data-step="1">
+          <rect x="792" y="6" width="368" height="56" rx="10" class="sv-box-hot"/>
+          <text x="808" y="32" class="sv-hot">5% → api v2 · 95% → api v1</text>
+          <text x="808" y="52" class="sv-lbl-sm">one weight to change · rollback in 2 seconds</text>
+        </g>
+        <g data-step="2">
+          <path d="M744 105 H788" class="sv-dash"/>
+          <rect x="792" y="77" width="368" height="56" rx="10" class="sv-box-hot"/>
+          <text x="808" y="103" class="sv-hot">X-Canary: true → always v2</text>
+          <text x="808" y="123" class="sv-lbl-sm">QA tests in production, on real data</text>
+        </g>
+        <g data-step="2">
+          <path d="M744 176 H788" class="sv-dash"/>
+          <rect x="792" y="148" width="368" height="56" rx="10" class="sv-box-risk"/>
+          <text x="808" y="174" class="sv-risk">an L4 balancer sees none of this</text>
+          <text x="808" y="194" class="sv-lbl-sm">no path, no header — one pod per connection</text>
+        </g>
+      </svg>
+    </div>
     <ul class="points tight">
-      <li><span class="chip hot">path</span> <code>/api</code> and <code>/ws</code> scale separately, on different pod types.</li>
-      <li><span class="chip hot">weight</span> Ship v2 to 5% of requests, watch the error rate, then 25%, 100%.</li>
-      <li><span class="chip hot">header</span> QA sends <code>X-Canary: true</code> to test v2 in production.</li>
-      <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
+      <li><span class="chip hot">scale them apart</span> <code>/api</code> is CPU-bound and <code>/ws</code> holds connections for hours. Same hostname, different pod types, different autoscaling rules — and no client ever knows.</li>
+      <li data-step="1"><span class="chip hot">ship safely</span> Send 5% to v2, watch the error rate, go to 25%, then 100%. Rollback stops being a redeploy and becomes one number back to zero.</li>
+      <li data-step="2"><span class="chip hot">test in production</span> QA sends a header and lands on v2 every time, against real data, while everyone else stays on v1.</li>
     </ul>
   </div>
-  <div class="foot"><span>19 / 55</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>19 / 54</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
@@ -306,7 +348,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>20 / 55</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>20 / 54</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
@@ -347,24 +389,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>21 / 55</span><span>client-side · grpc, service mesh</span></div>
-</section>
-
-<section class="slide" data-section="lb-spof">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.12 · Who balances the balancer?</div>
-  <h2>A single balancer is a single point of failure with a nicer name</h2>
-  <div class="body meter" style="justify-content:center;">
-    <table class="tbl">
-      <thead><tr><th>Pattern</th><th>How it works</th><th>Failover</th><th>Watch out for</th></tr></thead>
-      <tbody>
-        <tr><td class="name">Active-passive<span>keepalived · VRRP</span></td><td>Two nodes share one floating IP; the standby takes it when heartbeats stop</td><td class="num">~1–3 s</td><td>Half the hardware sits idle; split brain if both think they're primary</td></tr>
-        <tr><td class="name">Active-active<span>ECMP · anycast</span></td><td>Routers spread flows over N balancer nodes that all announce the same IP</td><td class="num">seconds (BGP)</td><td>A node change can move existing flows: pair it with consistent hashing (Maglev)</td></tr>
-        <tr><td class="name">Managed<span>ALB · NLB · GCLB</span></td><td>The cloud runs a fleet across AZs and scales it for you</td><td class="num">handled for you</td><td>ALB scales up gradually: a flash sale from zero can see 5xx for minutes</td></tr>
-        <tr><td class="name">Client-side<span>gRPC · mesh</span></td><td>No central balancer; every caller has the pod list</td><td class="num">instant, per call</td><td>Every client must refresh the pod list; one bug is replicated in every service</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="foot"><span>22 / 55</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>21 / 54</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <script>

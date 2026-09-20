@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 4</div>
   <h2>Demo: the crashed server</h2>
   <p class="lead">3 HTTP servers on ports 8001–8003, NGINX in front on 8000. Watch the requests cycle, then kill one.</p>
-  <div class="foot"><span>49 / 55</span><span>section 4 · demo</span></div>
+  <div class="foot"><span>48 / 54</span><span>section 4 · demo</span></div>
 </section>
 
 <section class="slide" data-section="demo-setup">
@@ -41,7 +41,7 @@ curl localhost:8001   <span class="c"># Server 8001</span>
 npm run status        <span class="c"># who is up, which algorithm</span></pre>
     </div>
   </div>
-  <div class="foot"><span>50 / 55</span><span>demo · setup</span></div>
+  <div class="foot"><span>49 / 54</span><span>demo · setup</span></div>
 </section>
 
 <section class="slide" data-section="demo-config">
@@ -76,7 +76,7 @@ Server 8002
 Server 8003</pre>
     </div>
   </div>
-  <div class="foot"><span>51 / 55</span><span>demo · round robin</span></div>
+  <div class="foot"><span>50 / 54</span><span>demo · round robin</span></div>
 </section>
 
 <section class="slide" data-section="demo-algorithms">
@@ -94,7 +94,7 @@ Server 8003</pre>
     </table>
     <pre class="code">npm run algo -- weight   <span class="c"># rr | weight | least | iphash · rewrites the upstream and reloads NGINX</span></pre>
   </div>
-  <div class="foot"><span>52 / 55</span><span>demo · predict before running</span></div>
+  <div class="foot"><span>51 / 54</span><span>demo · predict before running</span></div>
 </section>
 
 <section class="slide" data-section="demo-live">
@@ -122,7 +122,7 @@ npm run revive -- 8002</pre>
       </ul>
     </div>
   </div>
-  <div class="foot"><span>53 / 55</span><span>demo · live requests</span></div>
+  <div class="foot"><span>52 / 54</span><span>demo · live requests</span></div>
 </section>
 
 <section class="slide" data-section="demo-crash">
@@ -145,7 +145,7 @@ Server 8003</pre>
       <li data-step="3">Try it with <code>ip_hash;</code>: users who were on 8002 move to another server. With sessions in memory, they'd be logged out.</li>
     </ul>
   </div>
-  <div class="foot"><span>54 / 55</span><span>demo · passive failure detection</span></div>
+  <div class="foot"><span>53 / 54</span><span>demo · passive failure detection</span></div>
 </section>
 
 <script>
