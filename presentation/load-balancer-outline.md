@@ -58,11 +58,16 @@ Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
 Yêu cầu: routing giữa region/lục địa · DNS-based routing (GeoDNS) · failover active-active vs active-passive.
 
 Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
-- **2.1 DNS:** trả nhiều A record. Rẻ, nhưng client cache theo TTL → IP chết vẫn nhận traffic đến 5 phút. Dùng DNS để chọn *region*, dùng LB thật để chọn *server*.
-- **2.2 Kiến trúc 2 region:** Route 53 (latency + health, TTL 60 s) → NLB (L4, 3 AZ) → Envoy fleet (TLS, L7) → service.
-- **2.3 Mất region:** DNS failover ≈ detect ~30 s + TTL 60 s + client cache lâu. Anycast nhanh hơn. Failover chuyển traffic chứ không chuyển capacity.
-- **2.4 Capacity:** mỗi region phải gánh được toàn bộ traffic, cộng dư để mất 1 node.
-- **Còn thiếu:** GeoDNS (route theo vị trí client), so sánh active-active vs active-passive.
+- **2.1 Một region không giải quyết được gì:** (a) LB nằm *bên trong* failure domain nó bảo vệ — LB không tự failover cho chính nó; (b) vật lý: HCM → `us-east-1` ~230 ms RTT, 3 vòng (TCP + TLS + request) ≈ **690 ms trước khi code chạy**. 4 lý do đi global: latency, DR, capacity, data residency (GDPR, Nghị định 53).
+- **2.2 Ba đòn bẩy:** LB local là proxy *trên data path*; LB global phải tác động **trước khi có connection**. Name resolution (DNS — trước khi connect) · Routing (anycast/BGP — trong lúc connect) · Redirection (302 — sau khi connect, tốn thêm 1 RTT, hiếm dùng).
+- **2.3 DNS-based routing (GSLB):** authoritative nameserver trả địa chỉ khác nhau tuỳ vị trí + health. Trả lời xong là **ra khỏi đường đi** hoàn toàn. 4 input: ai hỏi (resolver IP + ECS), health, bảng latency **precomputed**, policy. Health lọc trước, policy chạy sau. **Không thấy load** — region healthy nhưng quá tải vẫn nhận đủ phần.
+- **2.4 Vì sao DNS không thể nhanh:** 5 tầng giữ câu trả lời cũ (recursive resolver, OS stub, browser, runtime/JVM, **connection pool — socket đang mở không bao giờ resolve lại**). t_failover = detect + TTL + client cache + pool recycle ≈ 2–5 phút. Đừng đặt TTL = 1 s. Cách đúng: **làm cho sự chậm trở nên vô hại** — giữ địa chỉ cũ còn trả lời (proxy tiếp, hoặc 503 + `Retry-After`).
+- **2.5 Anycast:** nhiều PoP cùng announce một IP qua BGP. Failover = **rút announcement**, hội tụ trong vài giây, client không cần câu trả lời mới. Gotcha: BGP đếm **số network**, không phải ms; không chia được % traffic; cần ASN + IP block + peering nên đa số đi thuê.
+- **2.6 Anycast + edge proxy (câu trả lời thật):** PoP là L7 proxy thật, bắt tay ngay tại chỗ (3 × 30 ms = 90 ms thay vì 690 ms) rồi đi 1 hop ấm qua backbone. Lấy lại **per-request control ở quy mô toàn cầu**: retry sang region khác, canary theo weight, drain cả một region. CDN = máy này + cache; lợi ngay cả khi **cache hit 0%**.
+- **2.7 So sánh 3 đòn bẩy:** failover phút / giây / dưới giây · per-request control không / không / full L7 · thấy load không / không / có. Thực tế **ghép cả ba**: DNS → anycast IP → PoP → region → pod. Gotcha chung: **health check toàn cầu rất khó**, và khi nó flap thì nó chuyển cả một châu lục.
+- **2.8 Tự kiểm tra:** 3 câu hỏi chốt phần này.
+- **2.9 Kiến trúc 2 region:** Route 53 (latency + health, TTL 60 s) → NLB (L4, 3 AZ) → Envoy fleet (TLS, L7) → service.
+- **2.10 Capacity:** failover chuyển traffic chứ **không chuyển capacity**. Mỗi region phải gánh được toàn bộ traffic, cộng dư để mất 1 AZ. Chạy tier LB ở 30–40%, rồi game-day drill để chứng minh.
 
 ## 3. Algorithms (Khanh)
 

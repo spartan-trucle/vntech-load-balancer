@@ -2,39 +2,164 @@
 <section class="slide divider" data-section="divider-02">
   <div class="divider-num">02</div>
   <div class="section-tag"><i></i>SECTION 2</div>
-  <h2>Global load balancing (GSLB)</h2>
-  <p class="lead">Between regions and continents: DNS-based routing (GeoDNS), and what happens when a whole region goes dark: active-active vs. active-passive.</p>
-  <div class="foot"><span>24 / 50</span><span>section 2 · global load balancing</span></div>
+  <h2>Global load balancing</h2>
+  <p class="lead">Between regions and continents. A local balancer picks a backend for traffic that already reached it; a global one has to change where the client sends traffic in the first place.</p>
+  <div class="foot"><span>24 / 56</span><span>section 2 · global load balancing</span></div>
 </section>
 
-<section class="slide" data-section="dns-lb">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>2.1 · DNS</div>
-  <h2>Return several IPs and let the client pick. Cheap, but clients keep a dead IP until the TTL runs out.</h2>
-  <div class="split code-left">
-    <pre class="code"><span class="c">$ dig +short api.shop.vn</span>
-10.0.1.11
-10.0.1.12
-10.0.1.13
-<span class="c"># resolver rotates the order on each lookup</span>
-
-<span class="c">$ dig api.shop.vn | grep TTL</span>
-api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
-
-<span class="c"># 12:00:00  10.0.1.12 dies</span>
-<span class="c"># 12:00:00  record removed from the zone</span>
-<span class="hl">12:04:59  clients still send to 10.0.1.12</span>  <span class="chip risk">5 min of errors</span></pre>
+<section class="slide" data-section="local-cant-fix">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>2.1 · What one region cannot fix</div>
+  <h2>A balancer cannot fail over itself, and it cannot outrun the speed of light</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="phys-flow" role="img" aria-label="A region failing with its balancer inside it, and the round-trip cost of reaching a far region"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="phys-replay">↻ Replay</button></div><p class="readout" id="phys-readout"></p></div>
+    </div>
     <ul class="points tight">
-      <li><span class="chip ok">good at</span> Sending users to the nearest <b>region</b>: Route 53 latency or geo routing.</li>
-      <li><span class="chip risk">bad at</span> Reacting fast. Resolvers, OS caches and JVMs cache the answer for the TTL, some for longer.</li>
-      <li data-step="1">No health, no load info: the client can't tell a busy IP from an idle one.</li>
-      <li data-step="1">Use DNS to pick a <b>region</b>, then a real balancer inside it to pick a <b>server</b>.</li>
+      <li><span class="chip risk">1</span> Your ALB lives <b>inside</b> the region it protects. When that region loses its control plane, nothing in-region is left to route around it.</li>
+      <li data-step="1"><span class="chip risk">2</span> Ho Chi Minh City to <code>us-east-1</code> is ~230 ms round trip. Perfect P2C in Virginia gives back none of it. The only fix is to <b>terminate the connection closer to the user</b>.</li>
+      <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
-  <div class="foot"><span>25 / 50</span><span>dns load balancing · ttl</span></div>
+  <div class="foot"><span>25 / 56</span><span>the two problems with no in-region answer</span></div>
+</section>
+
+<section class="slide" data-section="three-levers">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>2.2 · The three levers</div>
+  <h2>A global balancer is not a box you put traffic through. It makes the client choose.</h2>
+  <div class="body meter" style="justify-content:center; gap:20px;">
+    <table class="tbl">
+      <thead><tr><th>Lever</th><th>What it actually does</th><th>When the choice happens</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td>Your nameserver hands back a different address depending on where the user is and which regions are healthy</td><td class="num">before connecting</td></tr>
+        <tr><td class="name">Routing<span>anycast · BGP</span></td><td>The same IP is announced from many locations, and the internet's routing system delivers each user to the nearest one</td><td class="num">during connecting</td></tr>
+        <tr><td class="name">Redirection<span>HTTP 302</span></td><td>The app answers with a redirect to a region-specific hostname</td><td class="num">after connecting</td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight">
+      <li>A local balancer is a proxy <b>on the data path</b>: the client already sent traffic to it. A global balancer has to influence the decision <b>before any connection exists</b>.</li>
+      <li data-step="1">Redirection costs a whole extra round trip and is rarely used. Everything else in global load balancing is lever 1, lever 2, or both together.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>26 / 56</span><span>name resolution · routing · redirection</span></div>
+</section>
+
+<section class="slide" data-section="gslb-dns">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>2.3 · DNS-based routing (GSLB)</div>
+  <h2>The same hostname answers differently per user — then gets out of the way completely</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="gslb-flow" role="img" aria-label="A GSLB answering the same hostname with different regional addresses and dropping out of the request path"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="gslb-replay">↻ Replay</button></div><p class="readout" id="gslb-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">inputs</span> Only four: who is asking (resolver IP + EDNS Client Subnet), health state from its own probes, a <b>precomputed</b> latency table, and your policy.</li>
+      <li data-step="1"><span class="chip hot">order</span> Health filters first, then the policy runs on what is left: geo, latency, weighted, or primary/secondary.</li>
+      <li data-step="2"><span class="chip risk">omission</span> It never sees <b>load</b>. A region that is healthy but saturated keeps its full share, because a health check answers "is it up", not "can it take more".</li>
+    </ul>
+  </div>
+  <div class="foot"><span>27 / 56</span><span>gslb · one hostname, many answers</span></div>
+</section>
+
+<section class="slide" data-section="dns-stale">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-clock"/></svg>2.4 · Why DNS can never be fast</div>
+  <h2>The TTL is a promise about lookups, and an open socket never looks anything up</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="stale-flow" role="img" aria-label="Five layers caching a stale DNS answer, and the failover time they add up to"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="stale-replay">↻ Replay</button></div><p class="readout" id="stale-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li>The GSLB's only moment of influence is the lookup. After it answers it cannot recall the answer, cannot notify anyone, cannot even find out who is holding one.</li>
+      <li data-step="1"><span class="chip risk">don't</span> "Just set TTL to 1 second." Resolvers enforce floors anyway, you pay per query, and cached answers are what keep users working when your nameservers are unreachable.</li>
+      <li data-step="2"><span class="chip ok">do</span> Make the slowness harmless. Never cut the old address off: let it proxy onward, or answer <code>503</code> + <code>Retry-After</code>. Users can see <b>zero errors</b> during a failover that still takes five minutes.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>28 / 56</span><span>ttl · caching layers · the failover formula</span></div>
+</section>
+
+<section class="slide" data-section="anycast">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>2.5 · Anycast</div>
+  <h2>Announce one address from many places and let the internet do the routing</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="any-flow" role="img" aria-label="One IP announced from four points of presence, a withdrawal rerouting traffic, and BGP choosing a distant PoP"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="any-replay">↻ Replay</button></div><p class="readout" id="any-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">how</span> Several sites each announce the same prefix over <b>BGP</b> — "traffic for this address can come to me" — and every network on the path picks whichever announcement looks closest to it.</li>
+      <li data-step="1"><span class="chip hot">failover</span> Withdraw the announcement and the internet re-learns the next-best path in seconds. No client needs a new answer: <b>the address never changed.</b></li>
+      <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN, address block and peering — which is why most teams rent anycast.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>29 / 56</span><span>anycast · bgp · withdraw to fail over</span></div>
+</section>
+
+<section class="slide" data-section="edge-proxy">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>2.6 · Anycast + edge proxy</div>
+  <h2>Put a real L7 proxy in the nearby PoP and the handshakes stop crossing the ocean</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="edge-flow" role="img" aria-label="Handshakes terminating at a nearby point of presence, per-request retry into another origin, and a cache hit never reaching origin"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="edge-replay">↻ Replay</button></div><p class="readout" id="edge-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip hot">the point</span> The PoP is not a signpost. It completes the connection itself, then forwards the request over a warm pooled connection on a private backbone. Cloudflare, Google's global LB and Fastly all work this way.</li>
+      <li data-step="1"><span class="chip hot">control is back</span> Because it is a real L7 proxy, everything from section 1 now works <b>globally</b>: health-aware origin choice, retry into another region, weighted regional canaries, graceful drain of a whole region.</li>
+      <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>30 / 56</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+</section>
+
+<section class="slide" data-section="global-compare">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.7 · Which lever when</div>
+  <h2>They compose, and usually do: four balancing decisions for one request</h2>
+  <div class="body meter" style="justify-content:center; gap:18px;">
+    <table class="tbl compact">
+      <thead><tr><th></th><th>DNS-based routing</th><th>Anycast</th><th>Anycast + edge proxy</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Failover speed</td><td class="num">minutes</td><td class="num">seconds</td><td class="num"><b>sub-second</b></td></tr>
+        <tr><td class="name">Per-request control</td><td>None</td><td>None</td><td><b>Full L7</b></td></tr>
+        <tr><td class="name">Handshake latency</td><td>Full path</td><td>Full path</td><td><b>Terminated at the edge</b></td></tr>
+        <tr><td class="name">Sees backend load</td><td>No</td><td>No</td><td><b>Yes</b></td></tr>
+        <tr><td class="name">Setup cost</td><td>Trivial</td><td>ASN + peering</td><td>Buy it</td></tr>
+        <tr><td class="name">DDoS resistance</td><td>Poor</td><td>Good — spread over many sites</td><td><b>Good, plus request filtering</b></td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight">
+      <li data-step="1">DNS hands out an anycast IP → anycast reaches a PoP → the PoP picks an origin region → the region's balancer picks a pod.</li>
+      <li data-step="2"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>31 / 56</span><span>comparing the three levers</span></div>
+</section>
+
+<section class="slide" data-section="global-selfcheck">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>2.8 · Check yourself</div>
+  <h2>Three questions that separate "knows the words" from "knows the mechanism"</h2>
+  <div class="trio" style="align-items:stretch;">
+    <div class="card">
+      <div class="k">question 1</div>
+      <div class="t">Why can't DNS failover drain a region gracefully, when an edge proxy can?</div>
+      <p data-step="1">DNS gives one influence point — the answer you hand out — and then no relationship with the client until its cache expires. It cannot tell resolved clients to stop, and cannot tell in-flight work from new work. An edge proxy is on the path for every request, so it can stop sending new ones while outstanding ones finish.</p>
+    </div>
+    <div class="card">
+      <div class="k">question 2</div>
+      <div class="t">Origin in <code>us-east-1</code>, users in Vietnam. What does a CDN recover, and what does it not touch?</div>
+      <p data-step="2">It recovers the handshakes: TCP and TLS now complete ~30 ms away instead of ~230 ms, so ~690 ms becomes ~90 ms before the request is even in flight. It does not touch the origin fetch — that still crosses the Pacific, but once, over a warm pooled connection.</p>
+    </div>
+    <div class="card">
+      <div class="k">question 3</div>
+      <div class="t">Both use health checks. Why does anycast fail over so much faster than DNS?</div>
+      <p data-step="3">Because the client's target never changes. DNS needs every client to re-resolve, so you wait out detection <i>plus</i> TTL <i>plus</i> whatever the client caches on its own. Anycast keeps the same IP and changes the <b>route</b> to it — a BGP withdrawal reconverges in seconds and no client learns anything new.</p>
+    </div>
+  </div>
+  <div class="foot"><span>32 / 56</span><span>self-check · global</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.2 · Architecture</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.9 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
     <svg viewBox="0 0 1120 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
@@ -65,46 +190,431 @@ api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
       </g>
     </svg>
   </div>
-  <div class="foot"><span>26 / 50</span><span>system design · architecture</span></div>
-</section>
-
-<section class="slide" data-section="region-failover">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-globe"/></svg>2.3 · Losing a region</div>
-  <h2>DNS failover is bounded by the TTL. Anycast is bounded by BGP.</h2>
-  <div class="split code-left">
-    <pre class="code"><span class="c"># Singapore goes dark at 10:00:00</span>
-
-10:00:30  Route 53 health check: 3 fails → SIN removed
-10:00:30  new lookups get Tokyo only
-10:01:30  TTL 60 s expired for most resolvers
-<span class="hl">10:05:00  a few clients still on SIN</span>  <span class="c"># ignore TTL</span>
-
-<span class="c"># Tokyo now receives 2× traffic</span>
-10:00:40  Tokyo Envoy p99  90 ms → 310 ms
-10:01:10  HPA adds pods (takes ~60–90 s)
-<span class="hl">10:02:30  Tokyo p99 back to 110 ms</span></pre>
-    <ul class="points tight">
-      <li><span class="chip hot">DNS</span> Simple, works with any backend. Failover ≈ detection (~30 s) + TTL (60 s) + stragglers.</li>
-      <li><span class="chip hot">anycast</span> One IP announced from every region (AWS Global Accelerator, Cloudflare). Routers pick the nearest; failover in seconds.</li>
-      <li data-step="1"><span class="chip risk">the real trap</span> Failover moves the traffic, not the capacity. If Tokyo can't take 100% <b>right now</b>, you've turned one region outage into two.</li>
-    </ul>
-  </div>
-  <div class="foot"><span>27 / 50</span><span>global balancing · dns vs. anycast</span></div>
+  <div class="foot"><span>33 / 56</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.4 · Capacity</div>
-  <h2>Size each region for the whole world, then add room to lose a node</h2>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.10 · Capacity</div>
+  <h2>Failover moves the traffic, not the capacity. Size each region for the whole world.</h2>
   <div class="split" style="align-items:start;">
     <div class="stack">
       <div class="formula">peak <b>200,000 req/s</b> global<br>one region down → survivor takes <b>200,000</b><br>Envoy node: <b>25,000 req/s</b> at 60% CPU <span class="muted">(measure yours)</span></div>
       <div class="formula">200,000 ÷ 25,000 = <b>8 nodes</b><br>+ lose 1 AZ of 3 → × 1.5 = <b>12</b><br>per region: <b>12 nodes</b>, normally at ~33% of rated load</div>
     </div>
     <ul class="points tight">
+      <li><span class="chip risk">the real trap</span> If Tokyo cannot take 100% <b>right now</b>, you have turned one region outage into two.</li>
       <li>Run the balancer tier at <b>30–40%</b> in normal times. That idle headroom is what makes failover a non-event.</li>
       <li>Count <b>connections</b> too, not only requests: 400,000 open WebSockets × ~50 KB is 20 GB of memory across the fleet.</li>
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 50</span><span>system design · capacity</span></div>
+  <div class="foot"><span>34 / 56</span><span>system design · capacity</span></div>
 </section>
+
+<script>
+(() => {
+  const { el, $, scene, steps } = window.Charts;
+
+  // ---------- shared drawing helpers (same shapes as section 1) ----------
+  const W = 720, H = 330;
+  const box = (p, x, y, w, h, cls) => el('rect', { x, y, width: w, height: h, rx: 10, class: cls }, p);
+  const txt = (p, x, y, cls, t, anchor) =>
+    el('text', anchor ? { x, y, class: cls, 'text-anchor': anchor } : { x, y, class: cls }, p, t);
+  const line = (p, d, cls) => el('path', { d, class: cls }, p);
+  const card = (p, w, h, cls, label, lcls) => {
+    const g = el('g', { class: 'pkt-fly' }, p);
+    el('rect', { x: -w / 2, y: -h / 2, width: w, height: h, rx: 6, class: cls }, g);
+    if (label) txt(g, 0, 4, lcls || 'sv-lbl-sm', label, 'middle');
+    return g;
+  };
+  const put = (g, x, y) => { g.style.transform = `translate(${x}px, ${y}px)`; };
+  const move = (w, g, x, y) => { if (!w.virtual()) void g.getBoundingClientRect(); put(g, x, y); };
+  const fade = (w, g) => { g.classList.add('pkt-gone'); w.later(() => g.remove(), 400); };
+
+  // ---------- 2.1 what one region cannot fix ----------
+  // Two stacked rows, one per step: the balancer inside the dying region, then the RTT ladder.
+  {
+    const w = scene($('phys-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const rows = [0, 1].map(() => el('g', {}, svg));
+      return { rows, clear() { rows.forEach((r) => r.replaceChildren()); } };
+    });
+
+    // row 0 — one region, with the thing that is supposed to route around failure sitting inside it
+    async function domain(w, animate) {
+      const g = w.rows[0];
+      txt(g, 0, 14, 'sv-lbl-sm', 'one region · us-east-1');
+      const region = box(g, 0, 24, 420, 96, 'sv-box');
+      const alb = box(g, 18, 40, 150, 64, 'sv-box-hot');
+      txt(g, 34, 66, 'sv-hot', 'ALB');
+      txt(g, 34, 86, 'sv-lbl-sm', 'picks a pod');
+      const pods = box(g, 184, 40, 218, 64, 'sv-box');
+      txt(g, 200, 66, 'sv-lbl', '3 AZs of pods');
+      const note = txt(g, 440, 78, 'sv-lbl-sm', '');
+      if (!animate) { region.setAttribute('class', 'sv-box-risk'); alb.setAttribute('class', 'sv-box-risk'); pods.setAttribute('class', 'sv-box-risk'); note.textContent = 'nothing in here is left to route around it'; return; }
+      await w.sleep(700);
+      region.setAttribute('class', 'sv-box-risk');
+      pods.setAttribute('class', 'sv-box-risk');
+      note.textContent = 'region loses its control plane';
+      await w.sleep(800);
+      alb.setAttribute('class', 'sv-box-risk');
+      note.textContent = 'nothing in here is left to route around it';
+      w.say('The balancer is <strong>inside the failure domain it protects</strong>. It cannot fail over itself.');
+    }
+
+    // row 1 — three round trips before your code runs
+    async function rtt(w, animate) {
+      const g = w.rows[1], y = 176, bw = 150;
+      txt(g, 0, y - 12, 'sv-lbl-sm', 'Ho Chi Minh City → us-east-1 · one round trip = 230 ms');
+      const legs = ['TCP handshake', 'TLS 1.3 handshake', 'first request'];
+      for (let i = 0; i < legs.length; i++) {
+        const c = card(g, bw, 52, 'sv-box-hot', null);
+        txt(c, 0, -6, 'sv-hot', legs[i], 'middle');
+        txt(c, 0, 14, 'sv-lbl-sm', '230 ms', 'middle');
+        put(c, animate ? -90 : 80 + i * (bw + 12), y + 26);
+        if (animate) { move(w, c, 80 + i * (bw + 12), y + 26); await w.sleep(560); }
+      }
+      const tot = txt(g, 560, y + 32, 'sv-risk', '≈ 690 ms');
+      txt(g, 560, y + 52, 'sv-lbl-sm', 'before your app');
+      txt(g, 560, y + 68, 'sv-lbl-sm', 'does any work');
+      if (animate) { tot.classList.add('pkt-fly'); await w.sleep(400); w.say('Three round trips <strong>before your code runs</strong>. No algorithm in Virginia gives a millisecond of that back.'); }
+    }
+
+    steps('phys', w, [
+      async (w) => { await domain(w, true); },
+      async (w) => { await domain(w, false); await rtt(w, true); },
+      async (w) => {
+        await domain(w, false); await rtt(w, false);
+        const c = card(w.layer, 420, 40, 'sv-box-hot', 'terminate the connection closer to the user', 'sv-hot');
+        put(c, W / 2, 312);
+        w.say('Both problems have the same answer, and it is <strong>not in this region</strong>.');
+      },
+    ]);
+  }
+
+  // ---------- 2.3 DNS-based routing ----------
+  {
+    const w = scene($('gslb-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      const users = [
+        { name: 'user · Vietnam', y: 52 },
+        { name: 'user · Japan', y: 250 },
+      ].map((u) => {
+        const g = el('g', {}, fixed);
+        box(g, 0, u.y - 26, 150, 52, 'sv-box');
+        txt(g, 14, u.y + 4, 'sv-lbl-sm', u.name);
+        line(fixed, `M152 ${u.y} C184 ${u.y} 190 ${u.y > 150 ? 200 : 130} 212 ${u.y > 150 ? 200 : 130}`, 'sv-line-soft');
+        return { ...u, g };
+      });
+      box(fixed, 214, 108, 226, 114, 'sv-box-hot');
+      txt(fixed, 230, 136, 'sv-hot', 'GSLB');
+      txt(fixed, 230, 156, 'sv-lbl-sm', 'authoritative nameserver');
+      const stateBox = box(fixed, 228, 166, 200, 40, 'sv-box');
+      const state = txt(fixed, 238, 191, 'sv-code', '');
+      const regions = [
+        { name: 'Singapore', ip: '13.250.4.7', y: 52 },
+        { name: 'Tokyo', ip: '18.183.9.2', y: 250 },
+      ].map((r) => {
+        const g = el('g', {}, fixed);
+        const b = box(g, 532, r.y - 40, 188, 80, 'sv-box');
+        txt(g, 548, r.y - 12, 'sv-lbl', r.name);
+        txt(g, 548, r.y + 8, 'sv-lbl-sm', r.ip);
+        const sub = txt(g, 548, r.y + 26, 'sv-lbl-sm', '');
+        // dashed = health probes, always running and separate from any query
+        line(fixed, `M440 ${r.y > 150 ? 200 : 130} C480 ${r.y > 150 ? 230 : 100} 500 ${r.y} 530 ${r.y}`, 'sv-dash');
+        return { ...r, g, b, sub };
+      });
+      return {
+        users, regions, state, stateBox,
+        clear() {
+          state.textContent = '';
+          stateBox.setAttribute('class', 'sv-box');
+          regions.forEach((r) => { r.b.setAttribute('class', 'sv-box'); r.sub.textContent = ''; });
+        },
+      };
+    });
+
+    // one lookup: question in, policy runs, address out, then the client connects on its own
+    async function lookup(w, ui, ri, policy) {
+      const u = w.users[ui], r = w.regions[ri];
+      const q = card(w.layer, 150, 28, 'sv-box', 'api.shop.vn ?');
+      put(q, 75, u.y); move(w, q, 327, u.y > 150 ? 210 : 120);
+      await w.sleep(480); fade(w, q);
+      w.state.textContent = policy;
+      w.stateBox.setAttribute('class', 'sv-box-hot');
+      await w.sleep(800);
+      const a = card(w.layer, 150, 28, 'sv-box-hot', `${r.ip} · ttl 60`, 'sv-hot');
+      put(a, 327, u.y > 150 ? 210 : 120); move(w, a, 75, u.y);
+      await w.sleep(480); fade(w, a);
+      w.stateBox.setAttribute('class', 'sv-box');
+      // and now the GSLB is out of the path entirely
+      const d = card(w.layer, 120, 28, 'sv-box-hot', 'GET /orders', 'sv-hot');
+      put(d, 75, u.y); move(w, d, 626, r.y);
+      r.b.setAttribute('class', 'sv-box-hot');
+      await w.sleep(560); fade(w, d);
+    }
+
+    steps('gslb', w, [
+      async (w) => {
+        await lookup(w, 0, 0, 'from VN · SG healthy');
+        w.regions[0].sub.textContent = 'client connects directly';
+        w.say('The answer goes back, and the GSLB is <strong>out of the path</strong> — it never sees the request.');
+      },
+      async (w) => {
+        await lookup(w, 0, 0, 'from VN · SG healthy');
+        w.regions[0].sub.textContent = 'connects directly';
+        await w.sleep(300);
+        await lookup(w, 1, 1, 'from JP · TYO healthy');
+        w.regions[1].sub.textContent = 'connects directly';
+        w.say('<strong>Same question, different answer.</strong> One hostname, and the choice is made per lookup.');
+      },
+      async (w) => {
+        w.regions[0].b.setAttribute('class', 'sv-box-risk');
+        w.regions[0].sub.textContent = 'probes failing · OUT';
+        w.say('The probes run continuously, separate from any query. Singapore fails three in a row.');
+        await w.sleep(900);
+        await lookup(w, 0, 1, 'from VN · SG is OUT');
+        w.regions[1].sub.textContent = 'VN and JP both land here';
+        w.say('<strong>Health filters before the policy runs.</strong> Vietnam wanted Singapore; it was never a candidate.');
+      },
+    ]);
+  }
+
+  // ---------- 2.4 why DNS can never be fast ----------
+  {
+    const LAYERS = [
+      ['recursive resolver', 'mostly honours the TTL; some enforce a floor'],
+      ['OS stub resolver', 'systemd-resolved, nscd — its own cache'],
+      ['browser', 'Chrome keeps an internal DNS cache ~60 s'],
+      ['language runtime', 'the JVM InetAddress cache can be forever'],
+      ['connection pool', 'an open socket never re-resolves, TTL or not'],
+    ];
+    const w = scene($('stale-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      const head = txt(fixed, 0, 16, 'sv-lbl-sm', '');
+      const rows = LAYERS.map(([name, note], i) => {
+        const y = 30 + i * 56;
+        const g = el('g', {}, fixed);
+        const b = box(g, 0, y, 340, 46, 'sv-box');
+        txt(g, 16, y + 20, 'sv-lbl', `${i + 1} · ${name}`);
+        txt(g, 16, y + 38, 'sv-lbl-sm', note);
+        const holds = txt(g, 690, y + 28, 'sv-lbl-sm', '', 'end');
+        return { y, b, holds };
+      });
+      const sum = txt(fixed, 690, 322, 'sv-risk', '', 'end');
+      return {
+        head, rows, sum,
+        clear() {
+          head.textContent = ''; sum.textContent = '';
+          sum.setAttribute('class', 'sv-risk');
+          rows.forEach((r) => { r.b.setAttribute('class', 'sv-box'); r.holds.textContent = ''; });
+        },
+      };
+    });
+
+    steps('stale', w, [
+      async (w) => {
+        w.head.textContent = 't = 0 · the GSLB starts answering with the new address';
+        for (const [i, r] of w.rows.entries()) {
+          r.b.setAttribute('class', i === 4 ? 'sv-box-risk' : 'sv-box-hot');
+          r.holds.textContent = i === 4 ? 'never asks again' : 'still holding the old one';
+          r.holds.setAttribute('class', i === 4 ? 'sv-risk' : 'sv-lbl-sm');
+          await w.sleep(420);
+        }
+        w.say('One answer is retained in <strong>five places</strong>. Layer 5 is the one people miss.');
+      },
+      async (w) => {
+        w.head.textContent = 'the parts of a failover, added up';
+        const parts = ['probe 10 s × 3 failures  =  30 s', 'TTL 60 s, worst case  =  60 s',
+                       'browser + runtime cache  =  0 → minutes', 'connection pool lifetime 5 m  =  0 → 300 s'];
+        for (const [i, r] of w.rows.slice(0, 4).entries()) {
+          r.b.setAttribute('class', 'sv-box-hot');
+          r.holds.textContent = parts[i];
+          r.holds.setAttribute('class', 'sv-code');
+          await w.sleep(500);
+        }
+        const last = w.rows[4];
+        last.b.setAttribute('class', 'sv-box-risk');
+        last.holds.textContent = 'and a long tail after that';
+        last.holds.setAttribute('class', 'sv-risk');
+        w.sum.textContent = 'bulk of traffic moves in ~2–5 minutes';
+        w.say('The TTL is <strong>one term of four</strong>. Failover speed was never the number you published.');
+      },
+      async (w) => {
+        w.head.textContent = 'the same five minutes, with the old address still answering';
+        for (const r of w.rows) {
+          r.b.setAttribute('class', 'sv-box-hot');
+          r.holds.textContent = 'proxied onward · or 503 + Retry-After';
+          r.holds.setAttribute('class', 'sv-lbl-sm');
+          await w.sleep(300);
+        }
+        w.sum.textContent = 'errors seen by users: 0';
+        w.sum.setAttribute('class', 'sv-hot');
+        w.say('You cannot make DNS fast. You <strong>can</strong> make its slowness harmless.');
+      },
+    ]);
+  }
+
+  // ---------- 2.5 anycast ----------
+  {
+    const POPS = [
+      { name: 'Singapore', y: 40 },
+      { name: 'Tokyo', y: 130 },
+      { name: 'Frankfurt', y: 220 },
+      { name: 'Los Angeles', y: 300 },
+    ];
+    const w = scene($('any-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      txt(fixed, 0, 16, 'sv-lbl-sm', 'every PoP announces the same address · 203.0.113.9');
+      const users = [
+        { name: 'user · VN', y: 70 },
+        { name: 'user · DE', y: 232 },
+      ].map((u) => {
+        const g = el('g', {}, fixed);
+        box(g, 0, u.y - 22, 140, 44, 'sv-box');
+        txt(g, 14, u.y + 4, 'sv-lbl-sm', u.name);
+        return { ...u, g };
+      });
+      box(fixed, 220, 143, 130, 44, 'sv-box-hot');
+      txt(fixed, 285, 170, 'sv-hot', 'BGP', 'middle');
+      users.forEach((u) => line(fixed, `M142 ${u.y} C186 ${u.y} 190 165 218 165`, 'sv-line-soft'));
+      const pops = POPS.map((p) => {
+        const g = el('g', {}, fixed);
+        const b = box(g, 500, p.y - 26, 220, 52, 'sv-box');
+        txt(g, 516, p.y - 2, 'sv-lbl', p.name);
+        const sub = txt(g, 516, p.y + 16, 'sv-lbl-sm', '');
+        line(fixed, `M352 165 C420 165 430 ${p.y} 498 ${p.y}`, 'sv-line-soft');
+        return { ...p, g, b, sub };
+      });
+      return {
+        users, pops,
+        clear() { pops.forEach((p) => { p.b.setAttribute('class', 'sv-box'); p.sub.textContent = ''; }); },
+      };
+    });
+
+    // BGP hands the user to whichever announcement its network thinks is closest
+    async function route(w, ui, pi, { cls = 'sv-box-hot', label = '203.0.113.9' } = {}) {
+      const u = w.users[ui], p = w.pops[pi];
+      const c = card(w.layer, 140, 26, cls, label, cls === 'sv-box-risk' ? 'sv-risk' : 'sv-hot');
+      put(c, 70, u.y); move(w, c, 285, 165);
+      await w.sleep(440);
+      move(w, c, 610, p.y);
+      p.b.setAttribute('class', cls);
+      await w.sleep(520); fade(w, c);
+    }
+
+    steps('any', w, [
+      async (w) => {
+        await route(w, 0, 0);
+        w.pops[0].sub.textContent = 'nearest to VN';
+        await route(w, 1, 2);
+        w.pops[2].sub.textContent = 'nearest to DE';
+        w.say('Both users dialled <strong>the same address</strong>. The routing system sent them to different buildings.');
+      },
+      async (w) => {
+        await route(w, 0, 0);
+        w.pops[0].sub.textContent = 'nearest to VN';
+        await w.sleep(400);
+        w.pops[0].b.setAttribute('class', 'sv-box-risk');
+        w.pops[0].sub.textContent = 'announcement withdrawn';
+        w.say('Singapore stops telling the world it can reach the address…');
+        await w.sleep(900);
+        await route(w, 0, 1);
+        w.pops[1].sub.textContent = 'next-best path, seconds later';
+        w.say('…and the user moves. <strong>No new DNS answer:</strong> the address they hold never changed.');
+      },
+      async (w) => {
+        await route(w, 0, 3, { cls: 'sv-box-risk' });
+        w.pops[3].sub.textContent = '2 networks away';
+        w.pops[0].b.setAttribute('class', 'sv-box');
+        w.pops[0].sub.textContent = '4 networks away · 160 ms closer';
+        w.say('BGP counts <strong>networks crossed, not milliseconds</strong>. One odd peering deal and Vietnam goes to LA.');
+      },
+    ]);
+  }
+
+  // ---------- 2.6 anycast + edge proxy ----------
+  {
+    const w = scene($('edge-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      box(fixed, 0, 130, 120, 70, 'sv-box');
+      txt(fixed, 16, 160, 'sv-lbl', 'user · VN');
+      const rtt = txt(fixed, 16, 180, 'sv-hot', '30 ms away');
+      box(fixed, 206, 100, 210, 130, 'sv-box-hot');
+      txt(fixed, 222, 128, 'sv-hot', 'PoP · Singapore');
+      txt(fixed, 222, 148, 'sv-lbl-sm', 'a full L7 proxy');
+      const slotBox = box(fixed, 222, 158, 178, 40, 'sv-box');
+      const slot = txt(fixed, 232, 183, 'sv-code', '');
+      const note = txt(fixed, 222, 218, 'sv-lbl-sm', '');
+      line(fixed, 'M122 165 H204', 'sv-line-soft');
+      const origins = [
+        { name: 'us-east-1', y: 78 },
+        { name: 'ap-southeast-1', y: 252 },
+      ].map((o) => {
+        const g = el('g', {}, fixed);
+        const b = box(g, 520, o.y - 34, 200, 68, 'sv-box');
+        txt(g, 536, o.y - 6, 'sv-lbl', o.name);
+        const sub = txt(g, 536, o.y + 14, 'sv-lbl-sm', '');
+        line(fixed, `M418 165 C462 165 470 ${o.y} 518 ${o.y}`, 'sv-line-soft');
+        return { ...o, g, b, sub };
+      });
+      txt(fixed, 468, 152, 'sv-lbl-sm', 'backbone', 'middle');
+      return {
+        rtt, slot, slotBox, note, origins,
+        clear() {
+          rtt.textContent = '30 ms away'; slot.textContent = ''; note.textContent = '';
+          slotBox.setAttribute('class', 'sv-box');
+          origins.forEach((o) => { o.b.setAttribute('class', 'sv-box'); o.sub.textContent = ''; });
+        },
+      };
+    });
+
+    steps('edge', w, [
+      async (w) => {
+        for (const leg of ['TCP', 'TLS', 'GET /orders']) {
+          const c = card(w.layer, 110, 26, 'sv-box-hot', leg, 'sv-hot');
+          put(c, 60, 165); move(w, c, 300, 165);
+          await w.sleep(380); fade(w, c);
+        }
+        w.slotBox.setAttribute('class', 'sv-box-hot');
+        w.slot.textContent = 'GET /orders';
+        w.say('Three round trips, but at <strong>30 ms each: 90 ms</strong>, not 690.');
+        await w.sleep(500);
+        const h = card(w.layer, 130, 26, 'sv-box-hot', 'one warm hop', 'sv-hot');
+        put(h, 430, 165); move(w, h, 620, w.origins[0].y);
+        w.origins[0].b.setAttribute('class', 'sv-box-hot');
+        w.origins[0].sub.textContent = 'pooled connection, already open';
+        await w.sleep(560); fade(w, h);
+        w.slotBox.setAttribute('class', 'sv-box');
+        w.slot.textContent = '';
+        w.say('The ocean is crossed <strong>once</strong>, on a warm pooled connection over a private backbone.');
+      },
+      async (w) => {
+        w.slotBox.setAttribute('class', 'sv-box-hot');
+        w.slot.textContent = 'GET /orders';
+        const a = card(w.layer, 130, 26, 'sv-box-risk', '500 from origin', 'sv-risk');
+        put(a, 430, 165); move(w, a, 620, w.origins[0].y);
+        w.origins[0].b.setAttribute('class', 'sv-box-risk');
+        w.origins[0].sub.textContent = 'having a bad day';
+        await w.sleep(700); fade(w, a);
+        w.note.textContent = 'still holding the request';
+        await w.sleep(400);
+        const b = card(w.layer, 130, 26, 'sv-box-hot', 'retry', 'sv-hot');
+        put(b, 430, 165); move(w, b, 620, w.origins[1].y);
+        w.origins[1].b.setAttribute('class', 'sv-box-hot');
+        w.origins[1].sub.textContent = '200';
+        await w.sleep(560); fade(w, b);
+        w.say('It is a real L7 proxy, so it <strong>retries into a different region</strong>. DNS could never do that.');
+      },
+      async (w) => {
+        w.slotBox.setAttribute('class', 'sv-box-hot');
+        w.slot.textContent = 'GET /logo.svg';
+        w.note.textContent = 'cache hit · never leaves Singapore';
+        const c = card(w.layer, 110, 26, 'sv-box-hot', '200 · cached', 'sv-hot');
+        put(c, 300, 165); move(w, c, 60, 165);
+        await w.sleep(560); fade(w, c);
+        w.say('Add a cache and it is a CDN. But note: the 90 ms win above <strong>needed no cache at all</strong>.');
+      },
+    ]);
+  }
+})();
+</script>

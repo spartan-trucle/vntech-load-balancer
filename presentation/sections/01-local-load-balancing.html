@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: what an L4 balancer and an L7 balancer actually do to your traffic, how they check that a backend is alive, and how to choose.</p>
-  <div class="foot"><span>10 / 50</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>10 / 56</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="osi-stack">
@@ -78,7 +78,7 @@
       <li data-step="2">Layers 5 and 6 barely exist in practice — TCP/IP folds them into TLS. Every choice in this section is really "L4 or L7?".</li>
     </ul>
   </div>
-  <div class="foot"><span>11 / 50</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+  <div class="foot"><span>11 / 56</span><span>osi model · l4 = nlb, l7 = alb</span></div>
 </section>
 
 <section class="slide" data-section="packet-vs-request">
@@ -96,7 +96,7 @@
       <li data-step="2">One request can span many packets; one packet can hold the tail of one request and the head of the next. Nothing on the wire marks where a request begins.</li>
     </ul>
   </div>
-  <div class="foot"><span>12 / 50</span><span>a packet is not a request</span></div>
+  <div class="foot"><span>12 / 56</span><span>a packet is not a request</span></div>
 </section>
 
 <section class="slide" data-section="l4-mechanics">
@@ -113,7 +113,7 @@
       <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 50</span><span>l4 · one decision per connection</span></div>
+  <div class="foot"><span>13 / 56</span><span>l4 · one decision per connection</span></div>
 </section>
 
 <section class="slide" data-section="l7-mechanics">
@@ -130,7 +130,7 @@
       <li data-step="2"><span class="chip hot">retry</span> It still holds the request in memory, so when a pod dies it writes the same bytes to another one. The client never learns anything went wrong.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 50</span><span>l7 · one decision per request</span></div>
+  <div class="foot"><span>14 / 56</span><span>l7 · one decision per request</span></div>
 </section>
 
 <section class="slide" data-section="lb-is-a-program">
@@ -147,7 +147,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> Past the buffer limit the proxy streams instead of holding, so there is no copy left. Retries stop working silently, on a balancer configured to retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>15 / 50</span><span>buffers · heap · why l4 is cheap</span></div>
+  <div class="foot"><span>15 / 56</span><span>buffers · heap · why l4 is cheap</span></div>
 </section>
 
 <section class="slide" data-section="health-checks">
@@ -164,7 +164,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> Never check the database inside <code>/healthz</code>. A 2 s DB blip fails every pod at once and turns "degraded" into "100% down". Keep the check shallow.</li>
     </ul>
   </div>
-  <div class="foot"><span>16 / 50</span><span>active · passive · flapping · panic mode</span></div>
+  <div class="foot"><span>16 / 56</span><span>active · passive · flapping · panic mode</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7">
@@ -188,7 +188,7 @@
       <li><b>Most real architectures use both.</b> A cheap stateless L4 layer at the edge absorbs the connections and spreads them over a fleet of L7 proxies that do the smart routing behind it. That is roughly what every hyperscaler does.</li>
     </ul>
   </div>
-  <div class="foot"><span>17 / 50</span><span>l4 vs. l7 · the comparison</span></div>
+  <div class="foot"><span>17 / 56</span><span>l4 vs. l7 · the comparison</span></div>
 </section>
 
 <section class="slide" data-section="nlb-alb-practice">
@@ -211,7 +211,7 @@
       <li data-step="2"><span class="chip risk">4</span> <b>Cross-zone is on and free for ALB, off and billed for NLB.</b> Off means an AZ with 1 pod gets as much traffic as an AZ with 5.</li>
     </ul>
   </div>
-  <div class="foot"><span>18 / 50</span><span>aws · the defaults that bite</span></div>
+  <div class="foot"><span>18 / 56</span><span>aws · the defaults that bite</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7-selfcheck">
@@ -239,7 +239,7 @@
       <p data-step="4">It passed the buffer limit, so the proxy switched to streaming the body straight through. There was no copy left in memory to re-send. Retries are only as long as the buffer.</p>
     </div>
   </div>
-  <div class="foot"><span>19 / 50</span><span>self-check · before the algorithms</span></div>
+  <div class="foot"><span>19 / 56</span><span>self-check · before the algorithms</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
@@ -266,7 +266,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
     </ul>
   </div>
-  <div class="foot"><span>20 / 50</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>20 / 56</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
@@ -319,7 +319,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>21 / 50</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>21 / 56</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
@@ -360,7 +360,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>22 / 50</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>22 / 56</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <section class="slide" data-section="lb-spof">
@@ -377,7 +377,7 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>23 / 50</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>23 / 56</span><span>high availability for the balancer itself</span></div>
 </section>
 
 <script>
