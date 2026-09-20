@@ -15,7 +15,7 @@ sections/NN-*.html  slide content — one file per section, most edits happen he
 sections/99-thanks.html  closing slide: Kahoot QR + PIN typed in on stage (not a numbered section)
 tools/renumber.py   rewrites every footer page number ("12 / 39") in SECTIONS order
 load-balancer-outline.md  talk outline + speaker split (source material, not rendered)
-notes/speaker-script.md   per-slide speaking script (source material, not rendered)
+notes/speaker-script.md   per-slide speaking script, in Vietnamese (source material, not rendered)
 ```
 
 ## How the page is assembled
@@ -47,7 +47,7 @@ Consequences:
 - Before/after pictures: `data-hide-at="1"` fades an element out when step 1 is reached. Pair it with a `data-step="1"` element that draws the "after" state in the same place.
 - Animated numbers: `data-count="1000"` counts up when the slide becomes active (supported by `deck.js`, not used by any slide yet).
 - Icons come from the sprite in `index.html` (`#ic-balancer`, `#ic-pulse`, `#ic-ring`, `#ic-plug`, `#ic-globe`, …). Add new symbols there, not inline in sections.
-- Slide copy is English. Follow "Writing slide copy" below.
+- Slide copy is English. Follow "Writing slide copy" below. The speaker script is Vietnamese — the talk is delivered in Vietnamese off English slides, so keep technical terms (load balancer, request, connection, health check, retry, TTL, anycast, round robin, …) in English there rather than inventing Vietnamese equivalents.
 
 ## Writing slide copy
 
