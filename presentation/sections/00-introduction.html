@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>INTRODUCTION</div>
   <h2>Introduction</h2>
   <p class="lead">The three ways one server fails you — capacity, availability, operability — what a load balancer is, and the words people mix up.</p>
-  <div class="foot"><span>3 / 42</span><span>introduction</span></div>
+  <div class="foot"><span>3 / 43</span><span>introduction</span></div>
 </section>
 
 <section class="slide" data-section="three-axes">
@@ -65,7 +65,7 @@
     </div>
   </div>
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">Capacity is <em>how much</em> you can serve. Availability is surviving change you did not ask for. Operability is making change you did ask for, safely. Most of your changes are planned — that is why operability bites even a service that fits on one box.</p>
-  <div class="foot"><span>4 / 42</span><span>capacity · availability · operability</span></div>
+  <div class="foot"><span>4 / 43</span><span>capacity · availability · operability</span></div>
 </section>
 
 <section class="slide" data-section="one-server">
@@ -115,7 +115,7 @@
     </svg>
     <figcaption>More servers only help if something splits the traffic. Clients know one hostname; something behind that name has to pick a server for every request.</figcaption>
   </div>
-  <div class="foot"><span>5 / 42</span><span>why load balancing exists</span></div>
+  <div class="foot"><span>5 / 43</span><span>why load balancing exists</span></div>
 </section>
 
 <section class="slide" data-section="what-is-lb">
@@ -185,7 +185,7 @@
       </ul>
     </div>
   </div>
-  <div class="foot"><span>6 / 42</span><span>definition · listener, pool, algorithm, health</span></div>
+  <div class="foot"><span>6 / 43</span><span>definition · listener, pool, algorithm, health</span></div>
 </section>
 
 <section class="slide" data-section="proxy-vocabulary">
@@ -261,7 +261,7 @@
   <ul class="points tight" data-step="1">
     <li>To the client the LB <em>is</em> the server; to the backend it <em>is</em> the client — the backend sees the LB's IP, not the user's. Pass the real one in <code>X-Forwarded-For</code> (L7) or PROXY protocol (L4).</li>
   </ul>
-  <div class="foot"><span>7 / 42</span><span>forward proxy · reverse proxy · load balancer</span></div>
+  <div class="foot"><span>7 / 43</span><span>forward proxy · reverse proxy · load balancer</span></div>
 </section>
 
 <section class="slide" data-section="scale-up-out">
@@ -284,7 +284,7 @@
   <ul class="points tight" data-step="1">
     <li>If a user's cart lives in pod memory, the next request lands on another pod and the cart is empty. Put session state in Redis or the DB first.</li>
   </ul>
-  <div class="foot"><span>8 / 42</span><span>vertical vs. horizontal scaling</span></div>
+  <div class="foot"><span>8 / 43</span><span>vertical vs. horizontal scaling</span></div>
 </section>
 
 <section class="slide" data-section="three-jobs">
@@ -311,5 +311,5 @@
     </div>
   </div>
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
-  <div class="foot"><span>9 / 42</span><span>spread · route around failure · hide change</span></div>
+  <div class="foot"><span>9 / 43</span><span>spread · route around failure · hide change</span></div>
 </section>

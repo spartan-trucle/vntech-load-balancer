@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 2</div>
   <h2>Global load balancing (GSLB)</h2>
   <p class="lead">Between regions and continents: DNS-based routing (GeoDNS), and what happens when a whole region goes dark: active-active vs. active-passive.</p>
-  <div class="foot"><span>16 / 42</span><span>section 2 · global load balancing</span></div>
+  <div class="foot"><span>17 / 43</span><span>section 2 · global load balancing</span></div>
 </section>
 
 <section class="slide" data-section="dns-lb">
@@ -30,7 +30,7 @@ api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
       <li data-step="1">Use DNS to pick a <b>region</b>, then a real balancer inside it to pick a <b>server</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>17 / 42</span><span>dns load balancing · ttl</span></div>
+  <div class="foot"><span>18 / 43</span><span>dns load balancing · ttl</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
@@ -65,7 +65,7 @@ api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
       </g>
     </svg>
   </div>
-  <div class="foot"><span>18 / 42</span><span>system design · architecture</span></div>
+  <div class="foot"><span>19 / 43</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="region-failover">
@@ -89,7 +89,7 @@ api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
       <li data-step="1"><span class="chip risk">the real trap</span> Failover moves the traffic, not the capacity. If Tokyo can't take 100% <b>right now</b>, you've turned one region outage into two.</li>
     </ul>
   </div>
-  <div class="foot"><span>19 / 42</span><span>global balancing · dns vs. anycast</span></div>
+  <div class="foot"><span>20 / 43</span><span>global balancing · dns vs. anycast</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
@@ -106,5 +106,5 @@ api.shop.vn.  <span class="hl">300</span>  IN  A  10.0.1.11
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>20 / 42</span><span>system design · capacity</span></div>
+  <div class="foot"><span>21 / 43</span><span>system design · capacity</span></div>
 </section>

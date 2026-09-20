@@ -38,11 +38,12 @@ File này là nguồn nội dung cho slide. Slide là bản tiếng Anh của ou
 Yêu cầu: quản lý traffic trong data center (east-west) · software LB (NGINX, HAProxy) vs hardware LB · sidecar proxy pattern.
 
 Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
-- **1.1 L4 vs L7:** L4 chỉ thấy IP:port, cân bằng theo *connection*. L7 terminate TLS, đọc path/header/cookie, cân bằng theo *request*.
-- **1.2 L7 routing:** `/api` và `/ws` về pool khác nhau, canary 5% theo weight, header `X-Canary` cho QA.
-- **1.3 Đường đi trên EKS:** Route 53 → ALB → Ingress controller → (Service/kube-proxy cho call nội bộ) → Pod.
-- **1.4 Client-side LB / sidecar:** gRPC `round_robin` + headless Service, hoặc service mesh sidecar. Bớt 1 hop, nhưng mọi client phải tự cập nhật danh sách pod.
-- **1.5 Ai cân bằng cho LB:** active-passive (VRRP), active-active (ECMP/anycast + Maglev), managed (ALB), client-side.
+- **1.1 Mô hình OSI 7 tầng:** Load balancer chỉ ngồi ở 2 tầng: L4 (transport — TCP/UDP, port) và L7 (application — HTTP, header, cookie). Trên AWS: L4 = **NLB**, L7 = **ALB**.
+- **1.2 L4 vs L7:** L4 chỉ thấy IP:port, cân bằng theo *connection*. L7 terminate TLS, đọc path/header/cookie, cân bằng theo *request*.
+- **1.3 L7 routing:** `/api` và `/ws` về pool khác nhau, canary 5% theo weight, header `X-Canary` cho QA.
+- **1.4 Đường đi trên EKS:** Route 53 → ALB → Ingress controller → (Service/kube-proxy cho call nội bộ) → Pod.
+- **1.5 Client-side LB / sidecar:** gRPC `round_robin` + headless Service, hoặc service mesh sidecar. Bớt 1 hop, nhưng mọi client phải tự cập nhật danh sách pod.
+- **1.6 Ai cân bằng cho LB:** active-passive (VRRP), active-active (ECMP/anycast + Maglev), managed (ALB), client-side.
 - **Còn thiếu:** software vs hardware LB.
 
 ## 2. Global Load Balancing — GSLB (Truc)

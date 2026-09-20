@@ -4,11 +4,85 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: east-west traffic between services, software vs. hardware balancers, and the sidecar proxy.</p>
-  <div class="foot"><span>10 / 42</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>10 / 43</span><span>section 1 · local load balancing</span></div>
+</section>
+
+<section class="slide" data-section="osi-stack">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>1.1 · Back to the OSI model</div>
+  <h2>Seven layers, two seats for a balancer: layer 4 is an NLB, layer 7 is an ALB</h2>
+  <div class="split">
+    <div class="chart meter">
+      <svg viewBox="0 0 680 400" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
+        <defs>
+          <marker id="arrow-osi" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+        </defs>
+
+        <rect x="8" y="12" width="420" height="48" rx="8" class="sv-box-hot"/>
+        <text x="30" y="43" text-anchor="middle" class="sv-hot">7</text>
+        <text x="56" y="43" class="sv-lbl">Application</text>
+        <text x="412" y="43" text-anchor="end" class="sv-hot">HTTP · gRPC · headers, cookies</text>
+
+        <rect x="8" y="66" width="420" height="48" rx="8" class="sv-box"/>
+        <text x="30" y="97" text-anchor="middle" class="sv-lbl-sm">6</text>
+        <text x="56" y="97" class="sv-lbl">Presentation</text>
+        <text x="412" y="97" text-anchor="end" class="sv-lbl-sm">TLS · encoding · compression</text>
+
+        <rect x="8" y="120" width="420" height="48" rx="8" class="sv-box"/>
+        <text x="30" y="151" text-anchor="middle" class="sv-lbl-sm">5</text>
+        <text x="56" y="151" class="sv-lbl">Session</text>
+        <text x="412" y="151" text-anchor="end" class="sv-lbl-sm">setup and teardown of a dialogue</text>
+
+        <rect x="8" y="174" width="420" height="48" rx="8" class="sv-box-hot"/>
+        <text x="30" y="205" text-anchor="middle" class="sv-hot">4</text>
+        <text x="56" y="205" class="sv-lbl">Transport</text>
+        <text x="412" y="205" text-anchor="end" class="sv-hot">TCP · UDP · ports</text>
+
+        <rect x="8" y="228" width="420" height="48" rx="8" class="sv-box"/>
+        <text x="30" y="259" text-anchor="middle" class="sv-lbl-sm">3</text>
+        <text x="56" y="259" class="sv-lbl">Network</text>
+        <text x="412" y="259" text-anchor="end" class="sv-lbl-sm">IP addresses · routing</text>
+
+        <rect x="8" y="282" width="420" height="48" rx="8" class="sv-box"/>
+        <text x="30" y="313" text-anchor="middle" class="sv-lbl-sm">2</text>
+        <text x="56" y="313" class="sv-lbl">Data link</text>
+        <text x="412" y="313" text-anchor="end" class="sv-lbl-sm">Ethernet · MAC addresses</text>
+
+        <rect x="8" y="336" width="420" height="48" rx="8" class="sv-box"/>
+        <text x="30" y="367" text-anchor="middle" class="sv-lbl-sm">1</text>
+        <text x="56" y="367" class="sv-lbl">Physical</text>
+        <text x="412" y="367" text-anchor="end" class="sv-lbl-sm">copper · fibre · radio</text>
+
+        <g data-step="1">
+          <path d="M430 36 H452" class="sv-line" marker-end="url(#arrow-osi)"/>
+          <rect x="458" y="12" width="214" height="48" rx="8" class="sv-box-hot"/>
+          <text x="474" y="34" class="sv-hot">AWS ALB</text>
+          <text x="474" y="52" class="sv-lbl-sm">Application Load Balancer</text>
+
+          <path d="M430 198 H452" class="sv-line" marker-end="url(#arrow-osi)"/>
+          <rect x="458" y="174" width="214" height="48" rx="8" class="sv-box-hot"/>
+          <text x="474" y="196" class="sv-hot">AWS NLB</text>
+          <text x="474" y="214" class="sv-lbl-sm">Network Load Balancer</text>
+        </g>
+
+        <g data-step="2">
+          <path d="M442 240 V378" class="sv-dash"/>
+          <text x="458" y="313" class="sv-lbl-sm">layers 1–3: the network's job,</text>
+          <text x="458" y="331" class="sv-lbl-sm">not the balancer's</text>
+        </g>
+      </svg>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip hot">L4</span> The balancer reads the TCP header only: source IP, destination port. It picks one backend when the connection opens, then copies bytes. On AWS that is the <b>NLB</b>.</li>
+      <li><span class="chip hot">L7</span> The balancer terminates TLS and parses every HTTP request: method, path, <code>Host</code>, cookies. It can pick a different backend per request. On AWS that is the <b>ALB</b>.</li>
+      <li data-step="1">Same idea outside AWS: HAProxy <code>mode tcp</code> and kube-proxy sit at L4; NGINX, Envoy and HAProxy <code>mode http</code> sit at L7.</li>
+      <li data-step="2">Layers 5 and 6 barely exist in practice — TCP/IP folds them into TLS. Every choice in this section is really "L4 or L7?".</li>
+    </ul>
+  </div>
+  <div class="foot"><span>11 / 43</span><span>osi model · l4 = nlb, l7 = alb</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.1 · L4 vs. L7</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.2 · L4 vs. L7</div>
   <h2>An L4 balancer sees IPs and ports. An L7 balancer reads the HTTP request.</h2>
   <div class="body" style="gap:18px;">
     <div class="chart meter">
@@ -37,11 +111,11 @@
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>11 / 42</span><span>l4 vs. l7</span></div>
+  <div class="foot"><span>12 / 43</span><span>l4 vs. l7</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.2 · What L7 buys you</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>1.3 · What L7 buys you</div>
   <h2>One address, many pools. Route by path, header, or weight.</h2>
   <div class="split code-left">
     <pre class="code"><span class="c"># NGINX-style, one listener on :443</span>
@@ -64,11 +138,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="1">An L4 balancer can do none of this: it never sees the path. It can only pick a server for the whole connection.</li>
     </ul>
   </div>
-  <div class="foot"><span>12 / 42</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>13 / 43</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.3 · The path on AWS EKS</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.4 · The path on AWS EKS</div>
   <h2>Four hops pick a destination before a request reaches a pod</h2>
   <div class="body" style="gap:16px;">
     <div class="chart">
@@ -117,11 +191,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 42</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>14 / 43</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.4 · Client-side balancing</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.5 · Client-side balancing</div>
   <h2>For service-to-service calls, the caller can pick the backend itself and skip a hop</h2>
   <div class="split">
     <div class="chart meter">
@@ -158,11 +232,11 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 42</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>15 / 43</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <section class="slide" data-section="lb-spof">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.5 · Who balances the balancer?</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-shield"/></svg>1.6 · Who balances the balancer?</div>
   <h2>A single balancer is a single point of failure with a nicer name</h2>
   <div class="body meter" style="justify-content:center;">
     <table class="tbl">
@@ -175,5 +249,5 @@ if ($http_x_canary = "true") { set $api_version api_v2; }</pre>
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>15 / 42</span><span>high availability for the balancer itself</span></div>
+  <div class="foot"><span>16 / 43</span><span>high availability for the balancer itself</span></div>
 </section>
