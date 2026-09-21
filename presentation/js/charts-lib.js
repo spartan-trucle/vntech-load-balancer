@@ -67,6 +67,84 @@
 
   // Request-flow picture shared by section 3 (algorithm animations) and section 4 (live NGINX demo).
   // One picture for every algorithm: requests (coins) leave the balancer (or clients → hash box)
+  // Timers for a replayable animation. later()/sleep() run on wall time; snapshot() swaps in a
+  // virtual clock that jumps time forward and fires due timers at once, so a whole phase finishes
+  // synchronously (in microtasks) and print/PDF captures its end state.
+  function clock() {
+    let timers = new Set();
+    let vt = null;
+    const runUntil = (t) => {
+      for (;;) {
+        vt.queue.sort((a, b) => a.at - b.at);
+        const nx = vt.queue[0];
+        if (!nx || nx.at > t) break;
+        vt.queue.shift(); vt.now = nx.at; nx.fn();
+      }
+      vt.now = Math.max(vt.now, t);
+    };
+    const later = (fn, ms) => {
+      if (vt) { vt.queue.push({ at: vt.now + ms, fn }); return; }
+      const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id);
+    };
+    const sleep = (ms) => {
+      if (vt) { runUntil(vt.now + ms); return Promise.resolve(); }
+      return new Promise((res) => later(res, ms));
+    };
+    return {
+      later, sleep,
+      virtual: () => vt != null,
+      snapshot(phase, api) { vt = { now: 0, queue: [] }; phase(api); },
+      cancel() { vt = null; timers.forEach(clearTimeout); timers = new Set(); },
+    };
+  }
+
+  // Bind a widget to a slide's -> steps. Phase k plays when the presenter reaches data-step k;
+  // every phase replays from a clean state, so <- works too, and the # -replay button reruns it.
+  // Needs #<id>-flow, #<id>-readout and #<id>-replay, and a widget with reset/later/snapshot.
+  function steps(id, widget, phases) {
+    const svg = $(`${id}-flow`), slide = svg.closest('.slide');
+    const readout = $(`${id}-readout`);
+    widget.say = (html) => { readout.innerHTML = html; };
+    let key = null;
+    const phaseNow = () => Math.min(phases.length - 1,
+      Math.max(0, ...[...slide.querySelectorAll('[data-step].shown')].map((n) => Number(n.dataset.step))));
+    const run = (p) => {
+      widget.reset();
+      widget.say('');
+      widget.later(() => phases[p](widget), 600);
+    };
+    const check = () => {
+      const k = slide.classList.contains('active') ? phaseNow() : -1;
+      if (k === key) return;
+      key = k;
+      if (k < 0) widget.reset(); else run(k);
+    };
+    const last = () => widget.snapshot(phases[phases.length - 1]);
+    // Print / PDF shows every slide at its last step; ?print renders that state on load (headless export).
+    if (new URLSearchParams(location.search).has('print')) { last(); return; }
+    addEventListener('beforeprint', last);
+    addEventListener('afterprint', () => { key = null; check(); });
+    new MutationObserver(check).observe(slide, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    $(`${id}-replay`).addEventListener('click', () => { if (key >= 0) run(key); });
+    widget.reset();
+  }
+
+  // A hand-drawn scene for slides whose picture isn't a balancer-and-servers flow.
+  // draw() lays out the fixed parts once and returns handles for the phases to use; everything a
+  // phase draws goes in api.layer, which reset() wipes. A handle named clear() undoes any change a
+  // phase made to a fixed node.
+  function scene(svg, viewBox, draw) {
+    svg.setAttribute('viewBox', viewBox);
+    const clk = clock();
+    const api = { sleep: clk.sleep, later: clk.later, virtual: clk.virtual };
+    Object.assign(api, draw(svg, api) || {});
+    // appended after draw(), so what a phase draws paints on top of the fixed scenery
+    api.layer = el('g', {}, svg);
+    api.reset = () => { clk.cancel(); api.layer.replaceChildren(); api.clear && api.clear(); };
+    api.snapshot = (phase) => { api.reset(); clk.snapshot(phase, api); };
+    return api;
+  }
+
   // and land in a server. The hub box shows what the balancer "knows" when it picks.
   // Each slide's → steps pick a phase; every phase replays from a clean state, so going back works.
   const FLY = 900; // ms for one coin hop; matches .coin-fly in deck.css
@@ -109,7 +187,7 @@
     const coins = el('g', {}, svg);
     const slot = (s, k) => [SX + 24 + k * 25, s.y + bh - 19];
     const put = (g, x, y) => { g.style.transform = `translate(${x}px, ${y}px)`; };
-    const fly = (g, x, y) => { if (vt) { put(g, x, y); return; } void g.getBoundingClientRect(); put(g, x, y); };
+    const fly = (g, x, y) => { if (clk.virtual()) { put(g, x, y); return; } void g.getBoundingClientRect(); put(g, x, y); };
     const coin = (label, cls, x, y) => {
       const g = el('g', { class: `coin coin-fly ${cls}` }, coins);
       el('circle', { r: 10 }, g);
@@ -118,27 +196,8 @@
       return g;
     };
 
-    let timers = new Set();
-    // vt: a virtual clock used for print/PDF. sleep() jumps time forward and runs due timers at once,
-    // so a whole phase finishes synchronously (in microtasks) and the page prints its end state.
-    let vt = null;
-    const runUntil = (t) => {
-      for (;;) {
-        vt.queue.sort((a, b) => a.at - b.at);
-        const nx = vt.queue[0];
-        if (!nx || nx.at > t) break;
-        vt.queue.shift(); vt.now = nx.at; nx.fn();
-      }
-      vt.now = Math.max(vt.now, t);
-    };
-    const later = (fn, ms) => {
-      if (vt) { vt.queue.push({ at: vt.now + ms, fn }); return; }
-      const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id);
-    };
-    const sleep = (ms) => {
-      if (vt) { runUntil(vt.now + ms); return Promise.resolve(); }
-      return new Promise((res) => later(res, ms));
-    };
+    const clk = clock();
+    const { later, sleep } = clk;
     const home = new Map();
 
     const api = {
@@ -222,14 +281,9 @@
         return have ? 'hit' : prev ? 'lost' : 'new';
       },
       // run a phase on the virtual clock: the end state is on screen before the next paint
-      snapshot(phase) {
-        api.reset();
-        vt = { now: 0, queue: [] };
-        phase(api);
-      },
+      snapshot(phase) { api.reset(); clk.snapshot(phase, api); },
       reset() {
-        vt = null;
-        timers.forEach(clearTimeout); timers = new Set();
+        clk.cancel();
         coins.replaceChildren(); home.clear();
         S.forEach((s) => {
           Object.assign(s, { coins: [], sessions: new Map(), total: 0, active: 0, work: 0, peak: 0 });
@@ -244,5 +298,5 @@
     return api;
   }
 
-  window.Charts = { el, scale, fmt, $, rng, histogram, flow };
+  window.Charts = { el, scale, fmt, $, rng, histogram, flow, clock, steps, scene };
 })();
