@@ -51,6 +51,6 @@ The PDF uses whichever theme is active (Tokyo Night by default; press `T` first 
 ## Interactive slides
 
 - **3.2 – 3.6 · Round robin, weighted round robin, least connections, IP hash** — animated requests; press `→` to move to the next scenario, or click ↻ Replay.
-- **4.4 · Live** — sends real requests to NGINX from [`demo/`](../demo/) (`npm start` in `demo/` first) and animates which server answered; press `S` to send 6. Without NGINX it replays a recording.
+- **4.6 · Live** — sends real requests to NGINX from [`demo/`](../demo/) (`npm start` in `demo/` first) and animates which server answered; press `S` to send 6. Without NGINX it replays a recording.
 - **Appendix · One slow pod, four algorithms** — switch between round robin, random, least connections and power of two choices on the same simulated traffic.
 - **Appendix · Hash-based** — add a fourth cache node and compare how many keys move with `hash % N` vs. consistent hashing.

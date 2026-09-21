@@ -13,7 +13,7 @@
       <li><b>Client identity</b>: IP hash</li>
     </ul>
   </div>
-  <div class="foot"><span>33 / 54</span><span>section 3 · algorithms</span></div>
+  <div class="foot"><span>33 / 56</span><span>section 3 · algorithms</span></div>
 </section>
 
 <section class="slide" data-section="algo-question">
@@ -34,7 +34,7 @@
       <li data-step="3">For each one, ask two things: what does it know, and <b>what does it ignore?</b> The ignored part is where it breaks.</li>
     </ul>
   </div>
-  <div class="foot"><span>34 / 54</span><span>framing · static vs dynamic (ByteByteGo)</span></div>
+  <div class="foot"><span>34 / 56</span><span>framing · static vs dynamic (ByteByteGo)</span></div>
 </section>
 
 <section class="slide" data-section="round-robin">
@@ -52,7 +52,7 @@
       <li data-step="1"><span class="chip ok">use when</span> Servers are the same size, requests cost about the same, and the app is stateless.</li>
     </ul>
   </div>
-  <div class="foot"><span>35 / 54</span><span>round robin · ByteByteGo · NGINX, HAProxy docs</span></div>
+  <div class="foot"><span>35 / 56</span><span>round robin · ByteByteGo · NGINX, HAProxy docs</span></div>
 </section>
 
 <section class="slide" data-section="weighted-rr">
@@ -70,7 +70,7 @@
       <li data-step="2"><span class="chip risk">ignores</span> Live load. A weight is what you <i>believe</i> a server can handle, not a measurement. Set it wrong and that server overloads.</li>
     </ul>
   </div>
-  <div class="foot"><span>36 / 54</span><span>weighted round robin · ByteByteGo · NGINX smooth WRR</span></div>
+  <div class="foot"><span>36 / 56</span><span>weighted round robin · ByteByteGo · NGINX smooth WRR</span></div>
 </section>
 
 <section class="slide" data-section="least-conn">
@@ -89,7 +89,7 @@
       <li data-step="2"><span class="chip ok">use when</span> Request times vary a lot or connections are long-lived: WebSockets, uploads, DB proxies.</li>
     </ul>
   </div>
-  <div class="foot"><span>37 / 54</span><span>least connections · ByteByteGo · NGINX least_conn, HAProxy leastconn</span></div>
+  <div class="foot"><span>37 / 56</span><span>least connections · ByteByteGo · NGINX least_conn, HAProxy leastconn</span></div>
 </section>
 
 <section class="slide" data-section="ip-hash">
@@ -107,7 +107,7 @@
       <li data-step="1">NGINX <code>ip_hash</code> uses only the first 3 octets of an IPv4 address, so a whole <code>/24</code> shares one server. Mobile users change IP and lose affinity.</li>
     </ul>
   </div>
-  <div class="foot"><span>38 / 54</span><span>ip hash · ByteByteGo · NGINX ip_hash, HAProxy balance source</span></div>
+  <div class="foot"><span>38 / 56</span><span>ip hash · ByteByteGo · NGINX ip_hash, HAProxy balance source</span></div>
 </section>
 
 <section class="slide" data-section="ip-hash-scale">
@@ -125,7 +125,7 @@
       <li data-step="3"><span class="chip ok">less bad</span> Consistent hashing moves only ~1/N of users (ch. 5; see appendix). NGINX <code>hash $remote_addr consistent;</code></li>
     </ul>
   </div>
-  <div class="foot"><span>39 / 54</span><span>rehashing problem · System Design Interview ch. 5</span></div>
+  <div class="foot"><span>39 / 56</span><span>rehashing problem · System Design Interview ch. 5</span></div>
 </section>
 
 <section class="slide" data-section="sticky">
@@ -179,7 +179,7 @@
       <li data-step="2">Still want affinity? Use it only as a <b>cache hint</b>: losing it should cost a cache miss, not a logout.</li>
     </ul>
   </div>
-  <div class="foot"><span>40 / 54</span><span>stateful vs stateless web tier · System Design Interview ch. 1</span></div>
+  <div class="foot"><span>40 / 56</span><span>stateful vs stateless web tier · System Design Interview ch. 1</span></div>
 </section>
 
 <section class="slide" data-section="algo-comparison">
@@ -200,7 +200,7 @@
       </tbody>
     </table>
   </div>
-  <div class="foot"><span>41 / 54</span><span>algorithm comparison</span></div>
+  <div class="foot"><span>41 / 56</span><span>algorithm comparison</span></div>
 </section>
 
 <section class="slide" data-section="algo-takeaways">
@@ -213,7 +213,7 @@
     <div class="card" data-step="3"><div class="k">ip hash</div><div class="t">Identity</div><p>"Who is this client?"</p><p>Must keep a user on one server.</p></div>
   </div>
   <p class="lead" data-step="4" style="max-width:none; font-size:19px;">Reaching for sticky sessions? First ask whether you can <b>make the app stateless</b> instead.</p>
-  <div class="foot"><span>42 / 54</span><span>takeaways · algorithms</span></div>
+  <div class="foot"><span>42 / 56</span><span>takeaways · algorithms</span></div>
 </section>
 
 <!-- ============ APPENDIX: beyond the four ============ -->
@@ -227,7 +227,7 @@
       <li><b>Consistent hashing</b>: the fix for the rehashing problem.</li>
     </ul>
   </div>
-  <div class="foot"><span>43 / 54</span><span>appendix · algorithms</span></div>
+  <div class="foot"><span>43 / 56</span><span>appendix · algorithms</span></div>
 </section>
 
 <section class="slide" data-section="p2c">
@@ -266,7 +266,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <li data-step="2">Result: close to least-connections quality, at round-robin cost. A good default for L7.</li>
     </ul>
   </div>
-  <div class="foot"><span>44 / 54</span><span>power of two random choices</span></div>
+  <div class="foot"><span>44 / 56</span><span>power of two random choices</span></div>
 </section>
 
 <section class="slide" data-section="lb-sim">
@@ -287,7 +287,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <figcaption>Simulated: 480 req/s for 10 s into 4 pods with 4 workers each. pod-a…c take 20 ms per request on average, pod-d takes 60 ms (noisy neighbour). Bars are requests in flight, sampled every 100 ms.</figcaption>
     </div>
   </div>
-  <div class="foot"><span>45 / 54</span><span>simulation · same arrivals, same service times for every algorithm</span></div>
+  <div class="foot"><span>45 / 56</span><span>simulation · same arrivals, same service times for every algorithm</span></div>
 </section>
 
 <section class="slide" data-section="hash-mod">
@@ -308,7 +308,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
     </div>
     <p class="caption" style="margin:0; font-size:16px;">Hash on a user ID or cache key when locality matters: a per-user cache, a shard, a WebSocket room. NGINX <code>hash $key consistent</code>, HAProxy <code>balance uri</code>, Envoy <code>RING_HASH</code> / <code>MAGLEV</code>.</p>
   </div>
-  <div class="foot"><span>46 / 54</span><span>hash % n vs. consistent hashing</span></div>
+  <div class="foot"><span>46 / 56</span><span>hash % n vs. consistent hashing</span></div>
 </section>
 
 <section class="slide" data-section="ring">
@@ -325,7 +325,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <li data-step="2">With 3 points the arcs are uneven. Give each node <b>100–200 virtual nodes</b> (<code>A#0 … A#149</code>) so every node owns about the same share.</li>
     </ul>
   </div>
-  <div class="foot"><span>47 / 54</span><span>consistent hashing · the ring</span></div>
+  <div class="foot"><span>47 / 56</span><span>consistent hashing · the ring</span></div>
 </section>
 
 <script>

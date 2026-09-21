@@ -1,6 +1,6 @@
 # Demo: the crashed server
 
-Three Node + TypeScript backends on ports 8001–8003, NGINX in front on port 8000. Slide 4.4 of the deck sends real requests to NGINX and animates which server answered.
+Three Node + TypeScript backends on ports 8001–8003, NGINX in front on port 8000. Slide 4.6 of the deck sends real requests to NGINX and animates which server answered.
 
 ## Setup
 
