@@ -11,62 +11,62 @@
   <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>1.1 · Back to the OSI model</div>
   <h2>Seven layers, two seats for a balancer: layer 4 is an NLB, layer 7 is an ALB</h2>
   <div class="chart meter" style="flex:1; min-height:0; justify-content:center;">
-    <svg viewBox="0 0 680 400" style="width:auto; height:100%; max-width:100%; margin:0 auto;" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
+    <svg viewBox="0 0 760 400" style="width:auto; height:100%; max-width:100%; margin:0 auto;" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
         <defs>
           <marker id="arrow-osi" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
         </defs>
 
-        <rect x="8" y="12" width="420" height="48" rx="8" class="sv-box-hot"/>
+        <rect x="8" y="12" width="500" height="48" rx="8" class="sv-box-hot"/>
         <text x="30" y="43" text-anchor="middle" class="sv-hot">7</text>
         <text x="56" y="43" class="sv-lbl">Application</text>
-        <text x="412" y="43" text-anchor="end" class="sv-hot">HTTP · gRPC · headers, cookies</text>
+        <text x="492" y="43" text-anchor="end" class="sv-hot">HTTP · gRPC · headers, cookies</text>
 
-        <rect x="8" y="66" width="420" height="48" rx="8" class="sv-box"/>
+        <rect x="8" y="66" width="500" height="48" rx="8" class="sv-box"/>
         <text x="30" y="97" text-anchor="middle" class="sv-lbl-sm">6</text>
         <text x="56" y="97" class="sv-lbl">Presentation</text>
-        <text x="412" y="97" text-anchor="end" class="sv-lbl-sm">TLS · encoding · compression</text>
+        <text x="492" y="97" text-anchor="end" class="sv-lbl-sm">TLS · encoding · compression</text>
 
-        <rect x="8" y="120" width="420" height="48" rx="8" class="sv-box"/>
+        <rect x="8" y="120" width="500" height="48" rx="8" class="sv-box"/>
         <text x="30" y="151" text-anchor="middle" class="sv-lbl-sm">5</text>
         <text x="56" y="151" class="sv-lbl">Session</text>
-        <text x="412" y="151" text-anchor="end" class="sv-lbl-sm">setup and teardown of a dialogue</text>
+        <text x="492" y="151" text-anchor="end" class="sv-lbl-sm">setup and teardown of a dialogue</text>
 
-        <rect x="8" y="174" width="420" height="48" rx="8" class="sv-box-hot"/>
+        <rect x="8" y="174" width="500" height="48" rx="8" class="sv-box-hot"/>
         <text x="30" y="205" text-anchor="middle" class="sv-hot">4</text>
         <text x="56" y="205" class="sv-lbl">Transport</text>
-        <text x="412" y="205" text-anchor="end" class="sv-hot">TCP · UDP · ports</text>
+        <text x="492" y="205" text-anchor="end" class="sv-hot">TCP · UDP · ports</text>
 
-        <rect x="8" y="228" width="420" height="48" rx="8" class="sv-box"/>
+        <rect x="8" y="228" width="500" height="48" rx="8" class="sv-box"/>
         <text x="30" y="259" text-anchor="middle" class="sv-lbl-sm">3</text>
         <text x="56" y="259" class="sv-lbl">Network</text>
-        <text x="412" y="259" text-anchor="end" class="sv-lbl-sm">IP addresses · routing</text>
+        <text x="492" y="259" text-anchor="end" class="sv-lbl-sm">IP addresses · routing</text>
 
-        <rect x="8" y="282" width="420" height="48" rx="8" class="sv-box"/>
+        <rect x="8" y="282" width="500" height="48" rx="8" class="sv-box"/>
         <text x="30" y="313" text-anchor="middle" class="sv-lbl-sm">2</text>
         <text x="56" y="313" class="sv-lbl">Data link</text>
-        <text x="412" y="313" text-anchor="end" class="sv-lbl-sm">Ethernet · MAC addresses</text>
+        <text x="492" y="313" text-anchor="end" class="sv-lbl-sm">Ethernet · MAC addresses</text>
 
-        <rect x="8" y="336" width="420" height="48" rx="8" class="sv-box"/>
+        <rect x="8" y="336" width="500" height="48" rx="8" class="sv-box"/>
         <text x="30" y="367" text-anchor="middle" class="sv-lbl-sm">1</text>
         <text x="56" y="367" class="sv-lbl">Physical</text>
-        <text x="412" y="367" text-anchor="end" class="sv-lbl-sm">copper · fibre · radio</text>
+        <text x="492" y="367" text-anchor="end" class="sv-lbl-sm">copper · fibre · radio</text>
 
         <g data-step="1">
-          <path d="M430 36 H452" class="sv-line" marker-end="url(#arrow-osi)"/>
-          <rect x="458" y="12" width="214" height="48" rx="8" class="sv-box-hot"/>
-          <text x="474" y="34" class="sv-hot">AWS ALB</text>
-          <text x="474" y="52" class="sv-lbl-sm">Application Load Balancer</text>
+          <path d="M510 36 H532" class="sv-line" marker-end="url(#arrow-osi)"/>
+          <rect x="538" y="12" width="214" height="48" rx="8" class="sv-box-hot"/>
+          <text x="554" y="34" class="sv-hot">AWS ALB</text>
+          <text x="554" y="52" class="sv-lbl-sm">Application Load Balancer</text>
 
-          <path d="M430 198 H452" class="sv-line" marker-end="url(#arrow-osi)"/>
-          <rect x="458" y="174" width="214" height="48" rx="8" class="sv-box-hot"/>
-          <text x="474" y="196" class="sv-hot">AWS NLB</text>
-          <text x="474" y="214" class="sv-lbl-sm">Network Load Balancer</text>
+          <path d="M510 198 H532" class="sv-line" marker-end="url(#arrow-osi)"/>
+          <rect x="538" y="174" width="214" height="48" rx="8" class="sv-box-hot"/>
+          <text x="554" y="196" class="sv-hot">AWS NLB</text>
+          <text x="554" y="214" class="sv-lbl-sm">Network Load Balancer</text>
         </g>
 
         <g data-step="2">
-          <path d="M442 240 V378" class="sv-dash"/>
-          <text x="458" y="313" class="sv-lbl-sm">layers 1–3: the network's job,</text>
-          <text x="458" y="331" class="sv-lbl-sm">not the balancer's</text>
+          <path d="M522 240 V378" class="sv-dash"/>
+          <text x="538" y="313" class="sv-lbl-sm">layers 1–3: the network's job,</text>
+          <text x="538" y="331" class="sv-lbl-sm">not the balancer's</text>
         </g>
     </svg>
   </div>
@@ -79,7 +79,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="pkt-flow" role="img" aria-label="Packets arriving on a wire, the anatomy of one packet, and three HTTP requests sharing one TCP connection"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="pkt-replay">↻ Replay</button></div><p class="readout" id="pkt-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="pkt-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="pkt-readout"></p></div>
     </div>
     <ul class="points tight">
       <li>Think of the post. <span class="chip">L3</span> is the street address on the envelope: which machine.</li>
@@ -97,7 +97,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="l4-flow" role="img" aria-label="An L4 balancer picking a backend at the SYN packet and forwarding the rest through a connection table"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="l4-replay">↻ Replay</button></div><p class="readout" id="l4-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="l4-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="l4-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">state</span> One row per flow: <code>(src ip, src port, dst ip, dst port) → pod</code>. Packets 2..N carry no routing hint, so the table is the only memory of the choice.</li>
@@ -114,7 +114,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="l7-flow" role="img" aria-label="An L7 proxy terminating the client connection, holding the request, and writing it to a second connection"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="l7-replay">↻ Replay</button></div><p class="readout" id="l7-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="l7-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="l7-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip hot">per request</span> Two requests on the same client connection can land on two different pods. An L4 balancer cannot do that — it already committed the whole pipe.</li>
@@ -131,7 +131,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="prog-flow" role="img" aria-label="A balancer keeping a copy of each request in memory until one is too big to keep"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="prog-replay">↻ Replay</button></div><p class="readout" id="prog-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="prog-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="prog-readout"></p></div>
     </div>
     <ul class="points tight">
       <li>The balancer is an ordinary program, like the ones you write. It reads the request in, decides where it goes, writes it out. While it decides, the request sits in its memory.</li>
@@ -149,7 +149,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="hc-flow" role="img" aria-label="Active probes ejecting a failing pod, passive outlier detection, and a deep health check taking every pod out at once"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="hc-replay">↻ Replay</button></div><p class="readout" id="hc-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="hc-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="hc-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">active</span> Probe on a timer. <code>interval 5s × 3 failures = ~15 s of errors</code> before ejection — plus the request already in flight. Sane default: 5 s, 3 out, 2 back in.</li>
@@ -365,7 +365,7 @@ needs warm-up for a spike</pre>
 
 <script>
 (() => {
-  const { el, $, scene, steps } = window.Charts;
+  const { el, $, scene, steps, node } = window.Charts;
 
   // ---------- shared drawing helpers for the 1.2 – 1.6 mechanics scenes ----------
   const W = 720, H = 330;
@@ -399,8 +399,10 @@ needs warm-up for a spike</pre>
       const g = w.rows[0], y = 46;
       txt(g, 0, 14, 'sv-lbl-sm', 'on the wire · bytes, in order');
       line(g, `M0 ${y} H${W}`, 'sv-line-soft');
-      txt(g, 0, y + 34, 'sv-lbl-sm', 'client');
-      txt(g, W, y + 34, 'sv-lbl-sm', 'balancer', 'end');
+      el('use', { href: '#ic-client', x: 0, y: y + 16, width: 22, height: 22, class: 'sv-glyph' }, g);
+      txt(g, 28, y + 34, 'sv-lbl-sm', 'client');
+      el('use', { href: '#ic-balancer', x: W - 22, y: y + 16, width: 22, height: 22, class: 'sv-glyph' }, g);
+      txt(g, W - 30, y + 34, 'sv-lbl-sm', 'balancer', 'end');
       for (let i = 0; i < 7; i++) {
         const c = card(g, 78, 28, 'sv-box-hot', `pkt ${i + 1}`, 'sv-hot');
         put(c, animate ? -50 : 60 + i * 96, y);
@@ -462,21 +464,16 @@ needs warm-up for a spike</pre>
     const PODS = ['pod-a', 'pod-b', 'pod-c'];
     const w = scene($('l4-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
-      box(fixed, 0, 130, 108, 70, 'sv-box');
-      txt(fixed, 54, 160, 'sv-lbl', 'client', 'middle');
-      txt(fixed, 54, 180, 'sv-lbl-sm', '113.161.4.20', 'middle');
-      const lb = box(fixed, 190, 96, 250, 138, 'sv-box-hot');
-      txt(fixed, 206, 124, 'sv-hot', 'L4 balancer');
-      txt(fixed, 206, 148, 'sv-lbl-sm', 'connection table');
-      const rowBox = box(fixed, 206, 158, 218, 34, 'sv-box');
-      const row = txt(fixed, 216, 180, 'sv-code', '');
-      const note = txt(fixed, 206, 214, 'sv-lbl-sm', '');
+      node(fixed, { x: 0, y: 117, w: 132, h: 96, icon: 'ic-client', layout: 'stack', tile: 32, title: 'client', sub: '113.161.4.20' });
+      const { b: lb } = node(fixed, { x: 190, y: 96, w: 250, h: 138, icon: 'ic-balancer', cls: 'sv-box-hot', layout: 'head', tile: 30, title: 'L4 balancer', titleCls: 'sv-hot' });
+      txt(fixed, 206, 156, 'sv-lbl-sm', 'connection table');
+      const rowBox = box(fixed, 206, 164, 218, 32, 'sv-box');
+      const row = txt(fixed, 216, 185, 'sv-code', '');
+      const note = txt(fixed, 206, 220, 'sv-lbl-sm', '');
       const pods = PODS.map((name, i) => {
         const y = 30 + i * 108;
         const g = el('g', {}, fixed);
-        const b = box(g, 500, y, 220, 64, 'sv-box');
-        txt(g, 516, y + 28, 'sv-lbl', name);
-        const sub = txt(g, 516, y + 48, 'sv-lbl-sm', '');
+        const { b, sub } = node(g, { x: 500, y, w: 220, h: 64, icon: 'ic-pod', title: name, sub: '' });
         line(fixed, `M440 165 C468 165 476 ${y + 32} 498 ${y + 32}`, 'sv-line-soft');
         return { y: y + 32, b, sub };
       });
@@ -535,7 +532,7 @@ needs warm-up for a spike</pre>
         await w.sleep(600);
         w.rowBox.setAttribute('class', 'sv-box-risk');
         w.row.textContent = ':51422 → ✗';
-        move(w, c, 60, 165);
+        move(w, c, 66, 240);
         await w.sleep(500);
         w.say('The client gets a <strong>connection reset</strong>. Recovery is entirely the client’s problem.');
       },
@@ -547,22 +544,18 @@ needs warm-up for a spike</pre>
     const PODS = ['pod-a', 'pod-b', 'pod-c'];
     const w = scene($('l7-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
-      box(fixed, 0, 130, 100, 70, 'sv-box');
-      txt(fixed, 50, 170, 'sv-lbl', 'client', 'middle');
-      box(fixed, 196, 88, 236, 154, 'sv-box-hot');
-      txt(fixed, 212, 116, 'sv-hot', 'L7 proxy');
-      const state = txt(fixed, 212, 138, 'sv-lbl-sm', '');
-      const slotBox = box(fixed, 212, 150, 204, 44, 'sv-box');
-      const slot = txt(fixed, 222, 177, 'sv-code', '');
-      const note = txt(fixed, 212, 222, 'sv-lbl-sm', '');
-      line(fixed, 'M102 165 H194', 'sv-line-soft');
-      txt(fixed, 148, 152, 'sv-lbl-sm', 'conn A', 'middle');
+      node(fixed, { x: 0, y: 117, w: 116, h: 96, icon: 'ic-client', layout: 'stack', tile: 32, title: 'client', sub: 'one TCP conn' });
+      node(fixed, { x: 196, y: 88, w: 236, h: 154, icon: 'ic-balancer', cls: 'sv-box-hot', layout: 'head', tile: 30, title: 'L7 proxy', titleCls: 'sv-hot' });
+      const state = txt(fixed, 212, 146, 'sv-lbl-sm', '');
+      const slotBox = box(fixed, 212, 156, 204, 40, 'sv-box');
+      const slot = txt(fixed, 222, 181, 'sv-code', '');
+      const note = txt(fixed, 212, 226, 'sv-lbl-sm', '');
+      line(fixed, 'M118 165 H194', 'sv-line-soft');
+      txt(fixed, 156, 152, 'sv-lbl-sm', 'conn A', 'middle');
       const pods = PODS.map((name, i) => {
         const y = 30 + i * 108;
         const g = el('g', {}, fixed);
-        const b = box(g, 500, y, 220, 64, 'sv-box');
-        txt(g, 516, y + 28, 'sv-lbl', name);
-        const sub = txt(g, 516, y + 48, 'sv-lbl-sm', '');
+        const { b, sub } = node(g, { x: 500, y, w: 220, h: 64, icon: 'ic-pod', title: name, sub: '' });
         line(fixed, `M434 165 C464 165 472 ${y + 32} 498 ${y + 32}`, 'sv-line-soft');
         return { y: y + 32, b, sub };
       });
@@ -643,10 +636,9 @@ needs warm-up for a spike</pre>
     const CELLS = 8, CW = 74, CH = 40, CX = 36, CY = 150;
     const w = scene($('prog-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
-      box(fixed, 0, 60, W, 210, 'sv-box');
-      txt(fixed, 20, 40, 'sv-lbl', 'the balancer');
-      const rss = txt(fixed, W, 40, 'sv-hot', '', 'end');
-      txt(fixed, 20, 92, 'sv-lbl-sm', 'memory · one slot per request it is handling');
+      node(fixed, { x: 0, y: 60, w: W, h: 210, icon: 'ic-balancer', layout: 'head', tile: 30, title: 'the balancer' });
+      const rss = txt(fixed, W - 14, 90, 'sv-hot', '', 'end');
+      txt(fixed, 56, 114, 'sv-lbl-sm', 'memory · one slot per request it is handling');
       const cells = [];
       for (let i = 0; i < CELLS; i++) {
         const x = CX + i * (CW + 8);
@@ -714,17 +706,14 @@ needs warm-up for a spike</pre>
     const PODS = ['pod-a', 'pod-b', 'pod-c'];
     const w = scene($('hc-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
-      box(fixed, 0, 120, 200, 90, 'sv-box-hot');
-      txt(fixed, 16, 150, 'sv-hot', 'balancer');
-      const clock = txt(fixed, 16, 176, 'sv-code', 't = 0 s');
+      node(fixed, { x: 0, y: 114, w: 200, h: 100, icon: 'ic-balancer', cls: 'sv-box-hot', layout: 'head', tile: 30, title: 'balancer', titleCls: 'sv-hot' });
+      const clock = txt(fixed, 16, 174, 'sv-code', 't = 0 s');
       const healthy = txt(fixed, 16, 198, 'sv-lbl-sm', '3 / 3 healthy');
       const pods = PODS.map((name, i) => {
         const y = 24 + i * 106;
         const g = el('g', {}, fixed);
-        const b = box(g, 330, y, 250, 72, 'sv-box');
-        txt(g, 348, y + 30, 'sv-lbl', name);
-        const sub = txt(g, 348, y + 52, 'sv-lbl-sm', '');
-        const marks = txt(g, 564, y + 30, 'sv-hot', '', 'end');
+        const { b, sub } = node(g, { x: 330, y, w: 270, h: 72, icon: 'ic-pod', title: name, sub: '' });
+        const marks = txt(g, 584, y + 30, 'sv-hot', '', 'end');
         line(fixed, `M202 165 C258 165 268 ${y + 36} 328 ${y + 36}`, 'sv-line-soft');
         return { y: y + 36, b, sub, marks, hits: '' };
       });

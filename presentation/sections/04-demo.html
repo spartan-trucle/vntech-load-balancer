@@ -33,12 +33,13 @@
     </div>
     <div class="stack">
       <div class="code-label">demo/ · Node + TypeScript backends, NGINX in front</div>
-      <pre class="code">cd demo
+      <pre class="code"><span class="c"># three backends 8001–8003, NGINX on 8000</span>
+cd demo
 npm install
-npm start     <span class="c"># 8001–8003 + NGINX on 8000</span>
+npm start
 
 curl localhost:8001   <span class="c"># Server 8001</span>
-npm run status        <span class="c"># who is up, which algorithm</span></pre>
+npm run status        <span class="c"># who is up</span></pre>
     </div>
   </div>
   <div class="foot"><span>49 / 54</span><span>demo · setup</span></div>
@@ -111,8 +112,10 @@ Server 8003</pre>
     </div>
     <div class="stack">
       <div class="code-label">in the terminal, with this slide up</div>
-      <pre class="code">npm run algo -- least      <span class="c"># rr | weight | least | iphash</span>
-npm run slow -- 8002 3000  <span class="c"># GC pause on 8002</span>
+      <pre class="code"><span class="c"># rr | weight | least | iphash</span>
+npm run algo -- least
+<span class="c"># a 3 s GC pause on 8002</span>
+npm run slow -- 8002 3000
 npm run crash -- 8002
 npm run revive -- 8002</pre>
       <ul class="points tight">

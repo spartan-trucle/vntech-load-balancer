@@ -43,7 +43,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="rr-flow" role="img" aria-label="Round robin sends requests to A, B, C in turn"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="rr-replay">↻ Replay</button></div><p class="readout" id="rr-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="rr-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="rr-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">knows</span> One counter: <code>servers[i++ % N]</code>.</li>
@@ -61,7 +61,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="wrr-flow" role="img" aria-label="Weighted round robin with weights 3, 1, 1"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="wrr-replay">↻ Replay</button></div><p class="readout" id="wrr-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="wrr-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="wrr-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">knows</span> A weight per server, <b>set by you</b>: <code>server a weight=3;</code></li>
@@ -79,7 +79,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="lc-flow" role="img" aria-label="Round robin vs least connections when server B is slow"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="lc-replay">↻ Replay</button></div><p class="readout" id="lc-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="lc-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="lc-readout"></p></div>
     </div>
     <ul class="points tight">
       <li>Server B is in a GC pause: each request takes 5 s instead of 1 s.</li>
@@ -98,7 +98,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="ip-flow" role="img" aria-label="IP hash sends each client to the same server every time"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="ip-replay">↻ Replay</button></div><p class="readout" id="ip-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="ip-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="ip-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">knows</span> The client: <code>server = hash(ip) % N</code>.</li>
@@ -116,7 +116,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="ips-flow" role="img" aria-label="Adding a server or losing one remaps users under IP hash"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="ips-replay">↻ Replay</button></div><p class="readout" id="ips-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="ips-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="ips-readout"></p></div>
     </div>
     <ul class="points tight">
       <li>3 servers, each user's session on one of them.</li>

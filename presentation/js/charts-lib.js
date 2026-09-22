@@ -133,6 +133,27 @@
   // draw() lays out the fixed parts once and returns handles for the phases to use; everything a
   // phase draws goes in api.layer, which reset() wipes. A handle named clear() undoes any change a
   // phase made to a fixed node.
+  // A box with an icon tile, for the hand-drawn scenes: client, balancer, pod. `b` is the rect, so a
+  // scene keeps doing b.setAttribute('class', 'sv-box-hot' | 'sv-box-risk' | 'sv-box') and the tile follows
+  // through the `rect + .node-tile` rules in deck.css. Layouts: 'row' (tile left, text beside it),
+  // 'head' (tile top-left, title beside it; the caller draws the rest), 'stack' (tile centred, text under it).
+  function node(p, { x, y, w, h, icon, cls = 'sv-box', layout = 'row', tile = 36, title, titleCls = 'sv-lbl', sub, subCls = 'sv-lbl-sm' }) {
+    const g = el('g', { class: 'node' }, p);
+    const b = el('rect', { x, y, width: w, height: h, rx: 12, class: cls }, g);
+    const tx0 = layout === 'stack' ? x + (w - tile) / 2 : x + 12;
+    const ty0 = layout === 'row' ? y + (h - tile) / 2 : y + 10;
+    const t = el('g', { class: 'node-tile' }, g);
+    el('rect', { x: tx0, y: ty0, width: tile, height: tile, rx: Math.round(tile / 4), class: 'node-tile-bg' }, t);
+    el('use', { href: `#${icon}`, x: tx0 + tile * 0.17, y: ty0 + tile * 0.17, width: tile * 0.66, height: tile * 0.66 }, t);
+    const mid = layout === 'stack';
+    const tx = mid ? x + w / 2 : tx0 + tile + 12;
+    const anchor = mid ? { 'text-anchor': 'middle' } : {};
+    let ttl = null, sb = null;
+    if (title != null) ttl = el('text', { x: tx, y: mid ? ty0 + tile + 22 : (layout === 'head' ? ty0 + tile * 0.68 : y + h / 2 - 4), class: titleCls, ...anchor }, g, title);
+    if (sub != null) sb = el('text', { x: tx, y: mid ? ty0 + tile + 42 : y + h / 2 + 16, class: subCls, ...anchor }, g, sub);
+    return { g, b, tile: t, tx, title: ttl, sub: sb };
+  }
+
   function scene(svg, viewBox, draw) {
     svg.setAttribute('viewBox', viewBox);
     const clk = clock();
@@ -185,12 +206,12 @@
     });
 
     const coins = el('g', {}, svg);
-    const slot = (s, k) => [SX + 24 + k * 25, s.y + bh - 19];
+    const slot = (s, k) => [SX + 26 + k * 28, s.y + bh - 21];
     const put = (g, x, y) => { g.style.transform = `translate(${x}px, ${y}px)`; };
     const fly = (g, x, y) => { if (clk.virtual()) { put(g, x, y); return; } void g.getBoundingClientRect(); put(g, x, y); };
     const coin = (label, cls, x, y) => {
       const g = el('g', { class: `coin coin-fly ${cls}` }, coins);
-      el('circle', { r: 10 }, g);
+      el('circle', { r: 12 }, g);
       el('text', {}, g, label);
       put(g, x, y);
       return g;
@@ -298,5 +319,5 @@
     return api;
   }
 
-  window.Charts = { el, scale, fmt, $, rng, histogram, flow, clock, steps, scene };
+  window.Charts = { el, scale, fmt, $, rng, histogram, flow, clock, steps, scene, node };
 })();

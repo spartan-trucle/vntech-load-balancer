@@ -13,7 +13,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="phys-flow" role="img" aria-label="A region failing with its balancer inside it, and the round-trip cost of reaching a far region"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="phys-replay">↻ Replay</button></div><p class="readout" id="phys-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="phys-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="phys-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip risk">1</span> Your ALB lives <b>inside</b> the region it protects. When that region loses its control plane, nothing in-region is left to route around it.</li>
@@ -101,7 +101,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="gslb-flow" role="img" aria-label="A GSLB answering the same hostname with different regional addresses and dropping out of the request path"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="gslb-replay">↻ Replay</button></div><p class="readout" id="gslb-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="gslb-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="gslb-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">inputs</span> Only four: who is asking (resolver IP + EDNS Client Subnet), health state from its own probes, a <b>precomputed</b> latency table, and your policy.</li>
@@ -118,7 +118,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="stale-flow" role="img" aria-label="Five layers caching a stale DNS answer, and the failover time they add up to"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="stale-replay">↻ Replay</button></div><p class="readout" id="stale-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="stale-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="stale-readout"></p></div>
     </div>
     <ul class="points tight">
       <li>The GSLB's only moment of influence is the lookup. After it answers it cannot recall the answer, cannot notify anyone, cannot even find out who is holding one.</li>
@@ -135,7 +135,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="any-flow" role="img" aria-label="One IP announced from four points of presence, a withdrawal rerouting traffic, and BGP choosing a distant PoP"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="any-replay">↻ Replay</button></div><p class="readout" id="any-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="any-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="any-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip">how</span> Several sites each announce the same prefix over <b>BGP</b> — "traffic for this address can come to me" — and every network on the path picks whichever announcement looks closest to it.</li>
@@ -152,7 +152,7 @@
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="edge-flow" role="img" aria-label="Handshakes terminating at a nearby point of presence, per-request retry into another origin, and a cache hit never reaching origin"></svg></div>
-      <div class="flow-ctl"><div class="seg"><button id="edge-replay">↻ Replay</button></div><p class="readout" id="edge-readout"></p></div>
+      <div class="flow-ctl"><div class="seg"><button id="edge-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="edge-readout"></p></div>
     </div>
     <ul class="points tight">
       <li><span class="chip hot">the point</span> The PoP is not a signpost. It completes the connection itself, then forwards the request over a warm pooled connection on a private backbone. Cloudflare, Google's global LB and Fastly all work this way.</li>
