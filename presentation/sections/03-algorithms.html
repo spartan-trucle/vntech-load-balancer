@@ -137,35 +137,35 @@
         <defs><marker id="arrow-sticky" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
         <g data-hide-at="1">
           <text x="0" y="18" class="sv-hot">STATEFUL</text>
-          <rect x="0" y="60" width="120" height="44" rx="8" class="sv-box"/><text x="60" y="87" text-anchor="middle" class="sv-lbl">User A</text>
-          <rect x="0" y="210" width="120" height="44" rx="8" class="sv-box"/><text x="60" y="237" text-anchor="middle" class="sv-lbl">User B</text>
-          <path d="M120 82 H356" class="sv-line" marker-end="url(#arrow-sticky)"/>
-          <path d="M120 232 H356" class="sv-line" marker-end="url(#arrow-sticky)"/>
-          <text x="238" y="72" text-anchor="middle" class="sv-lbl-sm">must always go to server 1</text>
-          <text x="238" y="222" text-anchor="middle" class="sv-lbl-sm">must always go to server 2</text>
-          <rect x="360" y="40" width="200" height="84" rx="10" class="sv-box"/>
-          <text x="380" y="68" class="sv-lbl">Server 1</text>
-          <rect x="380" y="82" width="160" height="28" rx="6" class="sv-box-risk"/><text x="460" y="101" text-anchor="middle" class="sv-risk">session A in RAM</text>
-          <rect x="360" y="190" width="200" height="84" rx="10" class="sv-box"/>
-          <text x="380" y="218" class="sv-lbl">Server 2</text>
-          <rect x="380" y="232" width="160" height="28" rx="6" class="sv-box-risk"/><text x="460" y="251" text-anchor="middle" class="sv-risk">session B in RAM</text>
+          <use href="#gl-client" class="gl" x="0" y="58" width="48" height="48"/><text x="56" y="88" class="sv-lbl">User A</text>
+          <use href="#gl-client" class="gl" x="0" y="208" width="48" height="48"/><text x="56" y="238" class="sv-lbl">User B</text>
+          <path d="M136 82 H356" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <path d="M136 232 H356" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <text x="246" y="72" text-anchor="middle" class="sv-lbl-sm">must always go to server 1</text>
+          <text x="246" y="222" text-anchor="middle" class="sv-lbl-sm">must always go to server 2</text>
+          <use href="#gl-server" class="gl" x="360" y="40" width="48" height="48"/>
+          <text x="418" y="70" class="sv-lbl">Server 1</text>
+          <rect x="360" y="96" width="200" height="28" rx="6" class="sv-box-risk"/><text x="460" y="115" text-anchor="middle" class="sv-risk">session A in RAM</text>
+          <use href="#gl-server" class="gl" x="360" y="190" width="48" height="48"/>
+          <text x="418" y="220" class="sv-lbl">Server 2</text>
+          <rect x="360" y="246" width="200" height="28" rx="6" class="sv-box-risk"/><text x="460" y="265" text-anchor="middle" class="sv-risk">session B in RAM</text>
           <text x="0" y="318" class="sv-lbl-sm">Server 1 dies → user A is logged out. Add server 3 → nobody moves to it.</text>
         </g>
         <g data-step="1">
           <text x="0" y="18" class="sv-hot">STATELESS</text>
-          <rect x="0" y="60" width="100" height="40" rx="8" class="sv-box"/><text x="50" y="85" text-anchor="middle" class="sv-lbl">User A</text>
-          <rect x="0" y="140" width="100" height="40" rx="8" class="sv-box"/><text x="50" y="165" text-anchor="middle" class="sv-lbl">User B</text>
-          <rect x="0" y="220" width="100" height="40" rx="8" class="sv-box"/><text x="50" y="245" text-anchor="middle" class="sv-lbl">User C</text>
-          <path d="M100 80 L166 150" class="sv-line"/><path d="M100 160 H166" class="sv-line"/><path d="M100 240 L166 170" class="sv-line"/>
-          <rect x="170" y="130" width="90" height="50" rx="10" class="sv-box-hot"/><text x="215" y="160" text-anchor="middle" class="sv-hot">LB</text>
-          <path d="M260 155 L336 80" class="sv-line" marker-end="url(#arrow-sticky)"/>
-          <path d="M260 155 H336" class="sv-line" marker-end="url(#arrow-sticky)"/>
-          <path d="M260 155 L336 230" class="sv-line" marker-end="url(#arrow-sticky)"/>
-          <rect x="340" y="58" width="120" height="40" rx="8" class="sv-box"/><text x="400" y="83" text-anchor="middle" class="sv-lbl">Server 1</text>
-          <rect x="340" y="135" width="120" height="40" rx="8" class="sv-box"/><text x="400" y="160" text-anchor="middle" class="sv-lbl">Server 2</text>
-          <rect x="340" y="212" width="120" height="40" rx="8" class="sv-box"/><text x="400" y="237" text-anchor="middle" class="sv-lbl">Server 3</text>
-          <path d="M460 78 L518 140" class="sv-dash"/><path d="M460 155 H518" class="sv-dash"/><path d="M460 232 L518 170" class="sv-dash"/>
-          <rect x="520" y="120" width="120" height="70" rx="10" class="sv-box-hot"/>
+          <use href="#gl-client" class="gl" x="0" y="58" width="42" height="42"/><text x="50" y="85" class="sv-lbl">User A</text>
+          <use href="#gl-client" class="gl" x="0" y="138" width="42" height="42"/><text x="50" y="165" class="sv-lbl">User B</text>
+          <use href="#gl-client" class="gl" x="0" y="218" width="42" height="42"/><text x="50" y="245" class="sv-lbl">User C</text>
+          <path d="M118 80 L166 150" class="sv-line"/><path d="M118 160 H166" class="sv-line"/><path d="M118 240 L166 170" class="sv-line"/>
+          <use href="#gl-balancer" class="gl gl-hot" x="170" y="132" width="46" height="46"/><text x="193" y="196" text-anchor="middle" class="sv-hot">LB</text>
+          <path d="M218 150 L336 80" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <path d="M218 155 H336" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <path d="M218 162 L336 230" class="sv-line" marker-end="url(#arrow-sticky)"/>
+          <use href="#gl-server" class="gl" x="340" y="56" width="42" height="42"/><text x="390" y="83" class="sv-lbl">Server 1</text>
+          <use href="#gl-server" class="gl" x="340" y="133" width="42" height="42"/><text x="390" y="160" class="sv-lbl">Server 2</text>
+          <use href="#gl-server" class="gl" x="340" y="210" width="42" height="42"/><text x="390" y="237" class="sv-lbl">Server 3</text>
+          <path d="M470 78 L518 140" class="sv-dash"/><path d="M470 155 H518" class="sv-dash"/><path d="M470 232 L518 170" class="sv-dash"/>
+          <rect x="520" y="120" width="120" height="70" rx="10" class="gl-shell-hot"/>
           <text x="580" y="150" text-anchor="middle" class="sv-hot">Redis / NoSQL</text>
           <text x="580" y="172" text-anchor="middle" class="sv-lbl-sm">sessions A, B, C</text>
           <text x="0" y="318" class="sv-lbl-sm">Any server can serve any user. The balancer is free to use any algorithm.</text>
@@ -245,16 +245,15 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
       <div class="chart meter" data-step="1">
         <svg viewBox="0 0 640 128" role="img" aria-label="Three load balancers all choosing the same idle pod">
           <defs><marker id="arrow-p2c" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
-          <rect x="0" y="4" width="120" height="30" rx="7" class="sv-box"/><text x="60" y="24" text-anchor="middle" class="sv-lbl-sm">ingress-1</text>
-          <rect x="0" y="48" width="120" height="30" rx="7" class="sv-box"/><text x="60" y="68" text-anchor="middle" class="sv-lbl-sm">ingress-2</text>
-          <rect x="0" y="92" width="120" height="30" rx="7" class="sv-box"/><text x="60" y="112" text-anchor="middle" class="sv-lbl-sm">ingress-3</text>
-          <path d="M120 19 L380 60" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
-          <path d="M120 63 L380 63" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
-          <path d="M120 107 L380 66" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
-          <rect x="384" y="44" width="186" height="38" rx="8" class="sv-box-risk"/>
-          <text x="477" y="68" text-anchor="middle" class="sv-risk">new pod · 0 in flight</text>
-          <text x="580" y="58" class="sv-lbl-sm">all 3</text>
-          <text x="580" y="76" class="sv-lbl-sm">pick it</text>
+          <use href="#gl-balancer" class="gl" x="0" y="0" width="34" height="34"/><text x="42" y="24" class="sv-lbl-sm">ingress-1</text>
+          <use href="#gl-balancer" class="gl" x="0" y="44" width="34" height="34"/><text x="42" y="68" class="sv-lbl-sm">ingress-2</text>
+          <use href="#gl-balancer" class="gl" x="0" y="88" width="34" height="34"/><text x="42" y="112" class="sv-lbl-sm">ingress-3</text>
+          <path d="M126 19 L348 58" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
+          <path d="M126 63 L348 63" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
+          <path d="M126 107 L348 68" class="sv-risk-line" marker-end="url(#arrow-p2c)"/>
+          <use href="#gl-pod" class="gl gl-risk" x="352" y="40" width="46" height="46"/>
+          <text x="408" y="58" class="sv-risk">new pod · 0 in flight</text>
+          <text x="408" y="80" class="sv-lbl-sm">all 3 pick it</text>
         </svg>
         <figcaption>With strict "least busy", every balancer that sees the same stale counts sends to the same pod.</figcaption>
       </div>
@@ -340,7 +339,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
   {
     const w = flow($('rr-flow'), {
       servers: ['Server A', 'Server B', 'Server C'].map((name) => ({ name, sub: '4 vCPU' })),
-      stat: (s) => (s.work ? `${s.total} req · ${fmt(s.work)} ms of work` : `${s.total} req`),
+      stat: (s) => (s.work ? `${s.total} req · ${fmt(s.work)} ms` : `${s.total} req`),
     });
     const JOBS = [['/export', 3000], ['/health', 5], ['/product', 40]];
     steps('rr', w, [
@@ -416,7 +415,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
         { name: 'Server B', sub: 'GC pause · 5 s per request' },
         { name: 'Server C', sub: '1 s per request' },
       ],
-      stat: (s) => `active ${s.active} · total ${s.total}`,
+      stat: (s) => `${s.active} active · ${s.total} total`,
     });
     const run = (least) => async (w) => {
       w.mark(1, 'sv-box-risk');
@@ -444,7 +443,7 @@ fun pick(pods: List&lt;Pod&gt;): Pod {
     { tag: 'u6', name: 'u6', ip: '192.0.2.61', h: 40 },
   ];
   const hashLine = (w, u, n, s, note = '') => w.lb(`${u.name}: hash = ${u.h}`, `${u.h} % ${n} = ${u.h % n} → ${ABC[s]}${note}`);
-  const sessions = (s) => `${s.sessions.size} session${s.sessions.size === 1 ? '' : 's'} · ${s.total} req`;
+  const sessions = (s) => `${s.sessions.size} sess · ${s.total} req`;
 
   {
     const OFFICE = { tag: 'of', name: 'office, 50 people', ip: '113.161.4.20', h: 27, hidden: true };

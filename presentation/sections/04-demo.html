@@ -14,21 +14,21 @@
     <div class="chart meter">
       <svg viewBox="0 0 640 280" role="img" aria-label="curl sends requests to NGINX on port 8000, which forwards to servers on 8001, 8002 and 8003">
         <defs><marker id="arrow-demo" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
-        <rect x="0" y="115" width="110" height="50" rx="10" class="sv-box"/>
-        <text x="55" y="145" text-anchor="middle" class="sv-lbl">curl</text>
-        <path d="M110 140 H186" class="sv-line" marker-end="url(#arrow-demo)"/>
-        <rect x="190" y="100" width="160" height="80" rx="12" class="sv-box-hot"/>
-        <text x="270" y="134" text-anchor="middle" class="sv-hot">NGINX</text>
-        <text x="270" y="156" text-anchor="middle" class="sv-lbl-sm">listen 8000</text>
-        <path d="M350 140 L476 44" class="sv-line" marker-end="url(#arrow-demo)"/>
-        <path d="M350 140 H476" class="sv-line" marker-end="url(#arrow-demo)"/>
-        <path d="M350 140 L476 236" class="sv-line" marker-end="url(#arrow-demo)"/>
-        <rect x="480" y="16" width="160" height="56" rx="10" class="sv-box"/>
-        <text x="560" y="49" text-anchor="middle" class="sv-lbl">Server 8001</text>
-        <rect x="480" y="112" width="160" height="56" rx="10" class="sv-box"/>
-        <text x="560" y="145" text-anchor="middle" class="sv-lbl">Server 8002</text>
-        <rect x="480" y="208" width="160" height="56" rx="10" class="sv-box"/>
-        <text x="560" y="241" text-anchor="middle" class="sv-lbl">Server 8003</text>
+        <use href="#gl-client" class="gl" x="0" y="116" width="52" height="52"/>
+        <text x="26" y="190" text-anchor="middle" class="sv-lbl">curl</text>
+        <path d="M60 140 H186" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <use href="#gl-balancer" class="gl gl-hot" x="204" y="114" width="56" height="56"/>
+        <text x="232" y="192" text-anchor="middle" class="sv-hot">NGINX</text>
+        <text x="232" y="212" text-anchor="middle" class="sv-lbl-sm">listen 8000</text>
+        <path d="M266 130 L476 44" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <path d="M266 142 H476" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <path d="M266 154 L476 236" class="sv-line" marker-end="url(#arrow-demo)"/>
+        <use href="#gl-server" class="gl" x="480" y="18" width="52" height="52"/>
+        <text x="542" y="49" class="sv-lbl">Server 8001</text>
+        <use href="#gl-server" class="gl" x="480" y="114" width="52" height="52"/>
+        <text x="542" y="145" class="sv-lbl">Server 8002</text>
+        <use href="#gl-server" class="gl" x="480" y="210" width="52" height="52"/>
+        <text x="542" y="241" class="sv-lbl">Server 8003</text>
       </svg>
     </div>
     <div class="stack">

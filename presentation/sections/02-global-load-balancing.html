@@ -44,45 +44,42 @@
         </defs>
 
         <!-- 1 · before connecting -->
-        <rect x="0" y="0" width="368" height="142" rx="10" class="sv-box"/>
+        <rect x="0" y="0" width="368" height="142" rx="10" class="gl-shell"/>
         <text x="16" y="26" class="sv-hot">① before connecting</text>
         <text x="16" y="46" class="sv-lbl-sm">no connection exists yet</text>
-        <rect x="16" y="62" width="76" height="34" rx="7" class="sv-box-hot"/>
-        <text x="54" y="84" text-anchor="middle" class="sv-lbl-sm">user</text>
-        <path d="M94 72 H210" class="sv-line" marker-end="url(#arrow-lv)"/>
-        <text x="152" y="66" text-anchor="middle" class="sv-lbl-sm">api.shop.vn ?</text>
-        <rect x="216" y="62" width="76" height="34" rx="7" class="sv-box"/>
-        <text x="254" y="84" text-anchor="middle" class="sv-lbl-sm">DNS</text>
-        <path d="M214 90 H96" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <use href="#gl-client" class="gl gl-hot" x="16" y="60" width="40" height="40"/>
+        <path d="M62 72 H210" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <text x="136" y="66" text-anchor="middle" class="sv-lbl-sm">api.shop.vn ?</text>
+        <use href="#gl-internet" class="gl" x="216" y="60" width="40" height="40"/>
+        <text x="266" y="86" class="sv-lbl-sm">DNS</text>
+        <path d="M214 90 H64" class="sv-line" marker-end="url(#arrow-lv)"/>
         <text x="152" y="110" text-anchor="middle" class="sv-hot">13.250.4.7</text>
         <text x="16" y="130" class="sv-lbl-sm">the answer decides the region</text>
 
         <!-- 2 · during connecting -->
-        <rect x="396" y="0" width="368" height="142" rx="10" class="sv-box"/>
+        <rect x="396" y="0" width="368" height="142" rx="10" class="gl-shell"/>
         <text x="412" y="26" class="sv-hot">② during connecting</text>
         <text x="412" y="46" class="sv-lbl-sm">one address, many doors</text>
-        <rect x="412" y="66" width="76" height="34" rx="7" class="sv-box-hot"/>
-        <text x="450" y="88" text-anchor="middle" class="sv-lbl-sm">user</text>
-        <text x="450" y="116" text-anchor="middle" class="sv-hot">203.0.113.9</text>
-        <path d="M490 78 C540 78 546 62 596 62" class="sv-line" marker-end="url(#arrow-lv)"/>
-        <path d="M490 88 C540 88 546 106 596 106" class="sv-line-soft" marker-end="url(#arrow-lv)"/>
-        <rect x="602" y="46" width="146" height="32" rx="7" class="sv-box-hot"/>
-        <text x="675" y="67" text-anchor="middle" class="sv-lbl-sm">PoP Singapore</text>
-        <rect x="602" y="90" width="146" height="32" rx="7" class="sv-box"/>
-        <text x="675" y="111" text-anchor="middle" class="sv-lbl-sm">PoP Frankfurt</text>
+        <use href="#gl-client" class="gl gl-hot" x="412" y="64" width="40" height="40"/>
+        <text x="432" y="120" text-anchor="middle" class="sv-hot">203.0.113.9</text>
+        <path d="M458 78 C520 78 546 62 596 62" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <path d="M458 92 C520 92 546 106 596 106" class="sv-line-soft" marker-end="url(#arrow-lv)"/>
+        <use href="#gl-balancer" class="gl gl-hot" x="602" y="42" width="38" height="38"/>
+        <text x="648" y="66" class="sv-lbl-sm">PoP Singapore</text>
+        <use href="#gl-balancer" class="gl" x="602" y="88" width="38" height="38"/>
+        <text x="648" y="112" class="sv-lbl-sm">PoP Frankfurt</text>
         <text x="412" y="134" class="sv-lbl-sm">the network picks, not you</text>
 
         <!-- 3 · after connecting -->
-        <rect x="792" y="0" width="368" height="142" rx="10" class="sv-box"/>
+        <rect x="792" y="0" width="368" height="142" rx="10" class="gl-shell"/>
         <text x="808" y="26" class="sv-hot">③ after connecting</text>
         <text x="808" y="46" class="sv-lbl-sm">already talking to a server</text>
-        <rect x="808" y="62" width="76" height="34" rx="7" class="sv-box-hot"/>
-        <text x="846" y="84" text-anchor="middle" class="sv-lbl-sm">user</text>
-        <path d="M886 72 H1002" class="sv-line" marker-end="url(#arrow-lv)"/>
-        <text x="944" y="66" text-anchor="middle" class="sv-lbl-sm">GET /</text>
-        <rect x="1008" y="62" width="136" height="34" rx="7" class="sv-box"/>
-        <text x="1076" y="84" text-anchor="middle" class="sv-lbl-sm">nearest server</text>
-        <path d="M1006 90 H888" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <use href="#gl-client" class="gl gl-hot" x="808" y="60" width="40" height="40"/>
+        <path d="M854 72 H1002" class="sv-line" marker-end="url(#arrow-lv)"/>
+        <text x="928" y="66" text-anchor="middle" class="sv-lbl-sm">GET /</text>
+        <use href="#gl-server" class="gl" x="1008" y="60" width="40" height="40"/>
+        <text x="1056" y="86" class="sv-lbl-sm">nearest server</text>
+        <path d="M1006 90 H856" class="sv-line" marker-end="url(#arrow-lv)"/>
         <text x="944" y="110" text-anchor="middle" class="sv-risk">302 → sg.shop.vn</text>
         <text x="808" y="130" class="sv-risk">start over · +1 full round trip</text>
       </svg>
@@ -207,31 +204,31 @@
   <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.9 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
-    <svg viewBox="0 0 1120 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
+    <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
       <defs><marker id="arrow-arch" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
-      <rect x="0" y="120" width="120" height="60" rx="10" class="sv-box"/><text x="60" y="146" text-anchor="middle" class="sv-lbl">Clients</text><text x="60" y="164" text-anchor="middle" class="sv-lbl-sm">web · mobile</text>
-      <path d="M120 150 H158" class="sv-line" marker-end="url(#arrow-arch)"/>
-      <rect x="162" y="112" width="150" height="76" rx="10" class="sv-box-hot"/><text x="237" y="140" text-anchor="middle" class="sv-lbl">Route 53</text><text x="237" y="160" text-anchor="middle" class="sv-hot">latency + health</text><text x="237" y="176" text-anchor="middle" class="sv-lbl-sm">TTL 60 s</text>
+      <use href="#gl-client" class="gl" x="26" y="112" width="58" height="58"/><text x="55" y="190" text-anchor="middle" class="sv-lbl">Clients</text><text x="55" y="208" text-anchor="middle" class="sv-lbl-sm">web · mobile</text>
+      <path d="M90 140 H174" class="sv-line" marker-end="url(#arrow-arch)"/>
+      <use href="#gl-internet" class="gl gl-hot" x="180" y="112" width="58" height="58"/><text x="248" y="136" class="sv-lbl">Route 53</text><text x="248" y="156" class="sv-hot">latency + health</text><text x="248" y="174" class="sv-lbl-sm">TTL 60 s</text>
       <path d="M312 140 L378 70" class="sv-line" marker-end="url(#arrow-arch)"/>
       <path d="M312 160 L378 230" class="sv-line" marker-end="url(#arrow-arch)"/>
 
       <g>
-        <rect x="382" y="10" width="738" height="120" rx="12" class="sv-band"/>
+        <rect x="382" y="10" width="886" height="120" rx="12" class="sv-band"/>
         <text x="396" y="30" class="sv-lbl-sm">ap-southeast-1 · Singapore</text>
-        <rect x="396" y="44" width="150" height="70" rx="10" class="sv-box"/><text x="471" y="72" text-anchor="middle" class="sv-lbl">NLB</text><text x="471" y="92" text-anchor="middle" class="sv-lbl-sm">L4 · 3 AZs</text>
-        <path d="M546 79 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="588" y="44" width="220" height="70" rx="10" class="sv-box-hot"/><text x="698" y="72" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="698" y="92" text-anchor="middle" class="sv-hot">TLS · L7 · least request</text>
-        <path d="M808 79 H846" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="850" y="44" width="256" height="70" rx="10" class="sv-box"/><text x="978" y="72" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="978" y="92" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
+        <use href="#gl-balancer" class="gl" x="396" y="52" width="54" height="54"/><text x="460" y="76" class="sv-lbl">NLB</text><text x="460" y="96" class="sv-lbl-sm">L4 · 3 AZs</text>
+        <path d="M552 79 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <use href="#gl-balancer" class="gl gl-hot" x="588" y="52" width="54" height="54"/><text x="652" y="76" class="sv-lbl">Envoy fleet × 12</text><text x="652" y="96" class="sv-hot">TLS · L7 · least request</text>
+        <path d="M900 79 H934" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <use href="#gl-pod" class="gl" x="940" y="52" width="54" height="54"/><text x="1004" y="76" class="sv-lbl">30 services + sidecars</text><text x="1004" y="96" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
       <g>
-        <rect x="382" y="170" width="738" height="120" rx="12" class="sv-band"/>
+        <rect x="382" y="170" width="886" height="120" rx="12" class="sv-band"/>
         <text x="396" y="190" class="sv-lbl-sm">ap-northeast-1 · Tokyo</text>
-        <rect x="396" y="204" width="150" height="70" rx="10" class="sv-box"/><text x="471" y="232" text-anchor="middle" class="sv-lbl">NLB</text><text x="471" y="252" text-anchor="middle" class="sv-lbl-sm">L4 · 3 AZs</text>
-        <path d="M546 239 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="588" y="204" width="220" height="70" rx="10" class="sv-box-hot"/><text x="698" y="232" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="698" y="252" text-anchor="middle" class="sv-hot">TLS · L7 · least request</text>
-        <path d="M808 239 H846" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="850" y="204" width="256" height="70" rx="10" class="sv-box"/><text x="978" y="232" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="978" y="252" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
+        <use href="#gl-balancer" class="gl" x="396" y="212" width="54" height="54"/><text x="460" y="236" class="sv-lbl">NLB</text><text x="460" y="256" class="sv-lbl-sm">L4 · 3 AZs</text>
+        <path d="M552 239 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <use href="#gl-balancer" class="gl gl-hot" x="588" y="212" width="54" height="54"/><text x="652" y="236" class="sv-lbl">Envoy fleet × 12</text><text x="652" y="256" class="sv-hot">TLS · L7 · least request</text>
+        <path d="M900 239 H934" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <use href="#gl-pod" class="gl" x="940" y="212" width="54" height="54"/><text x="1004" y="236" class="sv-lbl">30 services + sidecars</text><text x="1004" y="256" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
     </svg>
   </div>
@@ -258,7 +255,7 @@
 
 <script>
 (() => {
-  const { el, $, scene, steps } = window.Charts;
+  const { el, $, scene, steps, glyph } = window.Charts;
 
   // ---------- shared drawing helpers (same shapes as section 1) ----------
   const W = 720, H = 330;
@@ -288,32 +285,33 @@
     function region(w) {
       const g = w.rows[0];
       txt(g, 0, 12, 'sv-lbl-sm', 'one region · us-east-1');
-      box(g, 0, 58, 86, 44, 'sv-box');
-      txt(g, 43, 85, 'sv-lbl-sm', 'user', 'middle');
-      const wall = box(g, 110, 22, 360, 124, 'sv-box');
-      const alb = box(g, 126, 58, 110, 52, 'sv-box-hot');
-      txt(g, 181, 82, 'sv-hot', 'ALB', 'middle');
-      txt(g, 181, 100, 'sv-lbl-sm', 'picks a pod', 'middle');
-      line(g, 'M88 80 H124', 'sv-line-soft');
+      glyph(g, { icon: 'gl-client', x: 8, y: 58, size: 44 });
+      txt(g, 30, 118, 'sv-lbl-sm', 'user', 'middle');
+      // the region is a boundary the story kills, so it stays an enclosure, not a label
+      const wall = box(g, 110, 22, 360, 124, 'gl-shell');
+      const alb = glyph(g, { icon: 'gl-balancer', x: 126, y: 54, size: 46, state: 'hot' });
+      txt(g, 149, 122, 'sv-hot', 'ALB', 'middle');
+      line(g, 'M56 80 H124', 'sv-line-soft');
       const pods = ['pod-a', 'pod-b', 'pod-c'].map((name, i) => {
         const y = 38 + i * 34;
-        const b = box(g, 252, y, 200, 28, 'sv-box');
-        txt(g, 266, y + 19, 'sv-lbl-sm', name);
-        const st = txt(g, 438, y + 19, 'sv-lbl-sm', '', 'end');
-        line(g, `M238 84 C258 84 244 ${y + 14} 250 ${y + 14}`, 'sv-line-soft');
+        const b = glyph(g, { icon: 'gl-pod', x: 252, y: y + 1, size: 26 });
+        txt(g, 286, y + 19, 'sv-lbl-sm', name);
+        const st = txt(g, 452, y + 19, 'sv-lbl-sm', '', 'end');
+        line(g, `M176 84 C216 84 236 ${y + 14} 250 ${y + 14}`, 'sv-line-soft');
         return { y: y + 14, b, st };
       });
-      const note = txt(g, 486, 76, 'sv-hot', '');
-      const note2 = txt(g, 486, 96, 'sv-lbl-sm', '');
-      return { wall, alb, pods, note, note2 };
+      const note = txt(g, 718, 66, 'sv-hot', '', 'end');
+      const note2 = txt(g, 718, 88, 'sv-lbl-sm', '', 'end');
+      const note3 = txt(g, 718, 106, 'sv-lbl-sm', '', 'end');
+      return { wall, alb, pods, note, note2, note3 };
     }
 
     // one request: user → ALB → pod, and back
     async function call(w, r, i, { ok = true } = {}) {
       const c = card(w.layer, 80, 24, ok ? 'sv-box-hot' : 'sv-box-risk', 'GET /', ok ? 'sv-hot' : 'sv-risk');
-      put(c, 43, 80); move(w, c, 181, 84);
+      put(c, 30, 80); move(w, c, 149, 84);
       await w.sleep(380);
-      move(w, c, 352, r.pods[i].y);
+      move(w, c, 330, r.pods[i].y);
       await w.sleep(380);
       r.pods[i].st.textContent = '200';
       r.pods[i].st.setAttribute('class', 'sv-hot');
@@ -323,17 +321,18 @@
     async function domain(w, animate) {
       const r = region(w);
       const dead = () => {
-        r.wall.setAttribute('class', 'sv-box-risk');
-        r.alb.setAttribute('class', 'sv-box-risk');
-        r.pods.forEach((p) => { p.b.setAttribute('class', 'sv-box-risk'); p.st.textContent = ''; });
-        r.note.textContent = 'the ALB died with the region';
-        r.note2.textContent = 'nothing inside can route around that';
+        r.wall.setAttribute('class', 'gl-shell-risk');
+        r.alb.set('sv-box-risk');
+        r.pods.forEach((p) => { p.b.set('sv-box-risk'); p.st.textContent = ''; });
+        r.note.textContent = 'the ALB died with it';
+        r.note2.textContent = 'nothing inside is left';
+        r.note3.textContent = 'to route around that';
       };
       if (!animate) { dead(); return; }
       await call(w, r, 1);
       w.say('Normal day. The balancer picks a pod, the user gets a 200.');
       await w.sleep(300);
-      r.pods[1].b.setAttribute('class', 'sv-box-risk');
+      r.pods[1].b.set('sv-box-risk');
       r.pods[1].st.textContent = 'dead';
       r.pods[1].st.setAttribute('class', 'sv-risk');
       await w.sleep(500);
@@ -343,9 +342,9 @@
       dead();
       // the request now has nowhere to land, and nobody left to redirect it
       const c = card(w.layer, 80, 24, 'sv-box-risk', 'GET /', 'sv-risk');
-      put(c, 43, 80); move(w, c, 128, 80);
+      put(c, 30, 80); move(w, c, 120, 80);
       await w.sleep(400);
-      move(w, c, 43, 80);
+      move(w, c, 30, 80);
       await w.sleep(400);
       fade(w, c);
       w.say('Now the whole region goes. <strong>The balancer went with it</strong> — it cannot route around itself.');
@@ -390,14 +389,15 @@
         { name: 'user · Japan', y: 250 },
       ].map((u) => {
         const g = el('g', {}, fixed);
-        box(g, 0, u.y - 26, 150, 52, 'sv-box');
-        txt(g, 14, u.y + 4, 'sv-lbl-sm', u.name);
+        glyph(g, { icon: 'gl-client', x: 0, y: u.y - 24, size: 48 });
+        txt(g, 58, u.y + 4, 'sv-lbl-sm', u.name);
         line(fixed, `M152 ${u.y} C184 ${u.y} 190 ${u.y > 150 ? 200 : 130} 212 ${u.y > 150 ? 200 : 130}`, 'sv-line-soft');
         return { ...u, g };
       });
-      box(fixed, 214, 108, 226, 114, 'sv-box-hot');
-      txt(fixed, 230, 136, 'sv-hot', 'GSLB');
-      txt(fixed, 230, 156, 'sv-lbl-sm', 'authoritative nameserver');
+      box(fixed, 214, 108, 226, 114, 'gl-shell-hot');
+      glyph(fixed, { icon: 'gl-internet', x: 222, y: 114, size: 40, state: 'hot' });
+      txt(fixed, 270, 134, 'sv-hot', 'GSLB');
+      txt(fixed, 270, 152, 'sv-lbl-sm', 'authoritative NS');
       const stateBox = box(fixed, 228, 166, 200, 40, 'sv-box');
       const state = txt(fixed, 238, 191, 'sv-code', '');
       const regions = [
@@ -405,10 +405,10 @@
         { name: 'Tokyo', ip: '18.183.9.2', y: 250 },
       ].map((r) => {
         const g = el('g', {}, fixed);
-        const b = box(g, 532, r.y - 40, 188, 80, 'sv-box');
-        txt(g, 548, r.y - 12, 'sv-lbl', r.name);
-        txt(g, 548, r.y + 8, 'sv-lbl-sm', r.ip);
-        const sub = txt(g, 548, r.y + 26, 'sv-lbl-sm', '');
+        const b = glyph(g, { icon: 'gl-server', x: 532, y: r.y - 24, size: 48 });
+        txt(g, 590, r.y - 12, 'sv-lbl', r.name);
+        txt(g, 590, r.y + 8, 'sv-lbl-sm', r.ip);
+        const sub = txt(g, 590, r.y + 26, 'sv-lbl-sm', '');
         // dashed = health probes, always running and separate from any query
         line(fixed, `M440 ${r.y > 150 ? 200 : 130} C480 ${r.y > 150 ? 230 : 100} 500 ${r.y} 530 ${r.y}`, 'sv-dash');
         return { ...r, g, b, sub };
@@ -418,7 +418,7 @@
         clear() {
           state.textContent = '';
           stateBox.setAttribute('class', 'sv-box');
-          regions.forEach((r) => { r.b.setAttribute('class', 'sv-box'); r.sub.textContent = ''; });
+          regions.forEach((r) => { r.b.set('sv-box'); r.sub.textContent = ''; });
         },
       };
     });
@@ -427,19 +427,19 @@
     async function lookup(w, ui, ri, policy) {
       const u = w.users[ui], r = w.regions[ri];
       const q = card(w.layer, 150, 28, 'sv-box', 'api.shop.vn ?');
-      put(q, 75, u.y); move(w, q, 327, u.y > 150 ? 210 : 120);
+      put(q, 100, u.y); move(w, q, 327, u.y > 150 ? 210 : 120);
       await w.sleep(480); fade(w, q);
       w.state.textContent = policy;
       w.stateBox.setAttribute('class', 'sv-box-hot');
       await w.sleep(800);
       const a = card(w.layer, 150, 28, 'sv-box-hot', `${r.ip} · ttl 60`, 'sv-hot');
-      put(a, 327, u.y > 150 ? 210 : 120); move(w, a, 75, u.y);
+      put(a, 327, u.y > 150 ? 210 : 120); move(w, a, 100, u.y);
       await w.sleep(480); fade(w, a);
       w.stateBox.setAttribute('class', 'sv-box');
       // and now the GSLB is out of the path entirely
       const d = card(w.layer, 120, 28, 'sv-box-hot', 'GET /orders', 'sv-hot');
-      put(d, 75, u.y); move(w, d, 626, r.y);
-      r.b.setAttribute('class', 'sv-box-hot');
+      put(d, 100, u.y); move(w, d, 626, r.y);
+      r.b.set('sv-box-hot');
       await w.sleep(560); fade(w, d);
     }
 
@@ -458,7 +458,7 @@
         w.say('<strong>Same question, different answer.</strong> One hostname, and the choice is made per lookup.');
       },
       async (w) => {
-        w.regions[0].b.setAttribute('class', 'sv-box-risk');
+        w.regions[0].b.set('sv-box-risk');
         w.regions[0].sub.textContent = 'probes failing · OUT';
         w.say('The probes run continuously, separate from any query. Singapore fails three in a row.');
         await w.sleep(900);
@@ -560,24 +560,24 @@
         { name: 'user · DE', y: 232 },
       ].map((u) => {
         const g = el('g', {}, fixed);
-        box(g, 0, u.y - 22, 140, 44, 'sv-box');
-        txt(g, 14, u.y + 4, 'sv-lbl-sm', u.name);
+        glyph(g, { icon: 'gl-client', x: 0, y: u.y - 22, size: 44 });
+        txt(g, 54, u.y + 4, 'sv-lbl-sm', u.name);
         return { ...u, g };
       });
-      box(fixed, 220, 143, 130, 44, 'sv-box-hot');
-      txt(fixed, 285, 170, 'sv-hot', 'BGP', 'middle');
-      users.forEach((u) => line(fixed, `M142 ${u.y} C186 ${u.y} 190 165 218 165`, 'sv-line-soft'));
+      glyph(fixed, { icon: 'gl-internet', x: 240, y: 141, size: 48, state: 'hot' });
+      txt(fixed, 264, 206, 'sv-hot', 'BGP', 'middle');
+      users.forEach((u) => line(fixed, `M142 ${u.y} C186 ${u.y} 190 165 236 165`, 'sv-line-soft'));
       const pops = POPS.map((p) => {
         const g = el('g', {}, fixed);
-        const b = box(g, 500, p.y - 26, 220, 52, 'sv-box');
-        txt(g, 516, p.y - 2, 'sv-lbl', p.name);
-        const sub = txt(g, 516, p.y + 16, 'sv-lbl-sm', '');
-        line(fixed, `M352 165 C420 165 430 ${p.y} 498 ${p.y}`, 'sv-line-soft');
+        const b = glyph(g, { icon: 'gl-balancer', x: 500, y: p.y - 24, size: 48 });
+        txt(g, 558, p.y - 2, 'sv-lbl', p.name);
+        const sub = txt(g, 558, p.y + 16, 'sv-lbl-sm', '');
+        line(fixed, `M290 165 C400 165 430 ${p.y} 498 ${p.y}`, 'sv-line-soft');
         return { ...p, g, b, sub };
       });
       return {
         users, pops,
-        clear() { pops.forEach((p) => { p.b.setAttribute('class', 'sv-box'); p.sub.textContent = ''; }); },
+        clear() { pops.forEach((p) => { p.b.set('sv-box'); p.sub.textContent = ''; }); },
       };
     });
 
@@ -585,10 +585,10 @@
     async function route(w, ui, pi, { cls = 'sv-box-hot', label = '203.0.113.9' } = {}) {
       const u = w.users[ui], p = w.pops[pi];
       const c = card(w.layer, 140, 26, cls, label, cls === 'sv-box-risk' ? 'sv-risk' : 'sv-hot');
-      put(c, 70, u.y); move(w, c, 285, 165);
+      put(c, 80, u.y); move(w, c, 264, 165);
       await w.sleep(440);
       move(w, c, 610, p.y);
-      p.b.setAttribute('class', cls);
+      p.b.set(cls);
       await w.sleep(520); fade(w, c);
     }
 
@@ -604,7 +604,7 @@
         await route(w, 0, 0);
         w.pops[0].sub.textContent = 'nearest to VN';
         await w.sleep(400);
-        w.pops[0].b.setAttribute('class', 'sv-box-risk');
+        w.pops[0].b.set('sv-box-risk');
         w.pops[0].sub.textContent = 'announcement withdrawn';
         w.say('Singapore stops telling the world it can reach the address…');
         await w.sleep(900);
@@ -615,7 +615,7 @@
       async (w) => {
         await route(w, 0, 3, { cls: 'sv-box-risk' });
         w.pops[3].sub.textContent = '2 networks away';
-        w.pops[0].b.setAttribute('class', 'sv-box');
+        w.pops[0].b.set('sv-box');
         w.pops[0].sub.textContent = '4 networks away · 160 ms closer';
         w.say('BGP counts <strong>networks crossed, not milliseconds</strong>. One odd peering deal and Vietnam goes to LA.');
       },
@@ -626,24 +626,25 @@
   {
     const w = scene($('edge-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
-      box(fixed, 0, 130, 120, 70, 'sv-box');
-      txt(fixed, 16, 160, 'sv-lbl', 'user · VN');
-      const rtt = txt(fixed, 16, 180, 'sv-hot', '30 ms away');
-      box(fixed, 206, 100, 210, 130, 'sv-box-hot');
-      txt(fixed, 222, 128, 'sv-hot', 'PoP · Singapore');
-      txt(fixed, 222, 148, 'sv-lbl-sm', 'a full L7 proxy');
+      glyph(fixed, { icon: 'gl-client', x: 0, y: 140, size: 50 });
+      txt(fixed, 0, 214, 'sv-lbl', 'user · VN');
+      const rtt = txt(fixed, 0, 234, 'sv-hot', '30 ms away');
+      box(fixed, 206, 100, 210, 130, 'gl-shell-hot');
+      glyph(fixed, { icon: 'gl-balancer', x: 214, y: 106, size: 40, state: 'hot' });
+      txt(fixed, 262, 126, 'sv-hot', 'PoP · Singapore');
+      txt(fixed, 262, 146, 'sv-lbl-sm', 'a full L7 proxy');
       const slotBox = box(fixed, 222, 158, 178, 40, 'sv-box');
       const slot = txt(fixed, 232, 183, 'sv-code', '');
       const note = txt(fixed, 222, 218, 'sv-lbl-sm', '');
-      line(fixed, 'M122 165 H204', 'sv-line-soft');
+      line(fixed, 'M54 165 H204', 'sv-line-soft');
       const origins = [
         { name: 'us-east-1', y: 78 },
         { name: 'ap-southeast-1', y: 252 },
       ].map((o) => {
         const g = el('g', {}, fixed);
-        const b = box(g, 520, o.y - 34, 200, 68, 'sv-box');
-        txt(g, 536, o.y - 6, 'sv-lbl', o.name);
-        const sub = txt(g, 536, o.y + 14, 'sv-lbl-sm', '');
+        const b = glyph(g, { icon: 'gl-server', x: 520, y: o.y - 25, size: 50 });
+        txt(g, 580, o.y - 6, 'sv-lbl', o.name);
+        const sub = txt(g, 580, o.y + 14, 'sv-lbl-sm', '');
         line(fixed, `M418 165 C462 165 470 ${o.y} 518 ${o.y}`, 'sv-line-soft');
         return { ...o, g, b, sub };
       });
@@ -653,7 +654,7 @@
         clear() {
           rtt.textContent = '30 ms away'; slot.textContent = ''; note.textContent = '';
           slotBox.setAttribute('class', 'sv-box');
-          origins.forEach((o) => { o.b.setAttribute('class', 'sv-box'); o.sub.textContent = ''; });
+          origins.forEach((o) => { o.b.set('sv-box'); o.sub.textContent = ''; });
         },
       };
     });
@@ -671,7 +672,7 @@
         await w.sleep(500);
         const h = card(w.layer, 130, 26, 'sv-box-hot', 'one warm hop', 'sv-hot');
         put(h, 430, 165); move(w, h, 620, w.origins[0].y);
-        w.origins[0].b.setAttribute('class', 'sv-box-hot');
+        w.origins[0].b.set('sv-box-hot');
         w.origins[0].sub.textContent = 'pooled connection, already open';
         await w.sleep(560); fade(w, h);
         w.slotBox.setAttribute('class', 'sv-box');
@@ -683,14 +684,14 @@
         w.slot.textContent = 'GET /orders';
         const a = card(w.layer, 130, 26, 'sv-box-risk', '500 from origin', 'sv-risk');
         put(a, 430, 165); move(w, a, 620, w.origins[0].y);
-        w.origins[0].b.setAttribute('class', 'sv-box-risk');
+        w.origins[0].b.set('sv-box-risk');
         w.origins[0].sub.textContent = 'having a bad day';
         await w.sleep(700); fade(w, a);
         w.note.textContent = 'still holding the request';
         await w.sleep(400);
         const b = card(w.layer, 130, 26, 'sv-box-hot', 'retry', 'sv-hot');
         put(b, 430, 165); move(w, b, 620, w.origins[1].y);
-        w.origins[1].b.setAttribute('class', 'sv-box-hot');
+        w.origins[1].b.set('sv-box-hot');
         w.origins[1].sub.textContent = '200';
         await w.sleep(560); fade(w, b);
         w.say('It is a real L7 proxy, so it <strong>retries into a different region</strong>. DNS could never do that.');
