@@ -112,11 +112,12 @@ BANK = {
          "it take more”, so a saturated healthy region keeps its full share."),
     15: ("medium",
          "Which can an L7 balancer do that an L4 balancer cannot?",
-         ["Re-send a failed request to another pod", "Preserve the client IP",
-          "Terminate TLS", "Hold a static IP"], 0, "slides 14-16",
-         "The L7 proxy still holds the request bytes in memory, so it can write them to a second "
-         "pod. L4 forwards each packet and forgets it, so there is nothing to replay. An NLB with a "
-         "TLS listener does terminate TLS, which is what makes that option tempting."),
+         ["Re-send a failed request to another pod", "Route traffic by domain name",
+          "Terminate TLS", "Eject a failing backend from the pool"], 0, "slides 14-16",
+         "Every option is a real balancer feature and L4 does three of them: it routes per domain by "
+         "reading SNI in the clear, an NLB with a TLS listener terminates TLS, and health checks "
+         "eject backends at both layers. Only the retry needs the request held in memory - L7 keeps "
+         "a copy and can write it to a second pod, while L4 forwards each packet and forgets it."),
     16: ("medium",
          "Why does a CDN help an API even at a 0% cache hit rate?",
          ["TCP and TLS handshakes finish ~30 ms away, not ~230 ms", "It compresses the JSON",
