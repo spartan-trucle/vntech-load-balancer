@@ -306,6 +306,53 @@ rect.sv-box-risk + .node-tile { color: var(--reject); }
 rect.sv-box-risk + .node-tile .node-tile-bg { fill: var(--reject-wash); stroke: var(--reject); }
 .sv-glyph { color: var(--accent-strong); }
 
+/* ---------- actor glyphs ---------- */
+/* Pictures of the things in the story: client, internet, balancer, server, pod (#gl-* in the
+   sprite). A diagram draws the actor as a glyph with its name underneath instead of a rectangle
+   with the name inside it. State is ink only — the shape never changes — so a pod being ejected
+   reads as the same pod, gone red.
+   These are custom properties, not class selectors on the shapes: a <use> clones the symbol into
+   a shadow tree that outside selectors cannot reach, while inherited custom properties pass
+   straight through. */
+.gl {
+  --gl-ink: var(--body);
+  --gl-fill: var(--surface-alt);
+  --gl-screen: var(--accent-wash);
+  --gl-led: var(--allow);
+  --gl-hub: var(--accent-strong);
+  --gl-hub-ring: var(--paper);
+  transition: opacity 0.3s ease;
+}
+/* the one being chosen right now — takes the part's accent */
+.gl-hot {
+  --gl-ink: var(--accent-strong);
+  --gl-fill: var(--accent-wash);
+  --gl-screen: color-mix(in srgb, var(--accent) 55%, var(--surface));
+  --gl-led: var(--accent-strong);
+  --gl-hub: var(--ink);
+}
+/* failing: 5xx, ejected, a dead region */
+.gl-risk {
+  --gl-ink: var(--reject);
+  --gl-fill: var(--reject-wash);
+  --gl-screen: var(--reject-wash);
+  --gl-led: var(--reject);
+  --gl-hub: var(--reject);
+}
+/* present but not in play: draining, out of scope, not yet reached */
+.gl-quiet {
+  --gl-ink: var(--muted);
+  --gl-fill: var(--surface);
+  --gl-screen: var(--surface);
+  --gl-led: var(--muted-soft);
+  --gl-hub: var(--muted);
+}
+/* an enclosure the scene draws its own contents into (a balancer's connection table, a region
+   boundary): a hairline shell, never a filled label box */
+.gl-shell { fill: none; stroke: var(--hairline); stroke-width: 1.5; stroke-dasharray: 7 6; }
+.gl-shell-hot { fill: color-mix(in srgb, var(--accent) 10%, transparent); stroke: var(--accent); stroke-width: 1.5; }
+.gl-shell-risk { fill: color-mix(in srgb, var(--reject) 10%, transparent); stroke: var(--reject); stroke-width: 1.5; }
+
 /* numbered request coins: toggle .old (leaked out) and .risk (429) on the <g class="coin"> */
 .coin circle { fill: var(--accent); stroke: var(--accent-strong); stroke-width: 1; }
 .coin text { fill: var(--surface); font-family: var(--mono); font-size: 12px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
@@ -606,6 +653,8 @@ body {
 .coin circle { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 75%, transparent)); }
 .sv-box-hot { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 50%, transparent)); }
 .sv-box-risk { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--reject) 35%, transparent)); }
+.gl-hot { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.gl-risk { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--reject) 40%, transparent)); }
 .coin.risk circle { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--reject) 60%, transparent)); }
 .coin.old circle { filter: none; }
 .byline img { box-shadow: 0 0 0 4px var(--accent-wash), 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent); }

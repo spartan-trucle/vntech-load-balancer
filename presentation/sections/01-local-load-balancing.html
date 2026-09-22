@@ -11,7 +11,7 @@
   <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>1.1 · Back to the OSI model</div>
   <h2>Seven layers, two seats for a balancer: layer 4 is an NLB, layer 7 is an ALB</h2>
   <div class="chart meter" style="flex:1; min-height:0; justify-content:center;">
-    <svg viewBox="0 0 760 400" style="width:auto; height:100%; max-width:100%; margin:0 auto;" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
+    <svg viewBox="0 0 800 400" style="width:auto; height:100%; max-width:100%; margin:0 auto;" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
         <defs>
           <marker id="arrow-osi" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
         </defs>
@@ -53,14 +53,14 @@
 
         <g data-step="1">
           <path d="M510 36 H532" class="sv-line" marker-end="url(#arrow-osi)"/>
-          <rect x="538" y="12" width="214" height="48" rx="8" class="sv-box-hot"/>
-          <text x="554" y="34" class="sv-hot">AWS ALB</text>
-          <text x="554" y="52" class="sv-lbl-sm">Application Load Balancer</text>
+          <use href="#gl-balancer" class="gl gl-hot" x="538" y="10" width="44" height="44"/>
+          <text x="592" y="32" class="sv-hot">AWS ALB</text>
+          <text x="592" y="50" class="sv-lbl-sm">Application Load Balancer</text>
 
           <path d="M510 198 H532" class="sv-line" marker-end="url(#arrow-osi)"/>
-          <rect x="538" y="174" width="214" height="48" rx="8" class="sv-box-hot"/>
-          <text x="554" y="196" class="sv-hot">AWS NLB</text>
-          <text x="554" y="214" class="sv-lbl-sm">Network Load Balancer</text>
+          <use href="#gl-balancer" class="gl gl-hot" x="538" y="172" width="44" height="44"/>
+          <text x="592" y="194" class="sv-hot">AWS NLB</text>
+          <text x="592" y="212" class="sv-lbl-sm">Network Load Balancer</text>
         </g>
 
         <g data-step="2">
@@ -210,35 +210,34 @@ needs warm-up for a spike</pre>
           <marker id="arrow-l7r" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
         </defs>
 
-        <rect x="0" y="72" width="190" height="66" rx="10" class="sv-box"/>
-        <text x="95" y="100" text-anchor="middle" class="sv-lbl">api.shop.vn</text>
-        <text x="95" y="122" text-anchor="middle" class="sv-lbl-sm">one address · one cert</text>
-        <path d="M192 105 H236" class="sv-line" marker-end="url(#arrow-l7r)"/>
+        <use href="#gl-internet" class="gl" x="8" y="72" width="60" height="60"/>
+        <text x="78" y="100" class="sv-lbl">api.shop.vn</text>
+        <text x="78" y="122" class="sv-lbl-sm">one address · one cert</text>
+        <path d="M228 105 H256" class="sv-line" marker-end="url(#arrow-l7r)"/>
 
-        <rect x="240" y="60" width="150" height="90" rx="10" class="sv-box-hot"/>
-        <text x="315" y="92" text-anchor="middle" class="sv-hot">L7 balancer</text>
-        <text x="315" y="114" text-anchor="middle" class="sv-lbl-sm">reads every</text>
-        <text x="315" y="132" text-anchor="middle" class="sv-lbl-sm">request</text>
+        <use href="#gl-balancer" class="gl gl-hot" x="262" y="72" width="66" height="66"/>
+        <text x="336" y="100" class="sv-hot">L7 balancer</text>
+        <text x="336" y="122" class="sv-lbl-sm">reads every request</text>
 
-        <path d="M392 88 C440 88 450 34 496 34" class="sv-line" marker-end="url(#arrow-l7r)"/>
-        <path d="M392 105 C440 105 450 105 496 105" class="sv-line" marker-end="url(#arrow-l7r)"/>
-        <path d="M392 122 C440 122 450 176 496 176" class="sv-line" marker-end="url(#arrow-l7r)"/>
+        <path d="M330 92 C420 92 440 34 496 34" class="sv-line" marker-end="url(#arrow-l7r)"/>
+        <path d="M330 105 C420 105 450 105 496 105" class="sv-line" marker-end="url(#arrow-l7r)"/>
+        <path d="M330 118 C420 118 440 176 496 176" class="sv-line" marker-end="url(#arrow-l7r)"/>
 
         <text x="446" y="24" text-anchor="middle" class="sv-hot">/api</text>
         <text x="446" y="96" text-anchor="middle" class="sv-hot">/ws</text>
         <text x="434" y="168" text-anchor="middle" class="sv-hot">/static</text>
 
-        <rect x="500" y="6" width="240" height="56" rx="10" class="sv-box"/>
-        <text x="516" y="32" class="sv-lbl">api pool · 12 pods</text>
-        <text x="516" y="52" class="sv-lbl-sm">CPU-heavy, scales on load</text>
+        <use href="#gl-pod" class="gl" x="500" y="10" width="48" height="48"/>
+        <text x="560" y="32" class="sv-lbl">api pool · 12 pods</text>
+        <text x="560" y="52" class="sv-lbl-sm">CPU-heavy, scales on load</text>
 
-        <rect x="500" y="77" width="240" height="56" rx="10" class="sv-box"/>
-        <text x="516" y="103" class="sv-lbl">socket pool · 4 pods</text>
-        <text x="516" y="123" class="sv-lbl-sm">long-lived, scales on count</text>
+        <use href="#gl-pod" class="gl" x="500" y="81" width="48" height="48"/>
+        <text x="560" y="103" class="sv-lbl">socket pool · 4 pods</text>
+        <text x="560" y="123" class="sv-lbl-sm">long-lived, scales on count</text>
 
-        <rect x="500" y="148" width="240" height="56" rx="10" class="sv-box"/>
-        <text x="516" y="174" class="sv-lbl">CDN origin</text>
-        <text x="516" y="194" class="sv-lbl-sm">cheap, cached at the edge</text>
+        <use href="#gl-server" class="gl" x="500" y="152" width="48" height="48"/>
+        <text x="560" y="174" class="sv-lbl">CDN origin</text>
+        <text x="560" y="194" class="sv-lbl-sm">cheap, cached at the edge</text>
 
         <path d="M744 34 H788" class="sv-dash"/>
         <g data-step="1">
@@ -274,36 +273,32 @@ needs warm-up for a spike</pre>
   <h2>Four hops pick a destination before a request reaches a pod</h2>
   <div class="body" style="gap:16px;">
     <div class="chart">
-    <svg viewBox="0 0 1160 104" role="img" aria-label="Route 53, ALB, ingress controller, Kubernetes Service, pod">
+    <svg viewBox="0 0 1160 110" role="img" aria-label="Route 53, ALB, ingress controller, Kubernetes Service, pod">
       <defs>
         <marker id="arrow-eks" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
       </defs>
-      <rect x="0" y="14" width="170" height="54" rx="10" class="sv-box-hot"/>
-      <text x="85" y="38" text-anchor="middle" class="sv-lbl">Route 53</text>
-      <text x="85" y="57" text-anchor="middle" class="sv-lbl-sm">DNS</text>
-      <text x="85" y="94" text-anchor="middle" class="sv-hot">① picks a region</text>
-      <path d="M172 41 H214" class="sv-line" marker-end="url(#arrow-eks)"/>
+      <use href="#gl-internet" class="gl gl-hot" x="58" y="10" width="54" height="54"/>
+      <text x="85" y="80" text-anchor="middle" class="sv-lbl">Route 53 · DNS</text>
+      <text x="85" y="100" text-anchor="middle" class="sv-hot">① picks a region</text>
+      <path d="M118 37 H208" class="sv-line" marker-end="url(#arrow-eks)"/>
 
-      <rect x="220" y="14" width="200" height="54" rx="10" class="sv-box-hot"/>
-      <text x="320" y="38" text-anchor="middle" class="sv-lbl">ALB</text>
-      <text x="320" y="57" text-anchor="middle" class="sv-lbl-sm">L7 · managed by AWS</text>
-      <text x="320" y="94" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
-      <path d="M422 41 H464" class="sv-line" marker-end="url(#arrow-eks)"/>
+      <use href="#gl-balancer" class="gl gl-hot" x="293" y="10" width="54" height="54"/>
+      <text x="320" y="80" text-anchor="middle" class="sv-lbl">ALB · L7, managed</text>
+      <text x="320" y="100" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
+      <path d="M353 37 H473" class="sv-line" marker-end="url(#arrow-eks)"/>
 
-      <rect x="470" y="14" width="230" height="54" rx="10" class="sv-box-hot"/>
-      <text x="585" y="38" text-anchor="middle" class="sv-lbl">Ingress controller</text>
-      <text x="585" y="57" text-anchor="middle" class="sv-lbl-sm">NGINX · Envoy Gateway</text>
-      <text x="585" y="94" text-anchor="middle" class="sv-hot">③ picks a pod</text>
-      <path d="M702 41 H744" class="sv-line" marker-end="url(#arrow-eks)"/>
+      <use href="#gl-balancer" class="gl gl-hot" x="558" y="10" width="54" height="54"/>
+      <text x="585" y="80" text-anchor="middle" class="sv-lbl">Ingress · NGINX, Envoy</text>
+      <text x="585" y="100" text-anchor="middle" class="sv-hot">③ picks a pod</text>
+      <path d="M618 37 H748" class="sv-line" marker-end="url(#arrow-eks)"/>
 
-      <rect x="750" y="14" width="220" height="54" rx="10" class="sv-box"/>
-      <text x="860" y="38" text-anchor="middle" class="sv-lbl">Service · kube-proxy</text>
-      <text x="860" y="57" text-anchor="middle" class="sv-lbl-sm">L4 · iptables / IPVS</text>
-      <text x="860" y="94" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
-      <path d="M972 41 H1014" class="sv-line" marker-end="url(#arrow-eks)"/>
+      <use href="#gl-balancer" class="gl" x="833" y="10" width="54" height="54"/>
+      <text x="860" y="80" text-anchor="middle" class="sv-lbl">Service · iptables / IPVS</text>
+      <text x="860" y="100" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
+      <path d="M893 37 H1023" class="sv-line" marker-end="url(#arrow-eks)"/>
 
-      <rect x="1020" y="14" width="140" height="54" rx="10" class="sv-box"/>
-      <text x="1090" y="46" text-anchor="middle" class="sv-lbl">Pod</text>
+      <use href="#gl-pod" class="gl" x="1063" y="10" width="54" height="54"/>
+      <text x="1090" y="80" text-anchor="middle" class="sv-lbl">Pod</text>
     </svg>
     </div>
     <table class="tbl dense">
@@ -332,24 +327,29 @@ needs warm-up for a spike</pre>
           <marker id="arrow-cs" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
         </defs>
         <text x="10" y="18" class="sv-lbl-sm">proxy in the middle</text>
-        <rect x="10" y="30" width="130" height="50" rx="10" class="sv-box"/><text x="75" y="60" text-anchor="middle" class="sv-lbl">order-svc</text>
-        <path d="M140 55 H218" class="sv-line" marker-end="url(#arrow-cs)"/>
-        <rect x="222" y="30" width="130" height="50" rx="10" class="sv-box-hot"/><text x="287" y="60" text-anchor="middle" class="sv-lbl">LB</text>
-        <path d="M352 55 L458 26" class="sv-line" marker-end="url(#arrow-cs)"/>
-        <path d="M352 55 H458" class="sv-line" marker-end="url(#arrow-cs)"/>
-        <path d="M352 55 L458 84" class="sv-line" marker-end="url(#arrow-cs)"/>
-        <text x="470" y="30" class="sv-lbl">payment-1</text><text x="470" y="60" class="sv-lbl">payment-2</text><text x="470" y="90" class="sv-lbl">payment-3</text>
+        <use href="#gl-pod" class="gl" x="10" y="30" width="50" height="50"/><text x="68" y="60" class="sv-lbl">order-svc</text>
+        <path d="M186 55 H246" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <use href="#gl-balancer" class="gl gl-hot" x="252" y="30" width="50" height="50"/>
+        <path d="M304 50 L400 26" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <path d="M304 55 H400" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <path d="M304 60 L400 84" class="sv-line" marker-end="url(#arrow-cs)"/>
+        <use href="#gl-pod" class="gl" x="406" y="8" width="34" height="34"/><text x="448" y="30" class="sv-lbl">payment-1</text>
+        <use href="#gl-pod" class="gl" x="406" y="38" width="34" height="34"/><text x="448" y="60" class="sv-lbl">payment-2</text>
+        <use href="#gl-pod" class="gl" x="406" y="68" width="34" height="34"/><text x="448" y="90" class="sv-lbl">payment-3</text>
         <text x="10" y="124" class="sv-lbl-sm">+1 network hop, +1 thing to scale and monitor</text>
 
         <g data-step="1">
           <text x="10" y="176" class="sv-lbl-sm">client-side</text>
-          <rect x="10" y="188" width="200" height="70" rx="10" class="sv-box-hot"/>
-          <text x="110" y="216" text-anchor="middle" class="sv-lbl">order-svc</text>
-          <text x="110" y="238" text-anchor="middle" class="sv-hot">picker inside</text>
-          <path d="M210 223 L458 190" class="sv-line" marker-end="url(#arrow-cs)"/>
-          <path d="M210 223 H458" class="sv-line" marker-end="url(#arrow-cs)"/>
-          <path d="M210 223 L458 256" class="sv-line" marker-end="url(#arrow-cs)"/>
-          <text x="470" y="194" class="sv-lbl">payment-1</text><text x="470" y="227" class="sv-lbl">payment-2</text><text x="470" y="260" class="sv-lbl">payment-3</text>
+          <rect x="10" y="188" width="200" height="70" rx="10" class="gl-shell-hot"/>
+          <use href="#gl-pod" class="gl gl-hot" x="18" y="198" width="50" height="50"/>
+          <text x="76" y="216" class="sv-lbl">order-svc</text>
+          <text x="76" y="238" class="sv-hot">picker inside</text>
+          <path d="M212 210 L400 190" class="sv-line" marker-end="url(#arrow-cs)"/>
+          <path d="M212 223 H400" class="sv-line" marker-end="url(#arrow-cs)"/>
+          <path d="M212 236 L400 256" class="sv-line" marker-end="url(#arrow-cs)"/>
+          <use href="#gl-pod" class="gl" x="406" y="172" width="34" height="34"/><text x="448" y="194" class="sv-lbl">payment-1</text>
+          <use href="#gl-pod" class="gl" x="406" y="205" width="34" height="34"/><text x="448" y="227" class="sv-lbl">payment-2</text>
+          <use href="#gl-pod" class="gl" x="406" y="238" width="34" height="34"/><text x="448" y="260" class="sv-lbl">payment-3</text>
           <text x="10" y="290" class="sv-lbl-sm">pod list from DNS (headless Service) or a registry</text>
         </g>
       </svg>
@@ -399,10 +399,10 @@ needs warm-up for a spike</pre>
       const g = w.rows[0], y = 46;
       txt(g, 0, 14, 'sv-lbl-sm', 'on the wire · bytes, in order');
       line(g, `M0 ${y} H${W}`, 'sv-line-soft');
-      el('use', { href: '#ic-client', x: 0, y: y + 16, width: 22, height: 22, class: 'sv-glyph' }, g);
-      txt(g, 28, y + 34, 'sv-lbl-sm', 'client');
-      el('use', { href: '#ic-balancer', x: W - 22, y: y + 16, width: 22, height: 22, class: 'sv-glyph' }, g);
-      txt(g, W - 30, y + 34, 'sv-lbl-sm', 'balancer', 'end');
+      el('use', { href: '#gl-client', x: 0, y: y + 12, width: 28, height: 28, class: 'gl' }, g);
+      txt(g, 34, y + 32, 'sv-lbl-sm', 'client');
+      el('use', { href: '#gl-balancer', x: W - 28, y: y + 12, width: 28, height: 28, class: 'gl' }, g);
+      txt(g, W - 36, y + 32, 'sv-lbl-sm', 'balancer', 'end');
       for (let i = 0; i < 7; i++) {
         const c = card(g, 78, 28, 'sv-box-hot', `pkt ${i + 1}`, 'sv-hot');
         put(c, animate ? -50 : 60 + i * 96, y);

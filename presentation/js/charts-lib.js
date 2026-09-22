@@ -133,25 +133,57 @@
   // draw() lays out the fixed parts once and returns handles for the phases to use; everything a
   // phase draws goes in api.layer, which reset() wipes. A handle named clear() undoes any change a
   // phase made to a fixed node.
-  // A box with an icon tile, for the hand-drawn scenes: client, balancer, pod. `b` is the rect, so a
-  // scene keeps doing b.setAttribute('class', 'sv-box-hot' | 'sv-box-risk' | 'sv-box') and the tile follows
-  // through the `rect + .node-tile` rules in deck.css. Layouts: 'row' (tile left, text beside it),
-  // 'head' (tile top-left, title beside it; the caller draws the rest), 'stack' (tile centred, text under it).
-  function node(p, { x, y, w, h, icon, cls = 'sv-box', layout = 'row', tile = 36, title, titleCls = 'sv-lbl', sub, subCls = 'sv-lbl-sm' }) {
+
+  // ---------- actor glyphs ----------
+  // The pictures in the sprite (#gl-client, #gl-internet, #gl-balancer, #gl-server, #gl-pod).
+  // A diagram draws the actor itself; its name goes beside or under the picture, never inside a
+  // box. State is ink: 'hot' = the one being chosen, 'risk' = failing, 'quiet' = out of play.
+  const GL = { 'ic-client': 'gl-client', 'ic-balancer': 'gl-balancer', 'ic-pod': 'gl-pod',
+               'ic-server': 'gl-server', 'ic-globe': 'gl-internet', 'ic-users': 'gl-client' };
+  // scenes already speak in box classes, so one word covers both vocabularies
+  const STATE = { 'sv-box': '', 'sv-box-hot': 'gl-hot', 'sv-box-risk': 'gl-risk', '': '',
+                  hot: 'gl-hot', risk: 'gl-risk', quiet: 'gl-quiet' };
+  const SHELL = { 'sv-box': 'gl-shell', 'sv-box-hot': 'gl-shell-hot', 'sv-box-risk': 'gl-shell-risk' };
+
+  function glyph(p, { icon, x, y, size, state = '' }) {
+    const g = el('use', { href: `#${GL[icon] || icon}`, x, y, width: size, height: size,
+                          class: `gl ${STATE[state] ?? state ?? ''}`.trim() }, p);
+    // the scenes drive state with setAttribute('class', 'sv-box-hot'); keep that working, whether
+    // a caller reaches for set() or for the plain DOM call
+    const raw = g.setAttribute.bind(g);
+    g.set = (cls) => raw('class', `gl ${STATE[cls] ?? cls ?? ''}`.trim());
+    g.setAttribute = (k, v) => (k === 'class' ? g.set(v) : raw(k, v));
+    return g;
+  }
+
+  // An actor in a scene. Layouts:
+  //   'row'   picture on the left, name and sub-line beside it
+  //   'stack' picture centred on the node, name and sub-line under it
+  //   'head'  an enclosure the caller draws into (a balancer's connection table): hairline shell,
+  //           picture in its top-left corner, name beside it
+  // `b` is a handle, not a rect: b.setAttribute('class', 'sv-box-hot' | 'sv-box-risk' | 'sv-box')
+  // still recolours the actor, so every existing scene keeps working.
+  function node(p, { x, y, w, h, icon, cls = 'sv-box', layout = 'row', size, title, titleCls = 'sv-lbl', sub, subCls = 'sv-lbl-sm' }) {
     const g = el('g', { class: 'node' }, p);
-    const b = el('rect', { x, y, width: w, height: h, rx: 12, class: cls }, g);
-    const tx0 = layout === 'stack' ? x + (w - tile) / 2 : x + 12;
-    const ty0 = layout === 'row' ? y + (h - tile) / 2 : y + 10;
-    const t = el('g', { class: 'node-tile' }, g);
-    el('rect', { x: tx0, y: ty0, width: tile, height: tile, rx: Math.round(tile / 4), class: 'node-tile-bg' }, t);
-    el('use', { href: `#${icon}`, x: tx0 + tile * 0.17, y: ty0 + tile * 0.17, width: tile * 0.66, height: tile * 0.66 }, t);
-    const mid = layout === 'stack';
-    const tx = mid ? x + w / 2 : tx0 + tile + 12;
+    const head = layout === 'head', mid = layout === 'stack';
+    const gs = size || (head ? 34 : mid ? Math.min(48, Math.max(36, h - 44)) : Math.min(46, Math.max(38, h - 18)));
+    let shell = null, gx, gy, tx, ty0;
+    if (head) {
+      shell = el('rect', { x, y, width: w, height: h, rx: 12, class: SHELL[cls] || 'gl-shell' }, g);
+      gx = x + 6; gy = y + 8; tx = gx + gs + 12; ty0 = gy + gs * 0.62;
+    } else if (mid) {
+      gx = x + (w - gs) / 2; gy = y + (h - gs) / 2; tx = x + w / 2; ty0 = gy + gs + 24;
+    } else {
+      gx = x + 2; gy = y + (h - gs) / 2; tx = gx + gs + 14; ty0 = y + h / 2 - 4;
+    }
+    const pic = glyph(g, { icon, x: gx, y: gy, size: gs, state: cls });
     const anchor = mid ? { 'text-anchor': 'middle' } : {};
     let ttl = null, sb = null;
-    if (title != null) ttl = el('text', { x: tx, y: mid ? ty0 + tile + 22 : (layout === 'head' ? ty0 + tile * 0.68 : y + h / 2 - 4), class: titleCls, ...anchor }, g, title);
-    if (sub != null) sb = el('text', { x: tx, y: mid ? ty0 + tile + 42 : y + h / 2 + 16, class: subCls, ...anchor }, g, sub);
-    return { g, b, tile: t, tx, title: ttl, sub: sb };
+    if (title != null) ttl = el('text', { x: tx, y: ty0, class: titleCls, ...anchor }, g, title);
+    if (sub != null) sb = el('text', { x: tx, y: mid ? ty0 + 21 : y + h / 2 + 16, class: subCls, ...anchor }, g, sub);
+    // shell and picture move together, so a scene that reddens the node reddens both
+    const b = { setAttribute: (k, v) => { if (k !== 'class') return; pic.set(v); shell && shell.setAttribute('class', SHELL[v] || 'gl-shell'); } };
+    return { g, b, pic, shell, tile: pic, tx, title: ttl, sub: sb };
   }
 
   function scene(svg, viewBox, draw) {
@@ -169,25 +201,34 @@
   // and land in a server. The hub box shows what the balancer "knows" when it picks.
   // Each slide's → steps pick a phase; every phase replays from a clean state, so going back works.
   const FLY = 900; // ms for one coin hop; matches .coin-fly in deck.css
-  function flow(svg, { servers, slots = servers.length, clients = null, title = 'load balancer', stat }) {
-    const W = 720, H = 330, SX = 450, SW = 270, GAP = 12;
+  function flow(svg, { servers, slots = servers.length, clients = null, title = 'load balancer', backend = 'gl-server', stat }) {
+    // the picture takes the left of each row, so the row starts further left than it used to and
+    // the name/counter column keeps its old width; with a client column there is no room to move,
+    // but those slides carry short counters
+    const W = 720, H = 330, GAP = 12, SX = clients ? 450 : 410, SW = W - SX;
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     const bh = (H - GAP * (slots - 1)) / slots;
     const hub = clients ? { x: 205, y: H / 2 - 48, w: 212, h: 96 } : { x: 0, y: H / 2 - 82, w: 220, h: 164 };
     const out = { x: hub.x + hub.w, y: H / 2 };
     const paths = el('g', {}, svg);
 
-    el('rect', { x: hub.x, y: hub.y, width: hub.w, height: hub.h, rx: 12, class: 'sv-box-hot' }, svg);
-    el('text', { x: hub.x + 14, y: hub.y + 26, class: 'sv-hot' }, svg, title);
+    // the balancer is drawn as itself; the shell holds what it knows when it picks
+    const HG = clients ? 36 : 40;
+    el('rect', { x: hub.x, y: hub.y, width: hub.w, height: hub.h, rx: 12, class: 'gl-shell-hot' }, svg);
+    glyph(svg, { icon: 'gl-balancer', x: hub.x + 6, y: hub.y + 8, size: HG, state: 'hot' });
+    el('text', { x: hub.x + HG + 18, y: hub.y + 26 + (clients ? 6 : 4), class: 'sv-hot' }, svg, title);
     const lines = (clients ? [0, 1] : [0, 1, 2, 3]).map((i) =>
-      el('text', { x: hub.x + 14, y: hub.y + 54 + i * 25, class: 'sv-code' }, svg));
+      el('text', { x: hub.x + 14, y: hub.y + HG + 26 + i * 25, class: 'sv-code' }, svg));
 
+    // picture on the left of each row, name and counters beside it, coins stacking underneath
+    const SG = Math.min(42, Math.max(30, bh - 14)), TX = SX + SG + 12;
     const S = servers.map((d, i) => {
       const y = i * (bh + GAP);
       const g = el('g', { class: 'flow-srv' }, svg);
-      const box = el('rect', { x: SX, y, width: SW, height: bh, rx: 10, class: 'sv-box' }, g);
-      el('text', { x: SX + 14, y: y + 22, class: 'sv-lbl' }, g, d.name);
-      const sub = el('text', { x: SX + 14, y: y + 39, class: 'sv-lbl-sm' }, g);
+      const pic = glyph(g, { icon: backend, x: SX, y: y + (bh - SG) / 2, size: SG });
+      const box = { setAttribute: (k, v) => { if (k === 'class') pic.set(v); } };
+      el('text', { x: TX, y: y + 22, class: 'sv-lbl' }, g, d.name);
+      const sub = el('text', { x: TX, y: y + 39, class: 'sv-lbl-sm' }, g);
       const st = el('text', { x: SX + SW - 12, y: y + 22, class: 'sv-tick', 'text-anchor': 'end' }, g);
       const path = el('path', {
         d: `M${out.x} ${out.y} C${out.x + 90} ${out.y} ${SX - 90} ${y + bh / 2} ${SX - 3} ${y + bh / 2}`,
@@ -199,14 +240,15 @@
     const C = clients && clients.map((c, i) => {
       const rowH = H / clients.length, y = i * rowH + rowH / 2;
       const g = el('g', { class: 'flow-srv' }, svg);
-      el('text', { x: 0, y: y - 3, class: 'sv-lbl' }, g, c.name);
-      el('text', { x: 0, y: y + 14, class: 'sv-tick' }, g, c.ip);
+      glyph(g, { icon: 'gl-client', x: 0, y: y - 21, size: 42 });
+      el('text', { x: 54, y: y - 3, class: 'sv-lbl' }, g, c.name);
+      el('text', { x: 54, y: y + 14, class: 'sv-tick' }, g, c.ip);
       el('path', { d: `M168 ${y} C210 ${y} 210 ${H / 2} ${hub.x - 3} ${H / 2}`, class: 'sv-line-soft' }, g);
       return { ...c, y, g };
     });
 
     const coins = el('g', {}, svg);
-    const slot = (s, k) => [SX + 26 + k * 28, s.y + bh - 21];
+    const slot = (s, k) => [TX + 12 + k * 28, s.y + bh - 18];
     const put = (g, x, y) => { g.style.transform = `translate(${x}px, ${y}px)`; };
     const fly = (g, x, y) => { if (clk.virtual()) { put(g, x, y); return; } void g.getBoundingClientRect(); put(g, x, y); };
     const coin = (label, cls, x, y) => {
@@ -319,5 +361,5 @@
     return api;
   }
 
-  window.Charts = { el, scale, fmt, $, rng, histogram, flow, clock, steps, scene, node };
+  window.Charts = { el, scale, fmt, $, rng, histogram, flow, clock, steps, scene, node, glyph };
 })();
