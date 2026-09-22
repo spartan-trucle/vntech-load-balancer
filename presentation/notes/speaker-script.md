@@ -28,7 +28,7 @@ nhớ sửa luôn ở đây.
 | Cảm ơn + Kahoot | 54 | cả hai | 3 phút |
 
 **Deck này chạy khoảng 60 phút nếu không tính phụ lục.** Cần cắt thì cắt theo thứ tự này, mỗi
-cái đều đứng độc lập được: phụ lục (43–47), rồi 32, 30, 18, 15. Đừng bao giờ bỏ slide 52 —
+cái đều đứng độc lập được: phụ lục (43–47), rồi 32, 30, 18, 16. Đừng bao giờ bỏ slide 52 —
 demo live mới là thứ mọi người nhớ.
 
 ---
@@ -113,24 +113,35 @@ qua v2; client thì từ đầu tới cuối chỉ thấy một địa chỉ duy
 nhưng đó là tính năng của sản phẩm, không phải bản chất của load balancing.
 **Chốt:** Nhớ ba việc này — mọi thứ còn lại hôm nay chỉ là làm một trong ba việc đó tốt hơn.
 
+### 9 / 54 · Các loại load balancer
+**Nói:** Trước khi đi sâu, điểm danh sáu cái tên hay gặp — ByteByteGo liệt kê đúng sáu cái này —
+nhưng đừng học như một danh sách. Chúng trả lời ba câu hỏi khác nhau. Cái gì chạy nó: hardware
+là một cái box trong rack như F5, nhanh nhưng đắt và mua một lần là chốt size; software là một
+chương trình như NGINX, HAProxy, Envoy, muốn scale thì chạy thêm bản; cloud là AWS ALB/NLB,
+Google Cloud Load Balancing, Azure — nhà cung cấp chạy hộ, mình nhận một endpoint và một hoá
+đơn. Nó đọc gì: layer 4 chỉ đọc IP và port, chọn backend một lần cho cả connection; layer 7 đọc
+path, header, cookie, chọn theo từng request. Nó với tới đâu: local là trong một cluster hay
+một region; global — GSLB — chọn region cho user qua DNS hoặc anycast, trước khi chạm tới
+balancer nào bên trong.
+**→ 1:** Ba câu hỏi này độc lập với nhau, nên một box thường là nhiều loại cùng lúc: ALB là
+cloud, bên dưới là software, và là layer 7.
+**Chốt:** Phần 1 là cột giữa — L4 và L7 chạy thế nào. Phần 2 là cột phải — GSLB.
+
 ---
 
 # Phần 1 — Local load balancing (Trúc)
 
-### 9 / 54 · Scale up vs scale out
+### 10 / 54 · Scale up vs scale out
 **Nói:** Hai cách lấy thêm capacity. Lên (up): 4 vCPU thành 64. Không đụng code, đó là cái hay
 — nhưng có một instance type to nhất, càng lên cao giá mỗi core càng tệ, và vẫn chỉ là một sợi
 dây điện. Ra (out): mười sáu pod nhỏ. Traffic tăng thì thêm, chết một con cũng không sập.
 Nhưng cần load balancer, và cần app không giữ state của user trong memory.
-**→ 1:** Cái vế cuối mới là việc thật. Nếu giỏ hàng nằm trong memory của pod, request tiếp
-theo rơi vào pod khác là giỏ hàng trống trơn. Đẩy session qua Redis hoặc DB *trước*, rồi mới
-scale out.
 
-### 10 / 54 · Divider 01
+### 11 / 54 · Divider 01
 **Nói:** Zoom vào bên trong một data center. Traffic east-west giữa các service của mình, và
 lựa chọn định hình mọi thứ còn lại: load balancer làm việc ở tầng nào?
 
-### 11 / 54 · Quay lại mô hình OSI
+### 12 / 54 · Quay lại mô hình OSI
 **Nói:** Ôn nhanh mô hình OSI, vì mười slide tới đều dựa vào nó. Bảy tầng. Load balancer chỉ
 bao giờ ngồi ở hai tầng thôi: tầng 4, transport — TCP, UDP, port — và tầng 7, application —
 HTTP, gRPC, header, cookie.
@@ -141,7 +152,7 @@ Balancer. Ra ngoài AWS cũng vậy: HAProxy `mode tcp` và kube-proxy ở L4, N
 trên load balancer. Tầng 5 và 6 thực tế gần như không tồn tại; TCP/IP gộp chúng vào TLS.
 **Chốt:** Hễ ai hỏi "NLB hay ALB?", thực chất họ đang hỏi "tầng 4 hay tầng 7?".
 
-### 12 / 54 · Packet không phải là request
+### 13 / 54 · Packet không phải là request
 **Nói:** Trước khi so L4 với L7, phải thống nhất cái gì thật sự đang chạy trên dây. Bảy packet
 tới lần lượt. Trên dây không có gì đánh dấu request bắt đầu ở đâu và kết thúc ở đâu cả.
 **→ 1:** Mở một packet ra. IP header, TCP header, payload. Load balancer L4 đọc hai cái header
@@ -156,7 +167,7 @@ cho người khác.
 **Chốt:** Ráp lại byte stream rồi parse là việc thật, tốn thật. **Chính cái việc đó là toàn bộ
 khác biệt**, và mọi thứ khác đều suy ra từ đây.
 
-### 13 / 54 · L4 load balancer chạy thế nào
+### 14 / 54 · L4 load balancer chạy thế nào
 **Nói:** Nhìn gói SYN. Load balancer hash bốn giá trị (src IP, src port, dst IP, dst port), chọn
 pod-b, rồi ghi một dòng vào connection table. Sau đó packet 2, 3, 4, 5 tới — chúng không mang
 gợi ý gì về nơi cần đến, nên chỉ còn cách tra cái dòng đó. Một quyết định, làm đúng một lần,
@@ -170,7 +181,7 @@ nhận reset.
 **Chốt:** Và để ý cái bảng đó là *state*. Restart load balancer là mọi connection đang sống
 reset theo.
 
-### 14 / 54 · L7 load balancer chạy thế nào
+### 15 / 54 · L7 load balancer chạy thế nào
 **Nói:** Một cỗ máy hoàn toàn khác. Nó hoàn tất handshake với client trên conn A, đọc nguyên
 request vào memory, quyết định, rồi ghi sang *connection của chính nó* tới pod-a. Hai TCP
 connection dán lại bằng code. Request thứ hai trên cùng connection của client lại đi về pod-c —
@@ -183,7 +194,7 @@ trên một connection mới. User chỉ thấy một cái 200 hơi chậm.
 **Chốt:** "Nó giữ request lại" là câu giải thích được retry, canary, metric theo từng request —
 tức là toàn bộ cột L7 trong bảng so sánh.
 
-### 15 / 54 · Request nằm ở đâu trong lúc chờ
+### 16 / 54 · Request nằm ở đâu trong lúc chờ
 **Nói:** Quay lại câu đó: proxy *giữ* request. Giữ ở đâu? Trong memory của nó. Load balancer là
 một chương trình bình thường, như mấy cái mình viết — đọc request vào, quyết định đi đâu, ghi
 ra. Trong lúc nó quyết định thì request của bạn nằm trong memory của nó, và mỗi request nó đang
@@ -197,7 +208,7 @@ không làm gì, vì chẳng còn bản sao nào để gửi lại. Upload to m�
 **Chốt:** So với L4 — nó không giữ gì cả, chuyển từng packet rồi quên luôn. Nên nó rẻ hơn hẳn,
 và cũng vì thế mà không bao giờ retry được.
 
-### 16 / 54 · Health check
+### 17 / 54 · Health check
 **Nói:** Load balancer loại nào cũng phải trả lời "backend này còn sống không". Active thì probe
 theo timer: `GET /healthz` mỗi 5 giây. pod-c bắt đầu lỗi — một lần fail chưa đủ để hành động,
 có thể chỉ là nấc nhẹ. Ba lần liên tiếp thì mới loại.
@@ -213,13 +224,6 @@ balancer tốt sẽ bỏ qua health luôn và chia đều cho tất cả, vì t�
 hiệu health hỏng cao hơn là cả cụm hỏng.
 **Chốt:** Cho health check của load balancer ở mức nông thôi — *process này còn phục vụ được
 không* — còn check dependency thì để một endpoint riêng, chỉ dùng để báo động cho mình.
-
-### 17 / 54 · L4 vs L7, đặt cạnh nhau
-**Nói:** Giờ tới bảng so sánh, và mọi dòng đều suy ra từ một thứ: một connection, hay hai. Theo
-connection vs theo request. Port vs path và header. Passthrough vs termination. Retry không thể
-vs có thể. Không có status code vs p99 theo từng route. Và chênh nhau cỡ 10 lần về chi phí.
-**Chốt:** Đừng học thuộc từng dòng. Nhớ nguyên nhân là suy lại được hết: **load balancer này có
-giữ request lại không, hay chỉ chuyển packet?**
 
 ### 18 / 54 · Vậy chọn cái nào?
 **Nói:** Slide này thứ Hai đi làm là dùng được luôn. Rút gọn lại chỉ còn một câu hỏi:
@@ -292,7 +296,7 @@ region nó bảo vệ. Request của user gõ cửa rồi dội ngược lại �
 vòng qua nữa. Load balancer không tự failover cho chính nó được.
 **→ 1:** Thứ hai: vật lý. Sài Gòn tới us-east-1 khoảng 230 mili-giây một vòng. TCP handshake,
 TLS handshake, request đầu tiên — ba vòng, bảy trăm mili-giây, *trước khi code của bạn chạy*.
-P2C hoàn hảo ở Virginia cũng không lấy lại được một mili-giây nào.
+Least request hoàn hảo ở Virginia cũng không lấy lại được một mili-giây nào.
 **→ 2:** Cả hai vấn đề có chung một lời giải, và nó không nằm trong region này: kết thúc
 connection ở gần user hơn.
 **Chốt:** Bốn lý do đi global — latency, disaster recovery, capacity vượt quá một region, và
@@ -377,10 +381,7 @@ bằng 0%**.
 **Nói:** Bảng so sánh. Failover: phút, giây, dưới một giây. Điều khiển theo từng request: không,
 không, full L7. Thấy được load của backend: không, không, có. Quy luật y hệt phần 1 — load
 balancer càng nằm *trên đường đi*, nó càng làm được nhiều.
-**→ 1:** Và chúng ghép được với nhau, đó mới là hình dạng hệ thống thật: DNS phát ra một IP
-anycast, anycast đưa tới PoP, PoP chọn region origin, load balancer của region chọn pod. Bốn
-quyết định cân bằng tải cho một request, mỗi cái ở một phạm vi khác nhau.
-**→ 2:** Cái bẫy chung cho cả ba: health check toàn cầu khó thật sự. "ap-southeast-1 có khoẻ
+**→ 1:** Cái bẫy chung cho cả ba: health check toàn cầu khó thật sự. "ap-southeast-1 có khoẻ
 không" không có một câu trả lời duy nhất — nó có thể hoàn toàn khoẻ nhưng không với tới được từ
 châu Âu vì một nhà mạng trung chuyển. Probe từ một chỗ thì được bức tranh sai; probe từ mọi nơi
 thì được một mớ ý kiến trái nhau phải tự xử.
@@ -400,7 +401,7 @@ trên đường đi của từng request.
 với latency routing, TTL 60 giây, chọn region. Trong mỗi region, một NLB trải trên ba AZ chia
 connection, một fleet Envoy terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
 gRPC nội bộ.
-**Chốt:** Bốn quyết định cân bằng tải, đúng như slide trước — và mỗi cái là một tầng khác nhau
+**Chốt:** Bốn quyết định cân bằng tải cho một request — và mỗi cái là một tầng khác nhau
 từ phần 1.
 
 ### 32 / 54 · Capacity
