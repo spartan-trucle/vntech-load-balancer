@@ -145,11 +145,15 @@ BANK = {
          "reading that means terminating TLS, which makes you an L7 balancer."),
     20: ("hard",
          "A large upload stops being retryable on an L7 balancer past the buffer cap. Why?",
-         ["Past the cap it keeps no copy, so there is nothing to re-send", "The client cancels it",
-          "The health check fails", "Re-encryption to the pod drops it"], 0, "slide 16",
-         "Retries exist only because the request sits in the proxy's memory. 10,000 concurrent "
-         "requests x 64 KB is already 640 MB, so every balancer caps what it will buffer. Over the "
-         "cap it streams the bytes straight through and retries quietly stop working."),
+         ["Past the cap it keeps no copy, so there is nothing to re-send",
+          "10,000 concurrent requests at 64 KB would need 640 MB",
+          "It hits the 60 s idle timeout before the upload finishes",
+          "The hop to the pod is plaintext, so the bytes are gone"], 0, "slide 16",
+         "B, C and D are all true statements from the deck, and none of them is the reason. 640 MB "
+         "is why the cap exists, not why retries stop. 60 s is the ALB's default idle timeout. The "
+         "hop to the pod really is plaintext unless you re-encrypt. Retries work only because the "
+         "proxy still holds the request: over the cap it stops keeping a copy and streams the bytes "
+         "straight through, so there is nothing left to re-send."),
     21: ("hard",
          "Peak 200k req/s global. A node does 25k. Survive one region down plus 1 of 3 AZs. "
          "Nodes/region?",
