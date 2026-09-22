@@ -658,3 +658,4 @@ body.overview .backdrop { display: none; }
 .slide > .cover-logo { transform: none; }
 .cover-tagline .ic { width: 34px; height: 34px; padding: 7px; border-radius: 7px; }
 .kahoot-pin input:read-only { border-bottom-color: transparent; cursor: default; }
+.code.sm { font-size: 13px; line-height: 1.55; padding: 14px 18px; }
