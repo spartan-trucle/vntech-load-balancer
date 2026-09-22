@@ -17,7 +17,7 @@
     </div>
     <ul class="points tight">
       <li><span class="chip risk">1</span> Your ALB lives <b>inside</b> the region it protects. When that region loses its control plane, nothing in-region is left to route around it.</li>
-      <li data-step="1"><span class="chip risk">2</span> Ho Chi Minh City to <code>us-east-1</code> is ~230 ms round trip. Perfect P2C in Virginia gives back none of it. The only fix is to <b>terminate the connection closer to the user</b>.</li>
+      <li data-step="1"><span class="chip risk">2</span> Ho Chi Minh City to <code>us-east-1</code> is ~230 ms round trip. Even a perfect least-request balancer in Virginia gives back none of it. The only fix is to <b>terminate the connection closer to the user</b>.</li>
       <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
@@ -179,8 +179,7 @@
       </tbody>
     </table>
     <ul class="points tight">
-      <li data-step="1">DNS hands out an anycast IP → anycast reaches a PoP → the PoP picks an origin region → the region's balancer picks a pod.</li>
-      <li data-step="2"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
+      <li data-step="1"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
     </ul>
   </div>
   <div class="foot"><span>29 / 54</span><span>comparing the three levers</span></div>
@@ -226,18 +225,18 @@
         <text x="396" y="30" class="sv-lbl-sm">ap-southeast-1 · Singapore</text>
         <rect x="396" y="44" width="150" height="70" rx="10" class="sv-box"/><text x="471" y="72" text-anchor="middle" class="sv-lbl">NLB</text><text x="471" y="92" text-anchor="middle" class="sv-lbl-sm">L4 · 3 AZs</text>
         <path d="M546 79 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="588" y="44" width="190" height="70" rx="10" class="sv-box-hot"/><text x="683" y="72" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="683" y="92" text-anchor="middle" class="sv-hot">TLS · L7 · P2C</text>
-        <path d="M778 79 H816" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="820" y="44" width="286" height="70" rx="10" class="sv-box"/><text x="963" y="72" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="963" y="92" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
+        <rect x="588" y="44" width="220" height="70" rx="10" class="sv-box-hot"/><text x="698" y="72" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="698" y="92" text-anchor="middle" class="sv-hot">TLS · L7 · least request</text>
+        <path d="M808 79 H846" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <rect x="850" y="44" width="256" height="70" rx="10" class="sv-box"/><text x="978" y="72" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="978" y="92" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
       <g>
         <rect x="382" y="170" width="738" height="120" rx="12" class="sv-band"/>
         <text x="396" y="190" class="sv-lbl-sm">ap-northeast-1 · Tokyo</text>
         <rect x="396" y="204" width="150" height="70" rx="10" class="sv-box"/><text x="471" y="232" text-anchor="middle" class="sv-lbl">NLB</text><text x="471" y="252" text-anchor="middle" class="sv-lbl-sm">L4 · 3 AZs</text>
         <path d="M546 239 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="588" y="204" width="190" height="70" rx="10" class="sv-box-hot"/><text x="683" y="232" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="683" y="252" text-anchor="middle" class="sv-hot">TLS · L7 · P2C</text>
-        <path d="M778 239 H816" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <rect x="820" y="204" width="286" height="70" rx="10" class="sv-box"/><text x="963" y="232" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="963" y="252" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
+        <rect x="588" y="204" width="220" height="70" rx="10" class="sv-box-hot"/><text x="698" y="232" text-anchor="middle" class="sv-lbl">Envoy fleet × 12</text><text x="698" y="252" text-anchor="middle" class="sv-hot">TLS · L7 · least request</text>
+        <path d="M808 239 H846" class="sv-line" marker-end="url(#arrow-arch)"/>
+        <rect x="850" y="204" width="256" height="70" rx="10" class="sv-box"/><text x="978" y="232" text-anchor="middle" class="sv-lbl">30 services + sidecars</text><text x="978" y="252" text-anchor="middle" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
     </svg>
   </div>

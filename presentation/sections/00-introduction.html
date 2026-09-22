@@ -290,6 +290,39 @@
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
   <div class="foot"><span>8 / 54</span><span>spread · route around failure · hide change</span></div>
 </section>
+<section class="slide" data-section="lb-types">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>Types of load balancer</div>
+  <h2>Six names you will meet, sorted by three questions: what runs it, what it reads, how far it reaches</h2>
+  <div class="trio">
+    <div class="card lift">
+      <svg class="ic"><use href="#ic-server"/></svg>
+      <div class="k">By what runs it</div>
+      <div class="t">Appliance, program, or managed service</div>
+      <p><b>Hardware</b> · F5 BIG-IP, Citrix ADC<br>A physical box in the rack with custom chips. Fast, expensive, sized once.</p>
+      <p><b>Software</b> · NGINX, HAProxy, Envoy<br>A program on any VM or pod. Scale it by running more copies.</p>
+      <p><b>Cloud</b> · AWS ALB/NLB, Google Cloud Load Balancing, Azure Load Balancer<br>The provider runs it. You get an endpoint and a bill per hour and per GB.</p>
+    </div>
+    <div class="card lift">
+      <svg class="ic"><use href="#ic-search"/></svg>
+      <div class="k">By what it reads</div>
+      <div class="t">A port, or the HTTP request inside</div>
+      <p><b>Layer 4</b> · transport<br>Reads the IP address and TCP/UDP port. Picks a backend once per connection. AWS NLB.</p>
+      <p><b>Layer 7</b> · application<br>Reads the method, path, headers and cookies. Picks a backend per request. AWS ALB.</p>
+      <p style="margin-top:auto;"><span class="chip hot">part 1</span> how each one works</p>
+    </div>
+    <div class="card lift">
+      <svg class="ic"><use href="#ic-globe"/></svg>
+      <div class="k">By how far it reaches</div>
+      <div class="t">One data center, or the whole planet</div>
+      <p><b>Local</b> · one cluster or region<br>Backends are milliseconds apart and one balancer sees all of them.</p>
+      <p><b>Global (GSLB)</b> · across regions<br>Picks a region for the user, usually through DNS or anycast, before any local balancer is reached.</p>
+      <p style="margin-top:auto;"><span class="chip hot">part 2</span> DNS, anycast, edge proxies</p>
+    </div>
+  </div>
+  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">One box is usually several of these at once: an AWS ALB is cloud, software underneath, and layer 7. The questions are independent.</p>
+  <div class="foot"><span>9 / 54</span><span>hardware · software · cloud · l4 · l7 · gslb</span></div>
+</section>
+
 <section class="slide" data-section="scale-up-out">
   <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>Scale up vs. scale out</div>
   <h2>A bigger box has a ceiling and one power cord. More boxes need a balancer.</h2>
@@ -307,9 +340,6 @@
       <div class="stack" style="gap:8px; margin-top:auto;"><span class="chip ok" style="align-self:flex-start">survives a dead pod</span><span class="chip hot" style="align-self:flex-start">needs stateless app + LB</span></div>
     </div>
   </div>
-  <ul class="points tight" data-step="1">
-    <li>If a user's cart lives in pod memory, the next request lands on another pod and the cart is empty. Put session state in Redis or the DB first.</li>
-  </ul>
-  <div class="foot"><span>9 / 54</span><span>vertical vs. horizontal scaling</span></div>
+  <div class="foot"><span>10 / 54</span><span>vertical vs. horizontal scaling</span></div>
 </section>
 
