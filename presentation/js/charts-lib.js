@@ -218,7 +218,7 @@
     glyph(svg, { icon: 'gl-balancer', x: hub.x + 6, y: hub.y + 8, size: HG, state: 'hot' });
     el('text', { x: hub.x + HG + 18, y: hub.y + 26 + (clients ? 6 : 4), class: 'sv-hot' }, svg, title);
     const lines = (clients ? [0, 1] : [0, 1, 2, 3]).map((i) =>
-      el('text', { x: hub.x + 14, y: hub.y + 54 + i * 25, class: 'sv-code' }, svg));
+      el('text', { x: hub.x + 14, y: hub.y + HG + 26 + i * 25, class: 'sv-code' }, svg));
 
     // picture on the left of each row, name and counters beside it, coins stacking underneath
     const SG = Math.min(42, Math.max(30, bh - 14)), TX = SX + SG + 12;

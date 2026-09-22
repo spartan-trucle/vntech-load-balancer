@@ -4,14 +4,14 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: what an L4 balancer and an L7 balancer actually do to your traffic, how they check that a backend is alive, and how to choose.</p>
-  <div class="foot"><span>11 / 54</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>11 / 55</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="osi-stack">
   <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>1.1 · Back to the OSI model</div>
   <h2>Seven layers, two seats for a balancer: layer 4 is an NLB, layer 7 is an ALB</h2>
   <div class="chart meter" style="flex:1; min-height:0; justify-content:center;">
-    <svg viewBox="0 0 760 400" style="width:auto; height:100%; max-width:100%; margin:0 auto;" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
+    <svg viewBox="0 0 800 400" style="width:auto; height:100%; max-width:100%; margin:0 auto;" role="img" aria-label="The seven OSI layers, with layer 7 mapped to AWS ALB and layer 4 to AWS NLB">
         <defs>
           <marker id="arrow-osi" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
         </defs>
@@ -70,7 +70,7 @@
         </g>
     </svg>
   </div>
-  <div class="foot"><span>12 / 54</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+  <div class="foot"><span>12 / 55</span><span>osi model · l4 = nlb, l7 = alb</span></div>
 </section>
 
 <section class="slide" data-section="packet-vs-request">
@@ -88,7 +88,7 @@
       <li data-step="2">One request can span many packets; one packet can hold the tail of one request and the head of the next. Nothing on the wire marks where a request begins.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 54</span><span>a packet is not a request</span></div>
+  <div class="foot"><span>13 / 55</span><span>a packet is not a request</span></div>
 </section>
 
 <section class="slide" data-section="l4-mechanics">
@@ -105,7 +105,7 @@
       <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 54</span><span>l4 · one decision per connection</span></div>
+  <div class="foot"><span>14 / 55</span><span>l4 · one decision per connection</span></div>
 </section>
 
 <section class="slide" data-section="l7-mechanics">
@@ -122,7 +122,7 @@
       <li data-step="2"><span class="chip hot">retry</span> It still holds the request in memory, so when a pod dies it writes the same bytes to another one. The client never learns anything went wrong.</li>
     </ul>
   </div>
-  <div class="foot"><span>15 / 54</span><span>l7 · one decision per request</span></div>
+  <div class="foot"><span>15 / 55</span><span>l7 · one decision per request</span></div>
 </section>
 
 <section class="slide" data-section="lb-is-a-program">
@@ -140,7 +140,7 @@
       <li data-step="2">An L4 balancer never keeps anything: it forwards each packet and forgets it. That is why it costs so much less, and why it could never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>16 / 54</span><span>memory · size limit · why retries stop</span></div>
+  <div class="foot"><span>16 / 55</span><span>memory · size limit · why retries stop</span></div>
 </section>
 
 <section class="slide" data-section="health-checks">
@@ -157,7 +157,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> Never check the database inside <code>/healthz</code>. A 2 s DB blip fails every pod at once and turns "degraded" into "100% down". Keep the check shallow.</li>
     </ul>
   </div>
-  <div class="foot"><span>17 / 54</span><span>active · passive · flapping · panic mode</span></div>
+  <div class="foot"><span>17 / 55</span><span>active · passive · flapping · panic mode</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7-choose">
@@ -197,7 +197,7 @@ needs warm-up for a spike</pre>
       <li data-step="2"><span class="chip risk">4</span> <b>NLB cross-zone is off and billed</b> (ALB: on and free). Off, an AZ with 1 pod takes as much as one with 5.</li>
     </ul>
   </div>
-  <div class="foot"><span>18 / 54</span><span>when to use which · aws defaults</span></div>
+  <div class="foot"><span>18 / 55</span><span>when to use which · aws defaults</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
@@ -265,7 +265,7 @@ needs warm-up for a spike</pre>
       <li data-step="2"><span class="chip hot">test in production</span> QA sends a header and lands on v2 every time, against real data, while everyone else stays on v1.</li>
     </ul>
   </div>
-  <div class="foot"><span>19 / 54</span><span>l7 routing · path, weight, header</span></div>
+  <div class="foot"><span>19 / 55</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
@@ -314,7 +314,7 @@ needs warm-up for a spike</pre>
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>20 / 54</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>20 / 55</span><span>layers · the path on eks</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
@@ -360,7 +360,7 @@ needs warm-up for a spike</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>21 / 54</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>21 / 55</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <script>

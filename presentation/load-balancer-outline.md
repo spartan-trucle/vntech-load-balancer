@@ -80,15 +80,16 @@ Khung chung: **LB dùng thông tin gì để quyết định?** Theo Alex Xu / B
 - **3.6 IP hash khi đổi số server (animation):** thêm D → `% 4` → 5/6 user sang server mới, mất session (Alex Xu ch. 5: rehashing problem). B chết → user của B mất session. Consistent hashing chỉ dời ~1/N (appendix).
 - **3.7 Sticky session — stateful vs stateless (Alex Xu ch. 1):** stateful thì mọi request của client phải về cùng server → sticky session, khó thêm/bớt server, khó xử lý server chết. Cookie (`AWSALB`, HAProxy `cookie`, NGINX `sticky cookie`) thay IP nhưng cùng vấn đề. Fix: session ra shared storage (Redis/NoSQL), web tier stateless. Affinity chỉ nên là cache hint.
 - **3.8 Bảng so sánh:** decides by, complexity, state trong LB, biết capacity, biết load, affinity, thêm/bớt server, use case.
-- **3.9 Cách chọn:** Order · Capacity · Load · Identity. Muốn sticky session → trước hết hỏi có làm app stateless được không.
+- **3.9 Cân bằng cho chính LB (LB cluster):** LB cũng là server: CPU, NIC, số connection (`worker_connections` 512/worker mặc định) → thành nút thắt khi traffic tăng. Active–passive (VRRP/keepalived, floating IP): hết SPOF, không thêm capacity. Active–active (router ECMP hash 5-tuple qua N LB cùng IP): thêm capacity; đổi N thì flow bị hash lại như 3.6 → Maglev dùng consistent hashing. ALB/NLB vốn là cluster; spike đột ngột vẫn cần pre-warm. Hình dạng hay gặp: L4 trước fleet L7 (slide 31).
+- **3.10 Cách chọn:** Order · Capacity · Load · Identity. Muốn sticky session → trước hết hỏi có làm app stateless được không.
 - **Appendix (nếu còn giờ / Q&A):** power of two choices, mô phỏng 1 pod chậm × 4 thuật toán, hash % N vs consistent hashing, vòng consistent hashing.
 
 ## 4. Demo — "The Crashed Server" (Khanh)
 
 Code ở `demo/` (ngoài `presentation/`): 3 backend Node + TypeScript (`src/server.ts`) trên 8001–8003, NGINX trên 8000, điều khiển bằng `npm run …` (`src/cli.ts`).
 
-- **4.1 Setup:** `cd demo && npm install && npm start`. Mỗi server trả về "Server 800x".
-- **4.2 NGINX:** `upstream` 3 server, không ghi thuật toán = round robin. 6 lần `curl` → 8001, 8002, 8003, 8001, 8002, 8003.
+- **4.1 Setup:** `cd demo && pnpm start`. Sơ đồ: deck `fetch()` → NGINX :8000 → Node 8001–8003; NGINX trả về `X-Upstream` (mọi server đã thử) và `X-LB` (thuật toán); deck hỏi `/__health` từng server mỗi giây; terminal đổi thuật toán / làm chậm / crash.
+- **4.2 Đang chạy gì:** trích `demo/nginx/nginx.conf` (upstream include, `proxy_buffering off`, `proxy_next_upstream`, `add_header X-Upstream / X-LB`) và `demo/src/server.ts` (`/__health`, `/__control`, `flushHeaders` trước body). `pnpm crash` là `kill -9` thật.
 - **4.3 Đoán trước:** bảng 4 thay đổi (`weight=4`, `least_conn`, `ip_hash`, crash 8002). Khán giả đoán output trước, bấm → để lật từng đáp án: `8001 8001 8002 8001 8003 8001` (smooth WRR) · vẫn xoay vòng vì mọi request xong ngay · 1 server duy nhất vì mọi request từ 127.0.0.1 · `8001 8003 8001 8003…` không lỗi.
-- **4.4 Live (chạy để kiểm chứng):** slide gửi request thật tới NGINX (phím `S`), đồng xu bay tới server đã trả lời. Trong lúc đó chạy ở terminal: `npm run algo -- least|weight|iphash`, `npm run slow -- 8002 3000` (để least_conn khác round robin), `npm run crash -- 8002`, `npm run revive -- 8002`. Header `X-Upstream` cho thấy cả lần thử thất bại lẫn lần retry. Không có NGINX thì slide phát lại bản ghi.
-- **4.5 Vì sao crash mà không ai thấy lỗi:** NGINX retry server kế (`proxy_next_upstream error timeout`), loại 8002 trong 10 s (`max_fails=1 fail_timeout=10s`). Đây là passive check: chỉ phát hiện khi traffic thật bị lỗi.
+- **4.4 Live (chạy để kiểm chứng):** slide gửi request thật tới NGINX (phím `S`), đồng xu bay tới server đã trả lời. Trong lúc đó chạy ở terminal: `pnpm algo least|weight|iphash`, `pnpm slow 8002 3000` (để least_conn khác round robin), `pnpm crash 8002`, `pnpm revive 8002`. Không có NGINX thì slide phát lại bản ghi.
+- **4.5 Vì sao crash mà không ai thấy lỗi:** NGINX retry server kế (`proxy_next_upstream error timeout`, chính là L7 retry ở slide 15), loại 8002 trong 10 s (`max_fails=1 fail_timeout=10s`). Đây là passive check (slide 17): chỉ phát hiện khi traffic thật bị lỗi.
