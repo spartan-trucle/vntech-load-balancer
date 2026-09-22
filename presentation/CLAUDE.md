@@ -137,7 +137,7 @@ Headless check without a browser window:
 | Blank slide / chart missing | Console error in a section `<script>`, or a duplicated `id`. |
 | `→` doesn't reveal the next part | `data-step` numbers missing or not consecutive. |
 | Chart wrong color in one theme | Hard-coded color instead of an `sv-*` class. |
-| Edits don't show / new slide looks unstyled | Browser cache. `deck.css` and `deck.js` are cache-busted by the loader; for anything else, hard reload. |
+| Edits don't show / new slide looks unstyled | Browser cache. `deck.css`, `deck.js`, `charts-lib.js` and `backdrop.js` are cache-busted by the loader; for anything else, hard reload. |
 
 ## Interactive slides
 
