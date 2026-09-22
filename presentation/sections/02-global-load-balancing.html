@@ -187,8 +187,8 @@
 
 <section class="slide" data-section="global-selfcheck">
   <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>2.8 · Check yourself</div>
-  <h2>Three questions that separate "knows the words" from "knows the mechanism"</h2>
-  <div class="trio" style="align-items:stretch;">
+  <h2>Two questions that separate "knows the words" from "knows the mechanism"</h2>
+  <div class="two" style="align-items:stretch;">
     <div class="card">
       <div class="k">question 1</div>
       <div class="t">Why can't DNS failover drain a region gracefully, when an edge proxy can?</div>
@@ -198,11 +198,6 @@
       <div class="k">question 2</div>
       <div class="t">Origin in <code>us-east-1</code>, users in Vietnam. What does a CDN recover, and what does it not touch?</div>
       <p data-step="2">It recovers the handshakes: TCP and TLS now complete ~30 ms away instead of ~230 ms, so ~690 ms becomes ~90 ms before the request is even in flight. It does not touch the origin fetch — that still crosses the Pacific, but once, over a warm pooled connection.</p>
-    </div>
-    <div class="card">
-      <div class="k">question 3</div>
-      <div class="t">Both use health checks. Why does anycast fail over so much faster than DNS?</div>
-      <p data-step="3">Because the client's target never changes. DNS needs every client to re-resolve, so you wait out detection <i>plus</i> TTL <i>plus</i> whatever the client caches on its own. Anycast keeps the same IP and changes the <b>route</b> to it — a BGP withdrawal reconverges in seconds and no client learns anything new.</p>
     </div>
   </div>
   <div class="foot"><span>30 / 54</span><span>self-check · global</span></div>
