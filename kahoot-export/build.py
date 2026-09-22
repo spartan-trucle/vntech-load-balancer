@@ -1,106 +1,174 @@
 #!/usr/bin/env python3
-"""Build the Kahoot import spreadsheet and a printable host sheet for the picked questions."""
+"""Build the Kahoot import spreadsheet and a printable host sheet.
+
+The full 22-question bank lives in BANK, keyed by the question numbers used in the
+quiz-bank artifact. PICKED selects which ones get exported, in play order.
+
+    pip install openpyxl reportlab && python3 build.py
+"""
 import os
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 
-# (n, tier, seconds, question, [4 options], correct index 0-3, slide, why)
-Q = [
-    (1, "easy", 20,
-     "For each request, what is a load balancer's core job?",
-     ["Pick one healthy backend from a pool", "Cache the response",
-      "Compress the response", "Encrypt the database"], 0, "slide 6",
-     "Health checks decide who is allowed; the algorithm picks which one. TLS, compression and WAF "
-     "are features of the box, not of load balancing."),
-    (2, "easy", 20,
-     "Which is NOT one of the three ways one server fails you?",
-     ["Capacity", "Availability", "Operability", "Compatibility"], 3, "slide 4",
-     "Capacity is how much you can serve. Availability is surviving change you did not ask for. "
-     "Operability is making change you did ask for, safely."),
-    (3, "easy", 20,
-     "“Scale up” (vertical) means...",
-     ["Move from 4 vCPU to 64 vCPU", "Run 16 pods of 4 vCPU each",
-      "Add a second region", "Put a CDN in front"], 0, "slide 10",
-     "Scaling up needs no code change but has a ceiling and one power cord. Scaling out survives a "
-     "dead pod, but needs a balancer in front and an app that keeps no state in memory."),
-    (5, "easy", 20,
-     "An L4 balancer makes its decision using...",
-     ["IP address and TCP/UDP port", "The HTTP path", "Cookies", "The request body"], 0,
-     "slides 13-14",
-     "It chooses once, at the SYN, and writes (src ip, src port, dst ip, dst port) -> pod into a "
-     "flow table. Packets 2..N carry no routing hint, so that table is the only memory of the choice."),
-    (7, "easy", 20,
-     "Which algorithm gives you session affinity?",
-     ["IP hash", "Round robin", "Least connections", "Weighted round robin"], 0, "slides 38, 41",
-     "hash(ip) % N sends the same client to the same server every time, with no table to store. It "
-     "is the only one of the four that gives affinity, and the only one that ignores load entirely."),
-    (9, "medium", 30,
-     "Which header carries the real client IP through an L7 balancer?",
-     ["X-Forwarded-For", "Host", "User-Agent", "X-Request-ID"], 0, "slide 7",
-     "The balancer terminates the client connection, so the backend's socket only ever shows the "
-     "balancer's IP. X-Forwarded-For is the L7 convention for carrying the original."),
-    (10, "medium", 30,
-     "Why should /healthz never query the database?",
-     ["One 2 s DB blip fails every pod at once", "It is slow to write",
-      "It leaks credentials", "The balancer ignores the body anyway"], 0, "slide 17",
-     "A shared dependency inside the check turns “degraded” into “100% down”: every pod fails at "
-     "the same moment and the pool empties. Keep the check shallow."),
-    (11, "medium", 30,
-     "With least connections, what happens to a brand-new server?",
-     ["It has 0 connections and gets flooded", "It is never chosen",
-      "It gets exactly 1/N", "It must be given a weight first"], 0, "slide 37",
-     "Zero active connections looks like “completely idle”, so it wins every comparison until it "
-     "catches up. The fix is slow start: ramp it in instead."),
-    (12, "medium", 30,
-     "Your app keeps the shopping cart in pod memory. Every deploy logs users out. Best fix?",
-     ["Switch to IP hash so each user sticks to one pod",
-      "Turn on sticky session cookies on the load balancer",
-      "Move sessions to Redis so any pod can serve any user",
-      "Use least connections instead of round robin"], 2, "slides 39-40",
-     "Affinity only hides the problem: the pod still holds the cart, so replacing it during a deploy "
-     "still loses it. IP hash also re-maps ~75% of users when the pod count changes (the rehashing "
-     "problem, ch. 5). Alex Xu's fix in ch. 1 is shared session storage and a stateless web tier. "
-     "Keep affinity afterwards only as a cache hint: losing it should cost a cache miss, not a logout."),
-    (13, "medium", 30,
-     "Anycast fails a site over by...",
-     ["Withdrawing the BGP announcement", "Lowering the DNS TTL",
-      "Returning HTTP 302", "Changing the IP address"], 0, "slide 27",
-     "Many sites announce the same prefix. Withdraw one and the internet re-learns the next-best path "
-     "in seconds. No client needs a new answer, because the address never changed."),
-    (15, "medium", 30,
-     "Which can an L7 balancer do that an L4 balancer cannot?",
-     ["Re-send a failed request to another pod", "Preserve the client IP",
-      "Terminate TLS", "Hold a static IP"], 0, "slides 14-16",
-     "The L7 proxy still holds the request bytes in memory, so it can write them to a second pod. L4 "
-     "forwards each packet and forgets it, so there is nothing to replay. An NLB with a TLS listener "
-     "does terminate TLS, which is what makes that option tempting."),
-    (16, "medium", 30,
-     "Why does a CDN help an API even at a 0% cache hit rate?",
-     ["TCP and TLS handshakes finish ~30 ms away, not ~230 ms", "It compresses the JSON",
-      "It caches the errors", "It lowers origin CPU"], 0, "slide 28",
-     "The edge PoP completes the connection itself, then forwards over a warm pooled connection on a "
-     "private backbone. That handshake win lands even on requests that can never be cached."),
-    (19, "hard", 60,
-     "Which clear-text signal lets an L4 balancer route per domain while holding no TLS keys?",
-     ["SNI in the TLS handshake", "The Host header",
-      "X-Forwarded-For", "The ALPN response"], 0, "slide 14",
-     "SNI travels in the clear during the handshake, so an L4 balancer can read the hostname without "
-     "decrypting anything. The Host header sits inside the encrypted stream, and reading that means "
-     "terminating TLS, which makes you an L7 balancer."),
-    (20, "hard", 60,
-     "A large upload stops being retryable on an L7 balancer past the buffer cap. Why?",
-     ["Past the cap it keeps no copy, so there is nothing to re-send", "The client cancels it",
-      "The health check fails", "Re-encryption to the pod drops it"], 0, "slide 16",
-     "Retries exist only because the request sits in the proxy's memory. 10,000 concurrent requests x "
-     "64 KB is already 640 MB, so every balancer caps what it will buffer. Over the cap it streams the "
-     "bytes straight through and retries quietly stop working."),
-    (21, "hard", 60,
-     "Peak 200k req/s global. A node does 25k. Survive one region down plus 1 of 3 AZs. Nodes/region?",
-     ["12", "8", "16", "6"], 0, "slide 32",
-     "Failover moves traffic, not capacity, so size each region for the whole world: 200,000 / 25,000 "
-     "= 8. Then lose 1 AZ of 3, x 1.5 = 12. They normally sit at ~33% of rated load, and that idle "
-     "headroom is what makes failover a non-event."),
-]
+# Questions to export, in the order they should be played.
+PICKED = [1, 3, 4, 5, 6, 8, 10, 11, 12, 13, 14, 15, 16, 20, 21]
+
+SECONDS = {"easy": 20, "medium": 30, "hard": 60}
+
+# n: (tier, question, [options], correct index, slide, why)
+BANK = {
+    1: ("easy",
+        "For each request, what is a load balancer's core job?",
+        ["Pick one healthy backend from a pool", "Cache the response",
+         "Compress the response", "Encrypt the database"], 0, "slide 6",
+        "Health checks decide who is allowed; the algorithm picks which one. TLS, compression and "
+        "WAF are features of the box, not of load balancing."),
+    2: ("easy",
+        "Which is NOT one of the three ways one server fails you?",
+        ["Capacity", "Availability", "Operability", "Compatibility"], 3, "slide 4",
+        "Capacity is how much you can serve. Availability is surviving change you did not ask for. "
+        "Operability is making change you did ask for, safely."),
+    3: ("easy",
+        "“Scale up” (vertical) means...",
+        ["Move from 4 vCPU to 64 vCPU", "Run 16 pods of 4 vCPU each",
+         "Add a second region", "Put a CDN in front"], 0, "slide 10",
+        "Scaling up needs no code change but has a ceiling and one power cord. Scaling out survives "
+        "a dead pod, but needs a balancer in front and an app that keeps no state in memory."),
+    4: ("easy",
+        "Health checks decide who is allowed. What does the algorithm decide?",
+        ["Which of the allowed backends gets this request", "Whether the pod is alive",
+         "How long the DNS TTL is", "Which region the user hits"], 0, "slide 6",
+        "Two separate mechanisms. A pod failing its health check is out of the pool entirely, so "
+        "the algorithm only ever chooses among the survivors."),
+    5: ("easy",
+        "An L4 balancer makes its decision using...",
+        ["IP address and TCP/UDP port", "The HTTP path", "Cookies", "The request body"], 0,
+        "slides 13-14",
+        "It chooses once, at the SYN, and writes (src ip, src port, dst ip, dst port) -> pod into a "
+        "flow table. Packets 2..N carry no routing hint, so that table is the only memory of the "
+        "choice."),
+    6: ("easy",
+        "Round robin picks a backend by...",
+        ["The order requests arrive - whose turn is it", "Live CPU usage",
+         "The client's IP", "Response size"], 0, "slide 35",
+        "One counter: servers[i++ % N]. It ignores how long each request takes - a 3 s export and a "
+        "5 ms health check are both “one turn”."),
+    7: ("easy",
+        "Which algorithm gives you session affinity?",
+        ["IP hash", "Round robin", "Least connections", "Weighted round robin"], 0, "slides 38, 41",
+        "hash(ip) % N sends the same client to the same server every time, with no table to store. "
+        "It is the only one of the four that gives affinity, and the only one that ignores load."),
+    8: ("easy",
+        "To the backend, a load balancer looks like...",
+        ["The client", "The server", "A DNS resolver", "A router"], 0, "slide 7",
+        "To the client the balancer is the server; to the backend it is the client. The backend sees "
+        "the balancer's IP, so the real one has to be passed in X-Forwarded-For (L7) or PROXY "
+        "protocol (L4)."),
+    9: ("medium",
+        "Which header carries the real client IP through an L7 balancer?",
+        ["X-Forwarded-For", "Host", "User-Agent", "X-Request-ID"], 0, "slide 7",
+        "The balancer terminates the client connection, so the backend's socket only ever shows the "
+        "balancer's IP. X-Forwarded-For is the L7 convention for carrying the original."),
+    10: ("medium",
+         "Why should /healthz never query the database?",
+         ["One 2 s DB blip fails every pod at once", "It is slow to write",
+          "It leaks credentials", "The balancer ignores the body anyway"], 0, "slide 17",
+         "A shared dependency inside the check turns “degraded” into “100% down”: every pod fails "
+         "at the same moment and the pool empties. Keep the check shallow."),
+    11: ("medium",
+         "With least connections, what happens to a brand-new server?",
+         ["It has 0 connections and gets flooded", "It is never chosen",
+          "It gets exactly 1/N", "It must be given a weight first"], 0, "slide 37",
+         "Zero active connections looks like “completely idle”, so it wins every comparison until "
+         "it catches up. The fix is slow start: ramp it in instead."),
+    12: ("medium",
+         "Your app keeps the shopping cart in pod memory. Every deploy logs users out. Best fix?",
+         ["Switch to IP hash so each user sticks to one pod",
+          "Turn on sticky session cookies on the load balancer",
+          "Move sessions to Redis so any pod can serve any user",
+          "Use least connections instead of round robin"], 2, "slides 39-40",
+         "Affinity only hides the problem: the pod still holds the cart, so replacing it during a "
+         "deploy still loses it. IP hash also re-maps ~75% of users when the pod count changes (the "
+         "rehashing problem, ch. 5). Alex Xu's fix in ch. 1 is shared session storage and a "
+         "stateless web tier. Keep affinity afterwards only as a cache hint: losing it should cost "
+         "a cache miss, not a logout."),
+    13: ("medium",
+         "Anycast fails a site over by...",
+         ["Withdrawing the BGP announcement", "Lowering the DNS TTL",
+          "Returning HTTP 302", "Changing the IP address"], 0, "slide 27",
+         "Many sites announce the same prefix. Withdraw one and the internet re-learns the "
+         "next-best path in seconds. No client needs a new answer, because the address never "
+         "changed."),
+    14: ("medium",
+         "What does a DNS-based GSLB never see?",
+         ["How loaded a region is", "Whether a region is up",
+          "Roughly where the resolver is", "Your routing policy"], 0, "slide 25",
+         "Its only inputs are the resolver IP and EDNS Client Subnet, its own health probes, a "
+         "precomputed latency table, and your policy. A health check answers “is it up”, not “can "
+         "it take more”, so a saturated healthy region keeps its full share."),
+    15: ("medium",
+         "Which can an L7 balancer do that an L4 balancer cannot?",
+         ["Re-send a failed request to another pod", "Preserve the client IP",
+          "Terminate TLS", "Hold a static IP"], 0, "slides 14-16",
+         "The L7 proxy still holds the request bytes in memory, so it can write them to a second "
+         "pod. L4 forwards each packet and forgets it, so there is nothing to replay. An NLB with a "
+         "TLS listener does terminate TLS, which is what makes that option tempting."),
+    16: ("medium",
+         "Why does a CDN help an API even at a 0% cache hit rate?",
+         ["TCP and TLS handshakes finish ~30 ms away, not ~230 ms", "It compresses the JSON",
+          "It caches the errors", "It lowers origin CPU"], 0, "slide 28",
+         "The edge PoP completes the connection itself, then forwards over a warm pooled connection "
+         "on a private backbone. That handshake win lands even on requests that can never be "
+         "cached."),
+    17: ("medium",
+         "What is AWS ALB's default algorithm?",
+         ["Round robin", "Least outstanding requests", "Flow hash", "Random"], 0, "slide 18",
+         "Least outstanding requests exists but is off until you turn it on. Two more defaults that "
+         "bite: an ALB never retries, and NLB cross-zone is off and billed."),
+    18: ("medium",
+         "An active-passive balancer pair on a floating IP (VRRP) gives you...",
+         ["No single point of failure, but no extra capacity", "Double the throughput",
+          "Per-request routing", "Failover between regions"], 0, "slide 42",
+         "The standby carries no traffic - it just takes the IP in seconds when the primary dies. "
+         "For capacity you need active-active: ECMP spreading flows across N balancers on one IP."),
+    19: ("hard",
+         "Which clear-text signal lets an L4 balancer route per domain with no TLS keys?",
+         ["SNI in the TLS handshake", "The Host header",
+          "X-Forwarded-For", "The ALPN response"], 0, "slide 14",
+         "SNI travels in the clear during the handshake, so an L4 balancer can read the hostname "
+         "without decrypting anything. The Host header sits inside the encrypted stream, and "
+         "reading that means terminating TLS, which makes you an L7 balancer."),
+    20: ("hard",
+         "A large upload stops being retryable on an L7 balancer past the buffer cap. Why?",
+         ["Past the cap it keeps no copy, so there is nothing to re-send", "The client cancels it",
+          "The health check fails", "Re-encryption to the pod drops it"], 0, "slide 16",
+         "Retries exist only because the request sits in the proxy's memory. 10,000 concurrent "
+         "requests x 64 KB is already 640 MB, so every balancer caps what it will buffer. Over the "
+         "cap it streams the bytes straight through and retries quietly stop working."),
+    21: ("hard",
+         "Peak 200k req/s global. A node does 25k. Survive one region down plus 1 of 3 AZs. "
+         "Nodes/region?",
+         ["12", "8", "16", "6"], 0, "slide 32",
+         "Failover moves traffic, not capacity, so size each region for the whole world: 200,000 / "
+         "25,000 = 8. Then lose 1 AZ of 3, x 1.5 = 12. They normally sit at ~33% of rated load, and "
+         "that idle headroom is what makes failover a non-event."),
+    22: ("hard",
+         "Active-active balancers behind ECMP on one IP: what breaks when you add one?",
+         ["Flows re-hash onto a different balancer, like hash % N", "The floating IP is lost",
+          "Health checks stop", "Certificates must be reissued"], 0, "slide 42",
+         "The same failure mode as the rehashing problem, one layer up: changing N re-hashes live "
+         "flows onto balancers that hold no state for them. Google's Maglev keeps them in place "
+         "with consistent hashing."),
+}
+
+missing = [n for n in PICKED if n not in BANK]
+if missing:
+    raise SystemExit("PICKED names questions that are not in BANK: %s" % missing)
+
+Q = []
+for n in PICKED:
+    tier, q, opts, right, slide, why = BANK[n]
+    Q.append((n, tier, SECONDS[tier], q, opts, right, slide, why))
 
 # ---- sanity: Kahoot's own limits -------------------------------------------------
 problems = []
@@ -110,7 +178,13 @@ for n, tier, secs, q, opts, right, slide, why in Q:
     for o in opts:
         if len(o) > 75:
             problems.append("Q%d option %d chars: %s" % (n, len(o), o))
-print("limit check:", problems or "all within 120/75")
+if problems:
+    raise SystemExit("over Kahoot's limits:\n  " + "\n  ".join(problems))
+tiers = {}
+for n, tier, *_ in Q:
+    tiers[tier] = tiers.get(tier, 0) + 1
+print("%d questions, all within 120/75 - %s" % (
+    len(Q), ", ".join("%d %s" % (v, k) for k, v in tiers.items())))
 
 # ---- 1. Kahoot import spreadsheet ----------------------------------------------
 from openpyxl import Workbook
@@ -147,13 +221,13 @@ ws.freeze_panes = "A2"
 
 # a second sheet with the host-facing detail, so nothing is lost on import
 ws2 = wb.create_sheet("Host notes")
-ws2.append(["#", "Difficulty", "Points", "Slide", "Correct answer", "Why"])
+ws2.append(["Play order", "Bank #", "Difficulty", "Points", "Slide", "Correct answer", "Why"])
 for c in ws2[1]:
     c.font = Font(bold=True)
-for n, tier, secs, q, opts, right, slide, why in Q:
-    ws2.append([n, tier, "double" if tier == "hard" else "standard",
+for i, (n, tier, secs, q, opts, right, slide, why) in enumerate(Q):
+    ws2.append([i + 1, n, tier, "double" if tier == "hard" else "standard",
                 slide, opts[right], why])
-for col, width in zip("ABCDEF", [5, 11, 10, 14, 44, 96]):
+for col, width in zip("ABCDEFG", [10, 8, 11, 10, 14, 44, 92]):
     ws2.column_dimensions[col].width = width
 for row in ws2.iter_rows(min_row=2):
     for c in row:
@@ -193,6 +267,7 @@ st_optok = ParagraphStyle("ok", parent=st_opt, fontName="Helvetica-Bold", textCo
 st_why = ParagraphStyle("w", fontName="Helvetica-Oblique", fontSize=8.5, leading=11.5,
                         textColor=BODY)
 
+doubles = sum(1 for _, tier, *_ in Q if tier == "hard")
 doc = SimpleDocTemplate(os.path.join(OUT, "load-balancing-kahoot-15.pdf"),
                         pagesize=A4,
                         leftMargin=20 * mm, rightMargin=20 * mm,
@@ -200,10 +275,13 @@ doc = SimpleDocTemplate(os.path.join(OUT, "load-balancing-kahoot-15.pdf"),
                         title="Load Balancing Kahoot - host sheet",
                         author="Truc Le")
 flow = [Paragraph("VNTECH TALK &middot; LOAD BALANCING &middot; HOST SHEET", st_eyebrow),
-        Paragraph("Kahoot: 15 questions", st_title),
-        Paragraph("Five easy, seven medium, three hard. The three hard ones are set to "
-                  "<b>double points</b>. Correct answer is marked; the note under each question is "
-                  "what to say after the reveal. Slide numbers refer to the talk deck.", st_lede),
+        Paragraph("Kahoot: %d questions" % len(Q), st_title),
+        Paragraph("%s. The %d hard %s set to <b>double points</b>. Correct answer is marked; the "
+                  "note under each question is what to say after the reveal. Slide numbers refer "
+                  "to the talk deck." % (
+                      ", ".join("%d %s" % (tiers[k], k) for k in ("easy", "medium", "hard")
+                                if k in tiers),
+                      doubles, "one is" if doubles == 1 else "ones are"), st_lede),
         Spacer(1, 7 * mm)]
 
 for i, (n, tier, secs, q, opts, right, slide, why) in enumerate(Q):
