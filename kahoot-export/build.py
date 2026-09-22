@@ -49,10 +49,14 @@ BANK = {
         "choice."),
     6: ("easy",
         "Round robin picks a backend by...",
-        ["The order requests arrive - whose turn is it", "Live CPU usage",
-         "The client's IP", "Response size"], 0, "slide 35",
-        "One counter: servers[i++ % N]. It ignores how long each request takes - a 3 s export and a "
-        "5 ms health check are both “one turn”."),
+        ["Whose turn it is in a fixed rotation",
+         "Which server has the fewest active connections",
+         "A weight you set per server",
+         "A hash of the client's IP"], 0, "slide 35",
+        "All four are real load balancing criteria, which is the trap: B is least connections, C is "
+        "weighted round robin, D is IP hash. Round robin is one counter, servers[i++ % N], and "
+        "knows only the order requests arrive - so a 3 s export and a 5 ms health check are both "
+        "“one turn”."),
     7: ("easy",
         "Which algorithm gives you session affinity?",
         ["IP hash", "Round robin", "Least connections", "Weighted round robin"], 0, "slides 38, 41",
