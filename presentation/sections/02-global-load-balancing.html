@@ -27,13 +27,13 @@
 <section class="slide" data-section="three-levers">
   <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>2.2 · The three levers</div>
   <h2>A global balancer is not a box you put traffic through. It makes the client choose.</h2>
-  <div class="body" style="gap:14px;">
+  <div class="body" style="gap:11px;">
     <table class="tbl compact">
-      <thead><tr><th>Lever</th><th>What it actually does</th><th>When the choice happens</th></tr></thead>
+      <thead><tr><th style="width:15%">Lever</th><th style="width:34%">The network mechanism underneath</th><th style="width:33%">How the lever uses it</th><th style="width:18%">When the choice happens</th></tr></thead>
       <tbody>
-        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td>Your nameserver answers with a different address per user location and region health</td><td class="num">before connecting</td></tr>
-        <tr><td class="name">Routing<span>anycast · BGP</span></td><td>One IP announced from many places; the internet's routing picks the nearest</td><td class="num">during connecting</td></tr>
-        <tr><td class="name">Redirection<span>HTTP 302</span></td><td>The app answers with a redirect to a region-specific hostname</td><td class="num">after connecting</td></tr>
+        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td><b>DNS</b> — Domain Name System: hostname → IP address, cached at every layer.</td><td>The nameserver answers differently per user location and region health</td><td class="num">before connecting</td></tr>
+        <tr><td class="name">Routing<span>anycast · BGP</span></td><td><b>Anycast</b>: one IP address announced from many points of presence (PoPs). <b>BGP</b> — Border Gateway Protocol: how networks share routes.</td><td>Announce everywhere; the internet routes to the nearest. Withdraw to drain a region.</td><td class="num">during connecting</td></tr>
+        <tr><td class="name">Redirection<span>HTTP 302</span></td><td><b>HTTP 302</b>: a response that says "ask this other URL instead".</td><td>The app answers with a redirect to a region-specific hostname</td><td class="num">after connecting</td></tr>
       </tbody>
     </table>
 
@@ -111,7 +111,7 @@
 
 <section class="slide" data-section="dns-stale">
   <div class="eyebrow"><svg class="ic"><use href="#ic-clock"/></svg>2.4 · Why DNS can never be fast</div>
-  <h2>The TTL is a promise about lookups, and an open socket never looks anything up</h2>
+  <h2>The TTL (time to live) is a promise about lookups, and an open socket never looks anything up</h2>
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="stale-flow" role="img" aria-label="Five layers caching a stale DNS answer, and the failover time they add up to"></svg></div>
@@ -137,7 +137,7 @@
     <ul class="points tight">
       <li><span class="chip">how</span> Several sites each announce the same prefix over <b>BGP</b> — "traffic for this address can come to me" — and every network on the path picks whichever announcement looks closest to it.</li>
       <li data-step="1"><span class="chip hot">failover</span> Withdraw the announcement and the internet re-learns the next-best path in seconds. No client needs a new answer: <b>the address never changed.</b></li>
-      <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN, address block and peering — which is why most teams rent anycast.</li>
+      <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN (autonomous system number), address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
   <div class="foot"><span>26 / 54</span><span>anycast · bgp · withdraw to fail over</span></div>

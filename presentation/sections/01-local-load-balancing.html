@@ -101,7 +101,7 @@
     </div>
     <ul class="points tight">
       <li><span class="chip">state</span> One row per flow: <code>(src ip, src port, dst ip, dst port) → pod</code>. Packets 2..N carry no routing hint, so the table is the only memory of the choice.</li>
-      <li data-step="1"><span class="chip hot">tls</span> Encrypted bytes forward exactly like plain ones — it was never going to read them. The one L7-ish signal it gets is <code>SNI</code>, sent in the clear during the handshake, which is how L4 does per-domain routing while holding no keys.</li>
+      <li data-step="1"><span class="chip hot">tls</span> Encrypted bytes forward exactly like plain ones — it was never going to read them. The one L7-ish signal it gets is <code>SNI</code> (Server Name Indication), sent in the clear during the handshake, which is how L4 does per-domain routing while holding no keys.</li>
       <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
     </ul>
   </div>

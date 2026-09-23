@@ -296,9 +296,12 @@ data residency. Cái cuối là luật chứ không phải sở thích: GDPR, v�
 traffic đã tới nó rồi, nó chỉ chọn backend. Load balancer global phải đổi được chỗ client gửi
 traffic *trước khi có bất kỳ connection nào*. Nó không phải cái hộp mình đẩy traffic qua, mà là
 cơ chế khiến client tự chọn.
-**Bảng:** Ba đòn bẩy, và cột quan trọng nhất là *khi nào*. Name resolution quyết định trước khi
-connect. Routing — anycast — quyết định trong lúc connect. Redirection, cái 302, quyết định sau
-khi connect.
+**Bảng:** Ba đòn bẩy. Cột thứ hai nhắc lại *cơ chế mạng* bên dưới, cho ai lâu rồi không đụng
+tới: DNS là Domain Name System, tra hostname ra IP, và mọi tầng đều cache câu trả lời. Anycast
+là **một** địa chỉ IP được announce từ nhiều PoP — point of presence — cùng lúc; BGP, Border
+Gateway Protocol, là cách các mạng báo cho nhau tuyến nào đi được. Cột thứ ba là đòn bẩy dùng
+cơ chế đó ra sao. Còn cột quan trọng nhất vẫn là *khi nào*: name resolution quyết định trước khi
+connect, routing quyết định trong lúc connect, redirection — cái 302 — quyết định sau khi connect.
 **→ 1:** Ba khoảnh khắc, nhìn ba hình nhỏ cho dễ hình dung. ① *Trước khi connect*: user chưa
 mở connection nào cả, mới chỉ đi hỏi DNS — và câu trả lời đó quyết định region. ② *Trong lúc
 connect*: chỉ có đúng một địa chỉ, nhưng mạng tự chọn giùm cửa nào gần nhất, mình không chen

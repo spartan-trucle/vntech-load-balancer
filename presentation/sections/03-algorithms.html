@@ -74,7 +74,7 @@
       <div class="flow-ctl"><div class="seg"><button id="lc-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="lc-readout"></p></div>
     </div>
     <ul class="points tight">
-      <li>Server B is in a GC pause: each request takes 5 s instead of 1 s.</li>
+      <li>Server B is in a GC (garbage collection) pause: each request takes 5 s instead of 1 s.</li>
       <li><span class="chip risk">round robin</span> Still sends B every third request. They pile up.</li>
       <li data-step="1"><span class="chip ok">least conn</span> Sees B is busy and goes elsewhere. No config change needed.</li>
       <li data-step="2"><span class="chip risk">cost</span> The balancer must track live counts per server. A brand-new server has 0 connections and gets flooded (use slow start).</li>
@@ -235,8 +235,8 @@
     </div>
     <ul class="points tight">
       <li><span class="chip risk">bottleneck</span> One NGINX is one box: its CPU, its NIC, its open connections (<code>worker_connections</code> is 512 per worker by default). Add pods forever and it still caps you.</li>
-      <li data-step="1"><span class="chip">active–passive</span> Two balancers share a floating IP (VRRP, keepalived). The standby takes the IP in seconds. Fixes the single point of failure, adds no capacity.</li>
-      <li data-step="2"><span class="chip ok">active–active</span> The router spreads flows across N balancers on one IP (ECMP). Add one, get capacity. Catch: change N and flows re-hash, like slide 39. Google's Maglev keeps them in place with consistent hashing.</li>
+      <li data-step="1"><span class="chip">active–passive</span> Two balancers share a floating IP (VRRP — Virtual Router Redundancy Protocol — or keepalived). The standby takes the IP in seconds. Fixes the single point of failure, adds no capacity.</li>
+      <li data-step="2"><span class="chip ok">active–active</span> The router spreads flows across N balancers on one IP (ECMP, equal-cost multi-path). Add one, get capacity. Catch: change N and flows re-hash, like slide 39. Google's Maglev keeps them in place with consistent hashing.</li>
       <li data-step="3"><span class="chip">managed</span> ALB and NLB are clusters already: AWS adds nodes behind the name. A sudden 10× spike can still outrun ALB (pre-warm it). The usual shape is an L4 tier in front of an L7 fleet (slide 31).</li>
     </ul>
   </div>

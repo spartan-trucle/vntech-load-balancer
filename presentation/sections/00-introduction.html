@@ -29,7 +29,7 @@
     <div class="card lift">
       <div class="k">② Availability</div>
       <div class="t">Change you did not ask for</div>
-      <p>One crash, one kernel panic, one AZ losing power = 100% down. Running 3 instances fixes nothing until something notices the dead one.</p>
+      <p>One crash, one kernel panic, one AZ (availability zone) losing power = 100% down. Running 3 instances fixes nothing until something notices the dead one.</p>
       <svg class="mini" viewBox="0 0 300 96" role="img" aria-label="Three instances, one dead, traffic still sent to it">
         <use href="#gl-client" class="gl" x="4" y="28" width="34" height="34"/>
         <text x="21" y="78" text-anchor="middle" class="sv-lbl-sm">users</text>
@@ -283,7 +283,7 @@
       <p>Drain one pod, replace it, add it back. Canary 5% of traffic to v2. Clients see one stable address.</p>
     </div>
   </div>
-  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
+  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF (web application firewall) rules. Those are features of the box, not of load balancing.</p>
   <div class="foot"><span>8 / 54</span><span>spread · route around failure · hide change</span></div>
 </section>
 <section class="slide" data-section="lb-types">
@@ -302,8 +302,8 @@
       <svg class="ic"><use href="#ic-search"/></svg>
       <div class="k">By what it reads</div>
       <div class="t">A port, or the HTTP request inside</div>
-      <p><b>Layer 4</b> · transport<br>Reads the IP address and TCP/UDP port. Picks a backend once per connection. AWS NLB.</p>
-      <p><b>Layer 7</b> · application<br>Reads the method, path, headers and cookies. Picks a backend per request. AWS ALB.</p>
+      <p><b>Layer 4</b> · transport<br>Reads the IP address and TCP/UDP port. Picks a backend once per connection. AWS NLB, the Network Load Balancer.</p>
+      <p><b>Layer 7</b> · application<br>Reads the method, path, headers and cookies. Picks a backend per request. AWS ALB, the Application Load Balancer.</p>
       <p style="margin-top:auto;"><span class="chip hot">part 1</span> how each one works</p>
     </div>
     <div class="card lift">
@@ -311,7 +311,7 @@
       <div class="k">By how far it reaches</div>
       <div class="t">One data center, or the whole planet</div>
       <p><b>Local</b> · one cluster or region<br>Backends are milliseconds apart and one balancer sees all of them.</p>
-      <p><b>Global (GSLB)</b> · across regions<br>Picks a region for the user, usually through DNS or anycast, before any local balancer is reached.</p>
+      <p><b>Global</b> · GSLB, global server load balancing<br>Picks a region for the user, usually through DNS or anycast, before any local balancer is reached.</p>
       <p style="margin-top:auto;"><span class="chip hot">part 2</span> DNS, anycast, edge proxies</p>
     </div>
   </div>
