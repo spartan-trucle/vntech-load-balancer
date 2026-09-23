@@ -21,14 +21,14 @@ nhớ sửa luôn ở đây.
 | Cover + outline | 1–2 | Trúc | 2 phút |
 | 00 Giới thiệu | 3–9 | Trúc | 10 phút |
 | 01 Local load balancing | 10–21 | Trúc | 16 phút |
-| 02 Global load balancing | 22–32 | Trúc | 15 phút |
-| 03 Algorithms | 33–42 | Khánh | 15 phút |
+| 02 Global load balancing | 22–31 | Trúc | 15 phút |
+| 03 Algorithms | 32–42 | Khánh | 15 phút |
 | 03 Phụ lục (chỉ khi còn giờ / có người hỏi) | 43–47 | Khánh | 0–8 phút |
 | 04 Demo | 48–53 | Khánh | 10 phút |
 | Cảm ơn + Kahoot | 54 | cả hai | 3 phút |
 
 **Deck này chạy khoảng 60 phút nếu không tính phụ lục.** Cần cắt thì cắt theo thứ tự này, mỗi
-cái đều đứng độc lập được: phụ lục (43–47), rồi 32, 30, 18, 16. Đừng bao giờ bỏ slide 52 —
+cái đều đứng độc lập được: phụ lục (43–47), rồi 31, 18, 16. Đừng bao giờ bỏ slide 52 —
 demo live mới là thứ mọi người nhớ.
 
 ---
@@ -388,15 +388,7 @@ thì được một mớ ý kiến trái nhau phải tự xử.
 **Chốt:** Và khi health check toàn cầu chập chờn, nó không loại một pod. **Nó dịch chuyển cả
 một châu lục.**
 
-### 30 / 54 · Tự kiểm tra
-**Nói:** Ba câu. Để mọi người trả lời trước rồi mới mở đáp án.
-**→ 1:** Drain êm: DNS chỉ có một điểm tác động rồi hết quan hệ với client. Edge proxy thì nằm
-trên đường đi của từng request.
-**→ 2:** CDN lấy lại phần handshake — 690 xuống 90 — và không đụng tới cú fetch về origin.
-**→ 3:** Anycast nhanh hơn vì đích của client không hề đổi; chỉ có đường đi đổi thôi.
-**Chốt:** Ba câu này mà thông thì bạn nắm được ba đòn bẩy và vì sao chúng khác nhau.
-
-### 31 / 54 · Kiến trúc
+### 30 / 54 · Kiến trúc
 **Nói:** Đây là toàn bộ mọi thứ ráp lại, và là hình dạng phần lớn team đang chạy thật. Route 53
 với latency routing, TTL 60 giây, chọn region. Trong mỗi region, một NLB trải trên ba AZ chia
 connection, một fleet Envoy terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
@@ -404,7 +396,7 @@ gRPC nội bộ.
 **Chốt:** Bốn quyết định cân bằng tải cho một request — và mỗi cái là một tầng khác nhau
 từ phần 1.
 
-### 32 / 54 · Capacity
+### 31 / 54 · Capacity
 **Nói:** Cái bẫy không ai lên kế hoạch cho: **failover chuyển traffic, chứ không chuyển
 capacity.** Singapore biến mất là Tokyo ôm 100% thế giới. Nếu Tokyo không gánh nổi *ngay lúc
 đó* thì bạn vừa biến một sự cố region thành hai.
@@ -418,11 +410,11 @@ mỗi cái ~50 KB, là 20 GB trên cả fleet.
 **→ 1:** Rồi chứng minh nó. Game-day drill: cố tình drain một region, trong giờ hành chính, và
 nhìn p99 với 5xx. Kế hoạch capacity chưa từng test thì vẫn chỉ là giả thuyết.
 
-### 33 / 54 · Divider 03
+### 32 / 54 · Divider 03
 **Nói:** Mình là Khánh. Mười slide tới, mỗi algorithm đều chỉ có một câu hỏi: load balancer
 thật sự nhìn vào cái gì? Thứ tự, capacity đã cấu hình, tải đang chạy, hay client là ai.
 
-### 34 / 54 · Load balancing algorithm là gì?
+### 33 / 54 · Load balancing algorithm là gì?
 **Nói:** Trước hết tách hai thứ mọi người hay gộp. Health check quyết định server nào *được
 phép*. Algorithm chọn một *trong số đó*, cho request này, dựa trên thông tin nó có. Static là
 luật cố định, mù tịt về việc server đang làm gì lúc này. Dynamic là nó đọc trạng thái sống của
@@ -432,7 +424,7 @@ connection đang chạy → least connections, cái dynamic duy nhất. IP của
 **Chốt:** Với mỗi cái, hỏi hai câu: nó biết gì, và nó *bỏ qua* gì? Phần bị bỏ qua luôn là chỗ
 nó vỡ.
 
-### 35 / 54 · Round robin
+### 34 / 54 · Round robin
 **Nói:** Server kế tiếp trong danh sách, hết thì quay lại đầu. Một biến đếm, `i++ % N`. Mặc
 định của NGINX, HAProxy và ALB. Nhìn nè: sáu request, mỗi con hai. Đều tăm tắp — nếu đếm theo
 số request.
@@ -442,7 +434,7 @@ có mười.
 **Chốt:** Round robin đếm request, không đếm khối lượng việc. Dùng khi server cùng cỡ và
 request tốn xấp xỉ nhau.
 
-### 36 / 54 · Weighted round robin
+### 35 / 54 · Weighted round robin
 **Nói:** Server A to gấp ba, nên cho weight 3. Cách làm ngây thơ là đi theo một danh sách cố
 định, `A A A B C` — đúng tỉ lệ, nhưng A ăn ba cú liên tiếp trong khi B và C ngồi chơi.
 **→ 1:** NGINX làm mượt: cộng weight vào biến đếm của từng server, chọn con lớn nhất, rồi trừ
@@ -451,7 +443,7 @@ request tốn xấp xỉ nhau.
 là bạn vừa cấu hình sẵn một cú quá tải.
 **Dùng khi:** instance nhiều cỡ khác nhau trong lúc migration, hoặc chia traffic cho canary.
 
-### 37 / 54 · Least connections
+### 36 / 54 · Least connections
 **Nói:** Giờ tới cái biết đọc trạng thái sống. Server B đang GC pause — mỗi request năm giây
 thay vì một. Round robin vẫn đều đặn đưa cho nó mỗi request thứ ba và chúng chất đống: bốn trên
 mười hai, bốn cái kẹt cùng lúc.
@@ -462,7 +454,7 @@ thì có zero connection, nên bị dội nước ngay khoảnh khắc nó vào 
 **Dùng khi:** thời gian request chênh nhau nhiều, hoặc connection sống lâu — WebSocket, upload,
 DB proxy.
 
-### 38 / 54 · IP hash
+### 37 / 54 · IP hash
 **Nói:** Mục tiêu khác: đưa cùng một client về cùng một server, mà không cần bảng lưu ở đâu cả.
 `hash(ip) % N`. Mấy giá trị hash đang trên màn hình — mọi người kiểm tra phép tính giúp mình.
 Vòng một, ai cũng có session. Vòng hai, cùng IP, cùng hash, cùng server: sáu trên sáu tìm lại
@@ -471,7 +463,7 @@ Vòng một, ai cũng có session. Vòng hai, cùng IP, cùng hash, cùng server
 *một client*. Tất cả đáp xuống server A. Và `ip_hash` của NGINX chỉ dùng ba octet đầu của IPv4,
 nên nguyên một /24 dùng chung một server. User mobile thì đổi IP nên cũng mất affinity luôn.
 
-### 39 / 54 · IP hash khi số server thay đổi
+### 38 / 54 · IP hash khi số server thay đổi
 **Nói:** Vấn đề lớn hơn. Ba server, session đã nằm đúng chỗ.
 **→ 1:** Thêm server D. `% 3` thành `% 4`, và phần lớn user — ba phần tư — rơi vào server chưa
 từng thấy session của họ. Alex Xu gọi đây là bài toán rehashing, chương 5. Mỗi một cái như vậy
@@ -480,7 +472,7 @@ là một lần bị đăng xuất.
 **→ 3:** Consistent hashing sửa được phần *quy mô* — chỉ khoảng 1/N user phải dịch chuyển.
 Trong NGINX là `hash $remote_addr consistent`. Phụ lục có phần đi chi tiết.
 
-### 40 / 54 · Sticky session: stateful vs stateless
+### 39 / 54 · Sticky session: stateful vs stateless
 **Nói:** Lùi lại một bước. IP hash chỉ quan trọng vì server đang giữ session trong RAM. Đó mới
 là con bug thật. Alex Xu, chương 1: với server stateful thì mọi request của một client phải quay
 lại đúng server đó — sticky session làm được việc đó, nhưng giờ thêm bớt server thành khó, và
@@ -492,7 +484,7 @@ Tầng web thành stateless và server nào cũng phục vụ được bất k�
 **→ 2:** Vẫn muốn affinity? Dùng nó như một *gợi ý cache* — mất nó thì chỉ nên tốn một cache
 miss, chứ không phải một lần đăng xuất.
 
-### 41 / 54 · So sánh các algorithm
+### 40 / 54 · So sánh các algorithm
 **Nói:** Cả phần này gói trong một bảng. Đọc kỹ hai dòng quan trọng: chỉ least connections biết
 tải hiện tại. Chỉ IP hash cho affinity. Không cái nào làm được cả hai — đó không phải do bảng
 này thiếu, mà đúng là tình trạng của bốn cái kinh điển.
@@ -564,7 +556,7 @@ production.
 **Nói:** Trước khi mình chạy — mọi người đoán thử. Mỗi cái dưới đây là một dòng trong khối
 upstream. (Lấy đáp án từ khán phòng cho từng dòng rồi mới mở.)
 **→ 1:** `weight=4` → `8001 8001 8002 8001 8003 8001`. Smooth weighted round robin, tỉ lệ 4:1:1
-— đúng kiểu đan xen mình thấy ở slide 36.
+— đúng kiểu đan xen mình thấy ở slide 35.
 **→ 2:** `least_conn` → vẫn ra thứ tự round robin, vì mọi request xong ngay lập tức, số đếm hoà
 nhau ở zero, và NGINX phá hoà bằng round robin. Least connections cần request *chậm* thì mới
 khác round robin.
@@ -595,7 +587,7 @@ mười giây, rồi NGINX thử lại.
 *passive*. NGINX chỉ biết khi có một request thật fail — một user thật đã trả giá cho phát hiện
 đó. Active health check thì probe theo timer thay vì vậy.
 **→ 3:** Thử đúng như vậy với `ip_hash` xem, mấy user đang ở 8002 sẽ dời qua server khác. Nếu
-session nằm trong memory thì họ vừa bị đăng xuất. Đúng y slide 40.
+session nằm trong memory thì họ vừa bị đăng xuất. Đúng y slide 39.
 
 ### 54 / 54 · Cảm ơn + Kahoot
 **Nói:** Xong rồi đó. Hỏi đáp trước, rồi một ván Kahoot ngắn về chuyện load balancer biết những
