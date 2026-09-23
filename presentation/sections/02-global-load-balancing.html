@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 2</div>
   <h2>Global load balancing</h2>
   <p class="lead">Between regions and continents. A local balancer picks a backend for traffic that already reached it; a global one has to change where the client sends traffic in the first place.</p>
-  <div class="foot"><span>22 / 54</span><span>section 2 · global load balancing</span></div>
+  <div class="foot"><span>21 / 54</span><span>section 2 · global load balancing</span></div>
 </section>
 
 <section class="slide" data-section="local-cant-fix">
@@ -21,7 +21,7 @@
       <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
-  <div class="foot"><span>23 / 54</span><span>the two problems with no in-region answer</span></div>
+  <div class="foot"><span>22 / 54</span><span>the two problems with no in-region answer</span></div>
 </section>
 
 <section class="slide" data-section="three-levers">
@@ -89,7 +89,7 @@
       <li>A local balancer is already <b>on the data path</b>. A global one has to act <b>before the connection exists</b> — so ③ is rare, and real systems use ① and ②.</li>
     </ul>
   </div>
-  <div class="foot"><span>24 / 54</span><span>name resolution · routing · redirection</span></div>
+  <div class="foot"><span>23 / 54</span><span>name resolution · routing · redirection</span></div>
 </section>
 
 <section class="slide" data-section="gslb-dns">
@@ -106,7 +106,7 @@
       <li data-step="2"><span class="chip risk">omission</span> It never sees <b>load</b>. A region that is healthy but saturated keeps its full share, because a health check answers "is it up", not "can it take more".</li>
     </ul>
   </div>
-  <div class="foot"><span>25 / 54</span><span>gslb · one hostname, many answers</span></div>
+  <div class="foot"><span>24 / 54</span><span>gslb · one hostname, many answers</span></div>
 </section>
 
 <section class="slide" data-section="dns-stale">
@@ -123,7 +123,7 @@
       <li data-step="2"><span class="chip ok">do</span> Make the slowness harmless. Never cut the old address off: let it proxy onward, or answer <code>503</code> + <code>Retry-After</code>. Users can see <b>zero errors</b> during a failover that still takes five minutes.</li>
     </ul>
   </div>
-  <div class="foot"><span>26 / 54</span><span>ttl · caching layers · the failover formula</span></div>
+  <div class="foot"><span>25 / 54</span><span>ttl · caching layers · the failover formula</span></div>
 </section>
 
 <section class="slide" data-section="anycast">
@@ -140,7 +140,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN, address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
-  <div class="foot"><span>27 / 54</span><span>anycast · bgp · withdraw to fail over</span></div>
+  <div class="foot"><span>26 / 54</span><span>anycast · bgp · withdraw to fail over</span></div>
 </section>
 
 <section class="slide" data-section="edge-proxy">
@@ -157,7 +157,7 @@
       <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 54</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+  <div class="foot"><span>27 / 54</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
 </section>
 
 <section class="slide" data-section="global-compare">
@@ -179,7 +179,7 @@
       <li data-step="1"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>29 / 54</span><span>comparing the three levers</span></div>
+  <div class="foot"><span>28 / 54</span><span>comparing the three levers</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
@@ -214,7 +214,7 @@
       </g>
     </svg>
   </div>
-  <div class="foot"><span>30 / 54</span><span>system design · architecture</span></div>
+  <div class="foot"><span>29 / 54</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
@@ -232,7 +232,56 @@
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>31 / 54</span><span>system design · capacity</span></div>
+  <div class="foot"><span>30 / 54</span><span>system design · capacity</span></div>
+</section>
+
+<section class="slide" data-section="eks-path">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.10 · The path on AWS EKS</div>
+  <h2>Four hops pick a destination before a request reaches a pod</h2>
+  <div class="body" style="gap:16px;">
+    <div class="chart">
+    <svg viewBox="0 0 1160 110" role="img" aria-label="Route 53, ALB or NLB, ingress controller, Kubernetes Service, pod">
+      <defs>
+        <marker id="arrow-eks" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+      </defs>
+      <use href="#gl-internet" class="gl gl-hot" x="58" y="10" width="54" height="54"/>
+      <text x="85" y="80" text-anchor="middle" class="sv-lbl">Route 53 · DNS</text>
+      <text x="85" y="100" text-anchor="middle" class="sv-hot">① picks a region</text>
+      <path d="M118 37 H208" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-balancer" class="gl gl-hot" x="293" y="10" width="54" height="54"/>
+      <text x="320" y="80" text-anchor="middle" class="sv-lbl">ALB (L7) or NLB (L4)</text>
+      <text x="320" y="100" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
+      <path d="M353 37 H473" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-balancer" class="gl gl-hot" x="558" y="10" width="54" height="54"/>
+      <text x="585" y="80" text-anchor="middle" class="sv-lbl">Ingress · NGINX, Envoy</text>
+      <text x="585" y="100" text-anchor="middle" class="sv-hot">③ picks a pod</text>
+      <path d="M618 37 H748" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-balancer" class="gl" x="833" y="10" width="54" height="54"/>
+      <text x="860" y="80" text-anchor="middle" class="sv-lbl">Service · iptables / IPVS</text>
+      <text x="860" y="100" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
+      <path d="M893 37 H1023" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-pod" class="gl" x="1063" y="10" width="54" height="54"/>
+      <text x="1090" y="80" text-anchor="middle" class="sv-lbl">Pod</text>
+    </svg>
+    </div>
+    <table class="tbl dense">
+      <thead><tr><th></th><th>Layer</th><th>Default algorithm</th><th>Health signal</th></tr></thead>
+      <tbody>
+        <tr><td class="name">① Route 53</td><td>DNS</td><td>Latency, geo, or weighted records</td><td>Route 53 health checks</td></tr>
+        <tr><td class="name">② ALB / NLB</td><td>L7 (ALB) · L4 (NLB)</td><td>ALB: round robin, or least outstanding requests · NLB: 5-tuple flow hash, sticky per connection</td><td>Target group health check</td></tr>
+        <tr><td class="name">③ Ingress</td><td>L7</td><td>Round robin (NGINX); Envoy also offers least request, ring hash</td><td>Pod readiness via Endpoints</td></tr>
+        <tr><td class="name">④ Service</td><td>L4</td><td>iptables: random pick per connection · IPVS: round robin</td><td>Pod readiness only</td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight" data-step="1">
+      <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>31 / 54</span><span>system design · the path on eks</span></div>
 </section>
 
 <script>

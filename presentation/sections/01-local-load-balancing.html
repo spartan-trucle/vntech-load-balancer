@@ -268,57 +268,8 @@ needs warm-up for a spike</pre>
   <div class="foot"><span>19 / 54</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
-<section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.9 · The path on AWS EKS</div>
-  <h2>Four hops pick a destination before a request reaches a pod</h2>
-  <div class="body" style="gap:16px;">
-    <div class="chart">
-    <svg viewBox="0 0 1160 110" role="img" aria-label="Route 53, ALB, ingress controller, Kubernetes Service, pod">
-      <defs>
-        <marker id="arrow-eks" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
-      </defs>
-      <use href="#gl-internet" class="gl gl-hot" x="58" y="10" width="54" height="54"/>
-      <text x="85" y="80" text-anchor="middle" class="sv-lbl">Route 53 · DNS</text>
-      <text x="85" y="100" text-anchor="middle" class="sv-hot">① picks a region</text>
-      <path d="M118 37 H208" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-balancer" class="gl gl-hot" x="293" y="10" width="54" height="54"/>
-      <text x="320" y="80" text-anchor="middle" class="sv-lbl">ALB · L7, managed</text>
-      <text x="320" y="100" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
-      <path d="M353 37 H473" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-balancer" class="gl gl-hot" x="558" y="10" width="54" height="54"/>
-      <text x="585" y="80" text-anchor="middle" class="sv-lbl">Ingress · NGINX, Envoy</text>
-      <text x="585" y="100" text-anchor="middle" class="sv-hot">③ picks a pod</text>
-      <path d="M618 37 H748" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-balancer" class="gl" x="833" y="10" width="54" height="54"/>
-      <text x="860" y="80" text-anchor="middle" class="sv-lbl">Service · iptables / IPVS</text>
-      <text x="860" y="100" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
-      <path d="M893 37 H1023" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-pod" class="gl" x="1063" y="10" width="54" height="54"/>
-      <text x="1090" y="80" text-anchor="middle" class="sv-lbl">Pod</text>
-    </svg>
-    </div>
-    <table class="tbl dense">
-      <thead><tr><th></th><th>Layer</th><th>Default algorithm</th><th>Health signal</th></tr></thead>
-      <tbody>
-        <tr><td class="name">① Route 53</td><td>DNS</td><td>Latency, geo, or weighted records</td><td>Route 53 health checks</td></tr>
-        <tr><td class="name">② ALB</td><td>L7</td><td>Round robin; can switch to least outstanding requests</td><td>Target group health check</td></tr>
-        <tr><td class="name">③ Ingress</td><td>L7</td><td>Round robin (NGINX); Envoy also offers least request, ring hash</td><td>Pod readiness via Endpoints</td></tr>
-        <tr><td class="name">④ Service</td><td>L4</td><td>iptables: random pick per connection · IPVS: round robin</td><td>Pod readiness only</td></tr>
-      </tbody>
-    </table>
-    <ul class="points tight" data-step="1">
-      <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
-    </ul>
-  </div>
-  <div class="foot"><span>20 / 54</span><span>layers · the path on eks</span></div>
-</section>
-
 <section class="slide" data-section="client-side-lb">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.10 · Client-side balancing</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.9 · Client-side balancing</div>
   <h2>For service-to-service calls, the caller can pick the backend itself and skip a hop</h2>
   <div class="split">
     <div class="chart meter">
@@ -360,7 +311,7 @@ needs warm-up for a spike</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>21 / 54</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>20 / 54</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <script>

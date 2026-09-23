@@ -20,8 +20,8 @@ nhớ sửa luôn ở đây.
 |---|---|---|---|
 | Cover + outline | 1–2 | Trúc | 2 phút |
 | 00 Giới thiệu | 3–9 | Trúc | 10 phút |
-| 01 Local load balancing | 10–21 | Trúc | 16 phút |
-| 02 Global load balancing | 22–31 | Trúc | 15 phút |
+| 01 Local load balancing | 10–20 | Trúc | 16 phút |
+| 02 Global load balancing | 21–31 | Trúc | 15 phút |
 | 03 Algorithms | 32–42 | Khánh | 15 phút |
 | 03 Phụ lục (chỉ khi còn giờ / có người hỏi) | 43–47 | Khánh | 0–8 phút |
 | 04 Demo | 48–53 | Khánh | 10 phút |
@@ -235,7 +235,7 @@ bắt TLS phải tới thẳng backend.
 theo weight, p99 theo từng route. Đa số traffic web và API rơi vào đây, nên **mặc định cứ chọn
 L7** trừ khi dính một lý do ở trên.
 **Nói:** Còn hệ thống lớn thì gần như luôn là *cả hai*: một lớp L4 rẻ ở biên để hứng connection,
-fleet L7 phía sau lo route. Đúng cái hình EKS ở slide 20.
+fleet L7 phía sau lo route. Đúng cái hình EKS ở slide 31.
 **→ 1:** Hai cái mặc định hay làm người ta vấp. Một là NLB *có* terminate TLS nếu bạn cho nó
 một TLS listener — và vẫn chia theo flow hash, vì nó không parse HTTP. Giải mã và hiểu là hai
 năng lực khác nhau. Hai là ALB mặc định round robin; least outstanding requests tắt cho tới khi
@@ -262,18 +262,7 @@ staging rồi giả lập dữ liệu cho giống.
 **Chốt:** L4 không làm được cái nào trong ba cái đó. Nó không thấy path, không thấy header — nó
 chọn một pod cho cả connection rồi hết phần nó.
 
-### 20 / 54 · Đường đi trên AWS EKS
-**Nói:** Thực tế không phải một load balancer, mà là bốn chặng. Route 53 chọn region. ALB chọn
-IP của node hoặc pod. Ingress controller chọn pod. Service, qua kube-proxy, lo các cuộc gọi
-pod-to-pod. Bốn thứ, mỗi thứ có algorithm riêng và định nghĩa "healthy" riêng — nhìn bảng: round
-robin ở ALB, round robin ở ingress, còn ở tầng Service thì iptables chọn *ngẫu nhiên* cho mỗi
-connection.
-**→ 1:** Traffic từ ngoài có thể bỏ hẳn chặng bốn — nếu ingress gửi thẳng vào pod IP thì
-Service chỉ còn dùng cho gọi nội bộ. Và ở đó nó cân bằng theo connection, không phải theo
-request. Nhớ điều này lúc nói tới gRPC.
-**Chốt:** Khi tải lệch, câu hỏi đầu tiên là *cái nào* trong bốn chặng đã ra quyết định.
-
-### 21 / 54 · Client-side balancing
+### 20 / 54 · Client-side balancing
 **Nói:** Với gọi service-to-service thì có thể bỏ luôn cái hộp ở giữa. gRPC client bật
 `round_robin` cộng với headless Service sẽ mở một connection cho mỗi pod và tự rải request.
 Service mesh cũng vậy, bằng sidecar nằm cạnh từng pod — code của mình chỉ gọi localhost. Bớt
@@ -283,11 +272,11 @@ pod từ headless Service hoặc từ registry.
 **→ 2:** Cái giá: client nào cũng cần danh sách pod và phải tự cập nhật. Danh sách cũ thì gọi
 vào pod không còn tồn tại, và giờ con bug đó nằm trong mọi service thay vì một chỗ.
 
-### 22 / 54 · Divider 02
+### 21 / 54 · Divider 02
 **Nói:** Giờ ra giữa các region. Bài toán khác hẳn: thứ ra quyết định thường là DNS, mà DNS thì
 không thấy được health hay load.
 
-### 23 / 54 · Một region không giải quyết được gì
+### 22 / 54 · Một region không giải quyết được gì
 **Nói:** Từ nãy tới giờ mình mặc định là load balancer luôn với tới được. Nhìn hình cho dễ.
 Ngày thường: balancer chọn pod, user nhận 200. Rồi pod-b chết — balancer né qua pod-c, user
 không hề biết có chuyện gì. Đó đúng là việc nó sinh ra để làm.
@@ -302,7 +291,7 @@ connection ở gần user hơn.
 **Chốt:** Bốn lý do đi global — latency, disaster recovery, capacity vượt quá một region, và
 data residency. Cái cuối là luật chứ không phải sở thích: GDPR, và Nghị định 53 của Việt Nam.
 
-### 24 / 54 · Ba đòn bẩy
+### 23 / 54 · Ba đòn bẩy
 **Nói:** Đây là chỗ phải đổi cách nghĩ. Load balancer local là một proxy *nằm trên data path* —
 traffic đã tới nó rồi, nó chỉ chọn backend. Load balancer global phải đổi được chỗ client gửi
 traffic *trước khi có bất kỳ connection nào*. Nó không phải cái hộp mình đẩy traffic qua, mà là
@@ -317,7 +306,7 @@ vào được. ③ *Sau khi connect*: đã nói chuyện với server rồi mớ
 nguyên một vòng nữa, nên hiếm ai xài. Mọi thứ thật đều là ① hoặc ②, hoặc cả hai.
 **Chốt:** Giữ cái bảng này trong đầu cho bốn slide tới.
 
-### 25 / 54 · DNS-based routing (GSLB)
+### 24 / 54 · DNS-based routing (GSLB)
 **Nói:** Đòn bẩy một. Authoritative nameserver của bạn *chính là* load balancer global. Một
 query tới từ Việt Nam, nó áp policy, nó trả về địa chỉ Singapore kèm TTL 60 giây. Rồi để ý cái
 này: client kết nối thẳng tới Singapore, và GSLB ra khỏi đường đi hoàn toàn. Nó không bao giờ
@@ -331,7 +320,7 @@ tập ứng viên *trước*, rồi policy mới chạy trên phần còn lại.
 của bạn. Để ý cái thiếu: **load**. Một region healthy nhưng đã quá tải vẫn nhận đủ phần của nó,
 vì health check trả lời "nó còn sống không", chứ không phải "nó còn gánh thêm được không".
 
-### 26 / 54 · Vì sao DNS không bao giờ nhanh được
+### 25 / 54 · Vì sao DNS không bao giờ nhanh được
 **Nói:** Ở t=0 GSLB bắt đầu trả địa chỉ mới. Giờ đếm xem ai còn đang giữ địa chỉ cũ. Recursive
 resolver. OS stub resolver. Cache của chính trình duyệt. Runtime ngôn ngữ — cache của JVM mặc
 định là vĩnh viễn. Và cái thứ năm, cái người ta hay quên: một socket đang mở trong connection
@@ -348,7 +337,7 @@ vẫn mất năm phút.
 tiền theo số query, và chính mấy câu trả lời đã cache mới là thứ giữ user chạy được khi
 nameserver của mình không với tới được.
 
-### 27 / 54 · Anycast
+### 26 / 54 · Anycast
 **Nói:** Đòn bẩy hai, và là một ý tưởng hoàn toàn khác. Nhiều site cùng announce *cùng một* địa
 chỉ IP qua BGP — "traffic cho địa chỉ này cứ gửi về tôi" — và mọi network trên đường đi chọn
 cái announcement mà nó thấy gần nhất. Hai user ở đây quay cùng một địa chỉ mà đáp xuống hai toà
@@ -363,7 +352,7 @@ rút hẳn.
 **Chốt:** Nó cũng là network engineering thứ thiệt: ASN riêng, dải IP riêng, thoả thuận peering.
 Đó đúng là lý do phần lớn team đi thuê anycast chứ không tự dựng.
 
-### 28 / 54 · Anycast + edge proxy
+### 27 / 54 · Anycast + edge proxy
 **Nói:** Giờ ghép hai cái lại, và đây là câu trả lời hiện đại. Anycast đưa user tới PoP gần
 nhất, và PoP đó là một **L7 proxy đầy đủ**, không phải cái bảng chỉ đường. Nó tự hoàn tất
 handshake — ba vòng ở 30 mili-giây thay vì 230, tức 90 mili-giây thay vì 690 — rồi chuyển
@@ -377,7 +366,7 @@ không cần cache gì cả. Đó là lý do đặt một API sau CDN vẫn đá
 bằng 0%**.
 **Chốt:** Cloudflare, global load balancer của Google, Fastly — đều là cỗ máy này.
 
-### 29 / 54 · Đòn bẩy nào, khi nào
+### 28 / 54 · Đòn bẩy nào, khi nào
 **Nói:** Bảng so sánh. Failover: phút, giây, dưới một giây. Điều khiển theo từng request: không,
 không, full L7. Thấy được load của backend: không, không, có. Quy luật y hệt phần 1 — load
 balancer càng nằm *trên đường đi*, nó càng làm được nhiều.
@@ -388,7 +377,7 @@ thì được một mớ ý kiến trái nhau phải tự xử.
 **Chốt:** Và khi health check toàn cầu chập chờn, nó không loại một pod. **Nó dịch chuyển cả
 một châu lục.**
 
-### 30 / 54 · Kiến trúc
+### 29 / 54 · Kiến trúc
 **Nói:** Đây là toàn bộ mọi thứ ráp lại, và là hình dạng phần lớn team đang chạy thật. Route 53
 với latency routing, TTL 60 giây, chọn region. Trong mỗi region, một NLB trải trên ba AZ chia
 connection, một fleet proxy L7 terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
@@ -396,7 +385,7 @@ gRPC nội bộ.
 **Chốt:** Bốn quyết định cân bằng tải cho một request — và mỗi cái là một tầng khác nhau
 từ phần 1.
 
-### 31 / 54 · Capacity
+### 30 / 54 · Capacity
 **Nói:** Cái bẫy không ai lên kế hoạch cho: **failover chuyển traffic, chứ không chuyển
 capacity.** Singapore biến mất là Tokyo ôm 100% thế giới. Nếu Tokyo không gánh nổi *ngay lúc
 đó* thì bạn vừa biến một sự cố region thành hai.
@@ -409,6 +398,17 @@ thành chuyện nhỏ. Và nhớ đếm cả connection chứ đừng chỉ đ�
 mỗi cái ~50 KB, là 20 GB trên cả fleet.
 **→ 1:** Rồi chứng minh nó. Game-day drill: cố tình drain một region, trong giờ hành chính, và
 nhìn p99 với 5xx. Kế hoạch capacity chưa từng test thì vẫn chỉ là giả thuyết.
+
+### 31 / 54 · Đường đi trên AWS EKS
+**Nói:** Thực tế không phải một load balancer, mà là bốn chặng. Route 53 chọn region. ALB (L7) hoặc NLB (L4) chọn
+IP của node hoặc pod. Ingress controller chọn pod. Service, qua kube-proxy, lo các cuộc gọi
+pod-to-pod. Bốn thứ, mỗi thứ có algorithm riêng và định nghĩa "healthy" riêng — nhìn bảng: ALB round
+robin còn NLB băm 5-tuple, round robin ở ingress, còn ở tầng Service thì iptables chọn *ngẫu nhiên* cho mỗi
+connection.
+**→ 1:** Traffic từ ngoài có thể bỏ hẳn chặng bốn — nếu ingress gửi thẳng vào pod IP thì
+Service chỉ còn dùng cho gọi nội bộ. Và ở đó nó cân bằng theo connection, không phải theo
+request. Nhớ điều này lúc nói tới gRPC.
+**Chốt:** Khi tải lệch, câu hỏi đầu tiên là *cái nào* trong bốn chặng đã ra quyết định.
 
 ### 32 / 54 · Divider 03
 **Nói:** Mình là Khánh. Mười slide tới, mỗi algorithm đều chỉ có một câu hỏi: load balancer
@@ -599,13 +599,13 @@ gì: thứ tự, capacity, tải, danh tính client. Quét QR hoặc vào kahoot
 
 - **"Bản thân load balancer có phải single point of failure không?"** → Ngắn gọn: có. Trong một
   region thì chạy thành cặp (VRRP, floating IP) hoặc thành fleet sau ECMP/anycast, hoặc xài loại
-  managed. Nhưng cả region sập thì hết cách — đó đúng là slide 23.
-- **"Sao không xài luôn DNS round robin?"** → Slide 25. Không có health, không biết load, và TTL
+  managed. Nhưng cả region sập thì hết cách — đó đúng là slide 22.
+- **"Sao không xài luôn DNS round robin?"** → Slide 24. Không có health, không biết load, và TTL
   nghĩa là một IP đã chết vẫn nhận traffic cả mấy phút.
-- **"Tụi mình xài gRPC mà một pod ăn hết tải."** → Slide 20 cộng với 3.5: gRPC dồn mọi thứ lên
+- **"Tụi mình xài gRPC mà một pod ăn hết tải."** → Slide 31 cộng với 3.5: gRPC dồn mọi thứ lên
   một connection, nên load balancer L4 chọn pod đúng một lần rồi thôi. Cân bằng theo request ở
   L7, hoặc theo từng call trong client / mesh.
 - **"Nên dùng algorithm nào?"** → Slide 42. Bắt đầu bằng round robin, chuyển qua least
   connections khi thời gian request chênh lệch, và coi sticky session như một mùi lạ cần xem lại.
-- **"Failover thật sự nhanh cỡ nào?"** → Slide 26: thời gian phát hiện cộng TTL cộng mấy con
+- **"Failover thật sự nhanh cỡ nào?"** → Slide 25: thời gian phát hiện cộng TTL cộng mấy con
   rớt lại, nên DNS là vài phút, anycast là vài giây.

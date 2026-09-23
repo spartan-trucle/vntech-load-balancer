@@ -48,8 +48,7 @@ Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
 - **1.6 Health check:** active (probe theo timer, `5s × 3 lần fail ≈ 15s lỗi`) vs passive (outlier detection). Chạy cả hai. Gotcha: **đừng check DB trong `/healthz`** — DB nấc 2 giây là rớt hết pod cùng lúc; panic mode dưới 50% healthy thì bỏ qua health.
 - **1.7 Chọn cái nào:** **L4/NLB** khi không phải HTTP (Postgres, Redis, Kafka, MQTT, UDP), cần static IP, hàng triệu connection idle, hoặc TLS phải tới thẳng backend. **L7/ALB** khi route theo path/host/header/cookie, cần retry, canary weight, p99 theo route — phần lớn traffic web/API, mặc định chọn cái này. **Cả hai** khi lớn: L4 ở biên, fleet L7 phía sau. 4 default cắn người: NLB *có* terminate TLS nhưng vẫn hash 5-tuple; ALB mặc định round robin; ALB **không** retry; cross-zone tắt + tính tiền ở NLB (bật + free ở ALB).
 - **1.8 L7 mang lại gì:** một hostname bên ngoài, bên trong `/api` / `/ws` / `/static` về ba pool **scale độc lập**; canary 5% theo weight (rollback = kéo số về 0); QA gắn header `X-Canary` để test thẳng trên production. L4 không làm được cái nào.
-- **1.9 Đường đi trên EKS:** Route 53 → ALB → Ingress controller → (Service/kube-proxy cho call nội bộ) → Pod.
-- **1.10 Client-side LB / sidecar:** gRPC `round_robin` + headless Service, hoặc service mesh sidecar. Bớt 1 hop, nhưng mọi client phải tự cập nhật danh sách pod.
+- **1.9 Client-side LB / sidecar:** gRPC `round_robin` + headless Service, hoặc service mesh sidecar. Bớt 1 hop, nhưng mọi client phải tự cập nhật danh sách pod.
 - **Còn thiếu:** software vs hardware LB.
 
 ## 2. Global Load Balancing — GSLB (Truc)
@@ -66,6 +65,7 @@ Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
 - **2.7 So sánh 3 đòn bẩy:** failover phút / giây / dưới giây · per-request control không / không / full L7 · thấy load không / không / có. Gotcha chung: **health check toàn cầu rất khó**, và khi nó flap thì nó chuyển cả một châu lục.
 - **2.8 Kiến trúc 2 region:** Route 53 (latency + health, TTL 60 s) → NLB (L4, 3 AZ) → fleet proxy L7 (TLS, least request) → service.
 - **2.9 Capacity:** failover chuyển traffic chứ **không chuyển capacity**. Mỗi region phải gánh được toàn bộ traffic, cộng dư để mất 1 AZ. Chạy tier LB ở 30–40%, rồi game-day drill để chứng minh.
+- **2.10 Đường đi trên EKS:** Route 53 → ALB (L7) hoặc NLB (L4) → Ingress controller → (Service/kube-proxy cho call nội bộ) → Pod.
 
 ## 3. Algorithms (Khanh)
 
