@@ -64,7 +64,7 @@ Slide hiện có (lấy từ bản cũ, Truc chỉnh tiếp):
 - **2.5 Anycast:** nhiều PoP cùng announce một IP qua BGP. Failover = **rút announcement**, hội tụ trong vài giây, client không cần câu trả lời mới. Gotcha: BGP đếm **số network**, không phải ms; không chia được % traffic; cần ASN + IP block + peering nên đa số đi thuê.
 - **2.6 Anycast + edge proxy (câu trả lời thật):** PoP là L7 proxy thật, bắt tay ngay tại chỗ (3 × 30 ms = 90 ms thay vì 690 ms) rồi đi 1 hop ấm qua backbone. Lấy lại **per-request control ở quy mô toàn cầu**: retry sang region khác, canary theo weight, drain cả một region. CDN = máy này + cache; lợi ngay cả khi **cache hit 0%**.
 - **2.7 So sánh 3 đòn bẩy:** failover phút / giây / dưới giây · per-request control không / không / full L7 · thấy load không / không / có. Gotcha chung: **health check toàn cầu rất khó**, và khi nó flap thì nó chuyển cả một châu lục.
-- **2.8 Kiến trúc 2 region:** Route 53 (latency + health, TTL 60 s) → NLB (L4, 3 AZ) → Envoy fleet (TLS, L7) → service.
+- **2.8 Kiến trúc 2 region:** Route 53 (latency + health, TTL 60 s) → NLB (L4, 3 AZ) → fleet proxy L7 (TLS, least request) → service.
 - **2.9 Capacity:** failover chuyển traffic chứ **không chuyển capacity**. Mỗi region phải gánh được toàn bộ traffic, cộng dư để mất 1 AZ. Chạy tier LB ở 30–40%, rồi game-day drill để chứng minh.
 
 ## 3. Algorithms (Khanh)

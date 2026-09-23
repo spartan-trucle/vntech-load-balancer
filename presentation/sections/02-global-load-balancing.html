@@ -186,7 +186,7 @@
   <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.8 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
-    <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
+    <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, L7 proxy fleet, services with sidecars">
       <defs><marker id="arrow-arch" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
       <use href="#gl-client" class="gl" x="26" y="112" width="58" height="58"/><text x="55" y="190" text-anchor="middle" class="sv-lbl">Clients</text><text x="55" y="208" text-anchor="middle" class="sv-lbl-sm">web · mobile</text>
       <path d="M90 140 H174" class="sv-line" marker-end="url(#arrow-arch)"/>
@@ -199,7 +199,7 @@
         <text x="396" y="30" class="sv-lbl-sm">ap-southeast-1 · Singapore</text>
         <use href="#gl-balancer" class="gl" x="396" y="52" width="54" height="54"/><text x="460" y="76" class="sv-lbl">NLB</text><text x="460" y="96" class="sv-lbl-sm">L4 · 3 AZs</text>
         <path d="M552 79 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <use href="#gl-balancer" class="gl gl-hot" x="588" y="52" width="54" height="54"/><text x="652" y="76" class="sv-lbl">Envoy fleet × 12</text><text x="652" y="96" class="sv-hot">TLS · L7 · least request</text>
+        <use href="#gl-balancer" class="gl gl-hot" x="588" y="52" width="54" height="54"/><text x="652" y="76" class="sv-lbl">L7 proxy fleet × 12</text><text x="652" y="96" class="sv-hot">TLS · L7 · least request</text>
         <path d="M900 79 H934" class="sv-line" marker-end="url(#arrow-arch)"/>
         <use href="#gl-pod" class="gl" x="940" y="52" width="54" height="54"/><text x="1004" y="76" class="sv-lbl">30 services + sidecars</text><text x="1004" y="96" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
@@ -208,7 +208,7 @@
         <text x="396" y="190" class="sv-lbl-sm">ap-northeast-1 · Tokyo</text>
         <use href="#gl-balancer" class="gl" x="396" y="212" width="54" height="54"/><text x="460" y="236" class="sv-lbl">NLB</text><text x="460" y="256" class="sv-lbl-sm">L4 · 3 AZs</text>
         <path d="M552 239 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <use href="#gl-balancer" class="gl gl-hot" x="588" y="212" width="54" height="54"/><text x="652" y="236" class="sv-lbl">Envoy fleet × 12</text><text x="652" y="256" class="sv-hot">TLS · L7 · least request</text>
+        <use href="#gl-balancer" class="gl gl-hot" x="588" y="212" width="54" height="54"/><text x="652" y="236" class="sv-lbl">L7 proxy fleet × 12</text><text x="652" y="256" class="sv-hot">TLS · L7 · least request</text>
         <path d="M900 239 H934" class="sv-line" marker-end="url(#arrow-arch)"/>
         <use href="#gl-pod" class="gl" x="940" y="212" width="54" height="54"/><text x="1004" y="236" class="sv-lbl">30 services + sidecars</text><text x="1004" y="256" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
@@ -222,7 +222,7 @@
   <h2>Failover moves the traffic, not the capacity. Size each region for the whole world.</h2>
   <div class="split" style="align-items:start;">
     <div class="stack">
-      <div class="formula">peak <b>200,000 req/s</b> global<br>one region down → survivor takes <b>200,000</b><br>Envoy node: <b>25,000 req/s</b> at 60% CPU <span class="muted">(measure yours)</span></div>
+      <div class="formula">peak <b>200,000 req/s</b> global<br>one region down → survivor takes <b>200,000</b><br>one L7 balancer node: <b>25,000 req/s</b> at 60% CPU <span class="muted">(measure yours)</span></div>
       <div class="formula">200,000 ÷ 25,000 = <b>8 nodes</b><br>+ lose 1 AZ of 3 → × 1.5 = <b>12</b><br>per region: <b>12 nodes</b>, normally at ~33% of rated load</div>
     </div>
     <ul class="points tight">

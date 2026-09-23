@@ -391,7 +391,7 @@ một châu lục.**
 ### 30 / 54 · Kiến trúc
 **Nói:** Đây là toàn bộ mọi thứ ráp lại, và là hình dạng phần lớn team đang chạy thật. Route 53
 với latency routing, TTL 60 giây, chọn region. Trong mỗi region, một NLB trải trên ba AZ chia
-connection, một fleet Envoy terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
+connection, một fleet proxy L7 terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
 gRPC nội bộ.
 **Chốt:** Bốn quyết định cân bằng tải cho một request — và mỗi cái là một tầng khác nhau
 từ phần 1.
@@ -401,7 +401,7 @@ từ phần 1.
 capacity.** Singapore biến mất là Tokyo ôm 100% thế giới. Nếu Tokyo không gánh nổi *ngay lúc
 đó* thì bạn vừa biến một sự cố region thành hai.
 **Làm phép tính:** 200.000 request một giây trên toàn cầu. Mất một region nghĩa là con còn lại
-ôm hết 200.000. Một node Envoy chạy 25.000 ở 60% CPU — nhớ tự đo hệ thống của bạn, đừng lấy
+ôm hết 200.000. Một node L7 balancer chạy 25.000 ở 60% CPU — nhớ tự đo hệ thống của bạn, đừng lấy
 số của mình. Vậy là 8 node, nhân 1,5 để sống sót khi mất một AZ, thành 12 node mỗi region,
 bình thường chạy khoảng một phần ba công suất.
 **Nói:** Cái một phần ba nằm không đó không phải lãng phí. Nó chính là thứ khiến failover trở
