@@ -144,7 +144,7 @@
 </section>
 
 <section class="slide" data-section="anycast">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>2.6 · Anycast</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>Appendix · Anycast<span class="chip ok">go fast</span></div>
   <h2>Announce one address from many places and let the internet do the routing</h2>
   <div class="split">
     <div class="body">
@@ -157,11 +157,11 @@
       <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN (autonomous system number), address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
-  <div class="foot"><span>27 / 55</span><span>anycast · bgp · withdraw to fail over</span></div>
+  <div class="foot"><span>27 / 55</span><span>appendix · anycast · bgp · withdraw to fail over</span></div>
 </section>
 
 <section class="slide" data-section="edge-proxy">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>2.7 · Anycast + edge proxy</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>Appendix · Anycast + edge proxy<span class="chip ok">go fast</span></div>
   <h2>Put a real L7 proxy in the nearby PoP and the handshakes stop crossing the ocean</h2>
   <div class="split">
     <div class="body">
@@ -174,11 +174,11 @@
       <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 55</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+  <div class="foot"><span>28 / 55</span><span>appendix · edge proxy · cdn · why 0% hit rate still wins</span></div>
 </section>
 
 <section class="slide" data-section="global-compare">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.8 · Which lever when</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.6 · Which lever when</div>
   <h2>They compose, and usually do: four balancing decisions for one request</h2>
   <div class="body meter" style="justify-content:center; gap:18px;">
     <table class="tbl compact">
@@ -200,7 +200,7 @@
 </section>
 
 <section class="slide" data-section="architecture">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.9 · Architecture</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.7 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
     <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, L7 proxy fleet, services with sidecars">
@@ -235,7 +235,7 @@
 </section>
 
 <section class="slide" data-section="capacity">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.10 · Capacity</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.8 · Capacity</div>
   <h2>Failover moves the traffic, not the capacity. Size each region for the whole world.</h2>
   <div class="split" style="align-items:start;">
     <div class="stack">
@@ -253,7 +253,7 @@
 </section>
 
 <section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.11 · The path on AWS EKS</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.9 · The path on AWS EKS</div>
   <h2>Four hops pick a destination before a request reaches a pod</h2>
   <div class="body" style="gap:16px;">
     <div class="chart">
@@ -705,7 +705,7 @@
     ]);
   }
 
-  // ---------- 2.6 anycast ----------
+  // ---------- appendix · anycast ----------
   {
     const POPS = [
       { name: 'Singapore', y: 40 },
@@ -783,7 +783,7 @@
     ]);
   }
 
-  // ---------- 2.7 anycast + edge proxy ----------
+  // ---------- appendix · anycast + edge proxy ----------
   {
     const w = scene($('edge-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
