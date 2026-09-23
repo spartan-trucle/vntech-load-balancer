@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 2</div>
   <h2>Global load balancing</h2>
   <p class="lead">Between regions and continents. A local balancer picks a backend for traffic that already reached it; a global one has to change where the client sends traffic in the first place.</p>
-  <div class="foot"><span>21 / 54</span><span>section 2 · global load balancing</span></div>
+  <div class="foot"><span>21 / 55</span><span>section 2 · global load balancing</span></div>
 </section>
 
 <section class="slide" data-section="local-cant-fix">
@@ -21,7 +21,7 @@
       <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
-  <div class="foot"><span>22 / 54</span><span>the two problems with no in-region answer</span></div>
+  <div class="foot"><span>22 / 55</span><span>the two problems with no in-region answer</span></div>
 </section>
 
 <section class="slide" data-section="three-levers">
@@ -86,10 +86,10 @@
     </div>
 
     <ul class="points tight">
-      <li>A local balancer is already <b>on the data path</b>. A global one has to act <b>before the connection exists</b> — so ③ is rare, and real systems use ① and ②.</li>
+      <li>A local balancer is already <b>on the data path</b>. A global one has to act <b>before the connection exists</b> — so ③ is rare, and real systems use ① and ②. ③ only shows up when the decision needs the request itself, like a user or a tenant, not just where they are.</li>
     </ul>
   </div>
-  <div class="foot"><span>23 / 54</span><span>name resolution · routing · redirection</span></div>
+  <div class="foot"><span>23 / 55</span><span>name resolution · routing · redirection</span></div>
 </section>
 
 <section class="slide" data-section="gslb-dns">
@@ -106,7 +106,7 @@
       <li data-step="2"><span class="chip risk">omission</span> It never sees <b>load</b>. A region that is healthy but saturated keeps its full share, because a health check answers "is it up", not "can it take more".</li>
     </ul>
   </div>
-  <div class="foot"><span>24 / 54</span><span>gslb · one hostname, many answers</span></div>
+  <div class="foot"><span>24 / 55</span><span>gslb · one hostname, many answers</span></div>
 </section>
 
 <section class="slide" data-section="dns-stale">
@@ -123,11 +123,28 @@
       <li data-step="2"><span class="chip ok">do</span> Make the slowness harmless. Never cut the old address off: let it proxy onward, or answer <code>503</code> + <code>Retry-After</code>. Users can see <b>zero errors</b> during a failover that still takes five minutes.</li>
     </ul>
   </div>
-  <div class="foot"><span>25 / 54</span><span>ttl · caching layers · the failover formula</span></div>
+  <div class="foot"><span>25 / 55</span><span>ttl · caching layers · the failover formula</span></div>
+</section>
+
+<section class="slide" data-section="redirection">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-window"/></svg>2.5 · Redirection</div>
+  <h2>The server that answers first sends you somewhere else — and you pay a second connection to get there</h2>
+  <div class="split">
+    <div class="body">
+      <div class="chart meter"><svg id="redir-flow" role="img" aria-label="An entry host redirecting a user to a regional host by hostname, then by a tenant cookie, then dying and stranding new users"></svg></div>
+      <div class="flow-ctl"><div class="seg"><button id="redir-replay" class="icon" aria-label="Replay" title="Replay"><svg class="ic"><use href="#ic-replay"/></svg></button></div><p class="readout" id="redir-readout"></p></div>
+    </div>
+    <ul class="points tight">
+      <li><span class="chip">how</span> Entry host <code>shop.vn</code> answers <code>302 Location: https://sg.shop.vn/…</code>. The browser resolves the new name and opens a fresh TCP + TLS connection there.</li>
+      <li data-step="1"><span class="chip hot">the upside</span> It sees the <b>whole request</b>: cookie, user ID, path. DNS sees only the resolver's IP, so it can pin a user to the region holding their data — data residency, tenant pinning. Salesforce's <code>login.</code> sends you to your own instance host; YouTube sends you to one specific <code>googlevideo.com</code> cache.</li>
+      <li data-step="2"><span class="chip risk">the cost</span> First request pays DNS + TCP + TLS <b>twice</b>. The entry host sits on the path, so if it dies nobody gets redirected. Use <code>307</code>/<code>308</code> for non-GET — a <code>302</code> can turn a <code>POST</code> into a <code>GET</code> — and some API clients never follow redirects at all. <b>Do:</b> use it only when the redirect is paid once and the session stays put.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>26 / 55</span><span>redirection · one 302, a second connection</span></div>
 </section>
 
 <section class="slide" data-section="anycast">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>2.5 · Anycast</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-route"/></svg>Appendix · Anycast<span class="chip ok">go fast</span></div>
   <h2>Announce one address from many places and let the internet do the routing</h2>
   <div class="split">
     <div class="body">
@@ -140,11 +157,11 @@
       <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN (autonomous system number), address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
-  <div class="foot"><span>26 / 54</span><span>anycast · bgp · withdraw to fail over</span></div>
+  <div class="foot"><span>27 / 55</span><span>appendix · anycast · bgp · withdraw to fail over</span></div>
 </section>
 
 <section class="slide" data-section="edge-proxy">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>2.6 · Anycast + edge proxy</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-balancer"/></svg>Appendix · Anycast + edge proxy<span class="chip ok">go fast</span></div>
   <h2>Put a real L7 proxy in the nearby PoP and the handshakes stop crossing the ocean</h2>
   <div class="split">
     <div class="body">
@@ -157,33 +174,33 @@
       <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>27 / 54</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+  <div class="foot"><span>28 / 55</span><span>appendix · edge proxy · cdn · why 0% hit rate still wins</span></div>
 </section>
 
 <section class="slide" data-section="global-compare">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.7 · Which lever when</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-scale"/></svg>2.6 · Which lever when</div>
   <h2>They compose, and usually do: four balancing decisions for one request</h2>
   <div class="body meter" style="justify-content:center; gap:18px;">
     <table class="tbl compact">
-      <thead><tr><th></th><th>DNS-based routing</th><th>Anycast</th><th>Anycast + edge proxy</th></tr></thead>
+      <thead><tr><th></th><th>DNS-based routing</th><th>Redirection</th><th>Anycast</th><th>Anycast + edge proxy</th></tr></thead>
       <tbody>
-        <tr><td class="name">Failover speed</td><td class="num">minutes</td><td class="num">seconds</td><td class="num"><b>sub-second</b></td></tr>
-        <tr><td class="name">Per-request control</td><td>None</td><td>None</td><td><b>Full L7</b></td></tr>
-        <tr><td class="name">Handshake latency</td><td>Full path</td><td>Full path</td><td><b>Terminated at the edge</b></td></tr>
-        <tr><td class="name">Sees backend load</td><td>No</td><td>No</td><td><b>Yes</b></td></tr>
-        <tr><td class="name">Setup cost</td><td>Trivial</td><td>ASN + peering</td><td>Buy it</td></tr>
-        <tr><td class="name">DDoS resistance</td><td>Poor</td><td>Good — spread over many sites</td><td><b>Good, plus request filtering</b></td></tr>
+        <tr><td class="name">Failover speed</td><td class="num">minutes</td><td class="num">as fast as the entry host</td><td class="num">seconds</td><td class="num"><b>sub-second</b></td></tr>
+        <tr><td class="name">Per-request control</td><td>None</td><td>First request only</td><td>None</td><td><b>Full L7</b></td></tr>
+        <tr><td class="name">Handshake latency</td><td>Full path</td><td>Paid twice on first visit</td><td>Full path</td><td><b>Terminated at the edge</b></td></tr>
+        <tr><td class="name">Sees backend load</td><td>No</td><td>Can</td><td>No</td><td><b>Yes</b></td></tr>
+        <tr><td class="name">Setup cost</td><td>Trivial</td><td>App code</td><td>ASN + peering</td><td>Buy it</td></tr>
+        <tr><td class="name">DDoS resistance</td><td>Poor</td><td>Entry host takes it</td><td>Good — spread over many sites</td><td><b>Good, plus request filtering</b></td></tr>
       </tbody>
     </table>
     <ul class="points tight">
       <li data-step="1"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 54</span><span>comparing the three levers</span></div>
+  <div class="foot"><span>29 / 55</span><span>comparing the three levers</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.8 · Architecture</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.7 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
     <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, L7 proxy fleet, services with sidecars">
@@ -214,11 +231,11 @@
       </g>
     </svg>
   </div>
-  <div class="foot"><span>29 / 54</span><span>system design · architecture</span></div>
+  <div class="foot"><span>30 / 55</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.9 · Capacity</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.8 · Capacity</div>
   <h2>Failover moves the traffic, not the capacity. Size each region for the whole world.</h2>
   <div class="split" style="align-items:start;">
     <div class="stack">
@@ -232,11 +249,11 @@
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>30 / 54</span><span>system design · capacity</span></div>
+  <div class="foot"><span>31 / 55</span><span>system design · capacity</span></div>
 </section>
 
 <section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.10 · The path on AWS EKS</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.9 · The path on AWS EKS</div>
   <h2>Four hops pick a destination before a request reaches a pod</h2>
   <div class="body" style="gap:16px;">
     <div class="chart">
@@ -281,7 +298,7 @@
       <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
     </ul>
   </div>
-  <div class="foot"><span>31 / 54</span><span>system design · the path on eks</span></div>
+  <div class="foot"><span>32 / 55</span><span>system design · the path on eks</span></div>
 </section>
 
 <script>
@@ -575,7 +592,120 @@
     ]);
   }
 
-  // ---------- 2.5 anycast ----------
+  // ---------- 2.5 redirection ----------
+  {
+    const w = scene($('redir-flow'), `0 0 ${W} ${H}`, (svg) => {
+      const fixed = el('g', {}, svg);
+      glyph(fixed, { icon: 'gl-client', x: 0, y: 140, size: 50 });
+      txt(fixed, 0, 214, 'sv-lbl', 'user · VN');
+      const tag = txt(fixed, 0, 234, 'sv-lbl-sm', '');
+      const entryWall = box(fixed, 206, 100, 210, 130, 'gl-shell-hot');
+      const entryGlyph = glyph(fixed, { icon: 'gl-balancer', x: 214, y: 106, size: 40, state: 'hot' });
+      txt(fixed, 262, 126, 'sv-hot', 'shop.vn');
+      txt(fixed, 262, 146, 'sv-lbl-sm', 'entry · us-east-1');
+      const slotBox = box(fixed, 222, 158, 178, 40, 'sv-box');
+      const slot = txt(fixed, 232, 183, 'sv-code', '');
+      const note = txt(fixed, 222, 218, 'sv-lbl-sm', '');
+      line(fixed, 'M54 165 H204', 'sv-line-soft');
+      const regions = [
+        { name: 'sg.shop.vn', y: 78 },
+        { name: 'eu.shop.vn', y: 252 },
+      ].map((r) => {
+        const g = el('g', {}, fixed);
+        const b = glyph(g, { icon: 'gl-server', x: 520, y: r.y - 25, size: 50 });
+        txt(g, 580, r.y - 6, 'sv-lbl', r.name);
+        const sub = txt(g, 580, r.y + 14, 'sv-lbl-sm', '');
+        line(fixed, `M418 165 C462 165 470 ${r.y} 518 ${r.y}`, 'sv-line-soft');
+        return { ...r, g, b, sub };
+      });
+      return {
+        tag, slotBox, slot, note, entryWall, entryGlyph, regions,
+        clear() {
+          tag.textContent = ''; slot.textContent = ''; note.textContent = '';
+          slotBox.setAttribute('class', 'sv-box');
+          entryWall.setAttribute('class', 'gl-shell-hot');
+          entryGlyph.set('sv-box-hot');
+          regions.forEach((r) => { r.b.set('sv-box'); r.sub.textContent = ''; });
+        },
+      };
+    });
+
+    // the entry host bounces one request to a regional host, then the browser starts over there
+    async function redirectTo(w, ri, reqLabel = 'GET /') {
+      const r = w.regions[ri];
+      const req = card(w.layer, 90, 26, 'sv-box-hot', reqLabel, 'sv-hot');
+      put(req, 30, 165); move(w, req, 300, 165);
+      await w.sleep(420); fade(w, req);
+      w.slotBox.setAttribute('class', 'sv-box-hot');
+      w.slot.textContent = `302 → ${r.name}`;
+      await w.sleep(560);
+      w.slotBox.setAttribute('class', 'sv-box');
+      w.slot.textContent = '';
+      const back = card(w.layer, 150, 26, 'sv-box-risk', `302 → ${r.name}`, 'sv-risk');
+      put(back, 300, 165); move(w, back, 30, 165);
+      await w.sleep(460); fade(w, back);
+      await w.sleep(200);
+      for (const leg of ['DNS', 'TCP', 'TLS']) {
+        const c = card(w.layer, 66, 24, 'sv-box-hot', leg, 'sv-hot');
+        put(c, 30, 165); move(w, c, 610, r.y);
+        await w.sleep(320); fade(w, c);
+      }
+      r.b.set('sv-box-hot');
+      r.sub.textContent = 'new connection';
+      const req2 = card(w.layer, 100, 26, 'sv-box-hot', 'GET /orders', 'sv-hot');
+      put(req2, 30, 165); move(w, req2, 610, r.y);
+      await w.sleep(420);
+      r.sub.textContent = '200';
+      fade(w, req2);
+    }
+
+    steps('redir', w, [
+      async (w) => {
+        await redirectTo(w, 0);
+        w.say('The first answer was a redirect. <strong>Three more round trips</strong> — DNS, TCP, TLS — before the real request even lands.');
+      },
+      async (w) => {
+        w.tag.textContent = 'cookie: tenant=eu';
+        const req = card(w.layer, 140, 26, 'sv-box-hot', 'GET / · tenant=eu', 'sv-hot');
+        put(req, 30, 165); move(w, req, 300, 165);
+        await w.sleep(420); fade(w, req);
+        w.slotBox.setAttribute('class', 'sv-box-hot');
+        w.slot.textContent = 'reads the cookie';
+        await w.sleep(500);
+        w.slot.textContent = '302 → eu.shop.vn';
+        await w.sleep(500);
+        w.slotBox.setAttribute('class', 'sv-box');
+        w.slot.textContent = '';
+        const back = card(w.layer, 150, 26, 'sv-box-risk', '302 → eu.shop.vn', 'sv-risk');
+        put(back, 300, 165); move(w, back, 30, 165);
+        await w.sleep(460); fade(w, back);
+        w.regions[1].b.set('sv-box-hot');
+        w.regions[1].sub.textContent = 'tenant data lives here';
+        w.say('DNS could not do this: it <strong>never saw the cookie</strong>. Only the app, holding the whole request, can.');
+      },
+      async (w) => {
+        w.regions[0].b.set('sv-box-hot');
+        w.regions[0].sub.textContent = 'cost already paid';
+        const req = card(w.layer, 100, 26, 'sv-box-hot', 'GET /orders', 'sv-hot');
+        put(req, 30, 165); move(w, req, 610, w.regions[0].y);
+        await w.sleep(460);
+        w.regions[0].sub.textContent = '200 · direct';
+        fade(w, req);
+        await w.sleep(400);
+        w.entryWall.setAttribute('class', 'gl-shell-risk');
+        w.entryGlyph.set('sv-box-risk');
+        w.note.textContent = 'entry host is down';
+        const req2 = card(w.layer, 90, 26, 'sv-box-risk', 'GET /', 'sv-risk');
+        put(req2, 30, 165); move(w, req2, 300, 165);
+        await w.sleep(420);
+        move(w, req2, 30, 165);
+        await w.sleep(400); fade(w, req2);
+        w.say('Existing users on <code>sg.shop.vn</code> keep going. <strong>New users get nothing</strong>: the redirector is a single point on the first request.');
+      },
+    ]);
+  }
+
+  // ---------- appendix · anycast ----------
   {
     const POPS = [
       { name: 'Singapore', y: 40 },
@@ -653,7 +783,7 @@
     ]);
   }
 
-  // ---------- 2.6 anycast + edge proxy ----------
+  // ---------- appendix · anycast + edge proxy ----------
   {
     const w = scene($('edge-flow'), `0 0 ${W} ${H}`, (svg) => {
       const fixed = el('g', {}, svg);
