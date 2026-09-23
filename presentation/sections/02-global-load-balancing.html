@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 2</div>
   <h2>Global load balancing</h2>
   <p class="lead">Between regions and continents. A local balancer picks a backend for traffic that already reached it; a global one has to change where the client sends traffic in the first place.</p>
-  <div class="foot"><span>22 / 55</span><span>section 2 · global load balancing</span></div>
+  <div class="foot"><span>21 / 54</span><span>section 2 · global load balancing</span></div>
 </section>
 
 <section class="slide" data-section="local-cant-fix">
@@ -21,19 +21,19 @@
       <li data-step="2"><span class="chip hot">why go global</span> Latency · disaster recovery · capacity beyond one region · data residency (GDPR, Vietnam's Decree 53 — some data legally cannot leave).</li>
     </ul>
   </div>
-  <div class="foot"><span>23 / 55</span><span>the two problems with no in-region answer</span></div>
+  <div class="foot"><span>22 / 54</span><span>the two problems with no in-region answer</span></div>
 </section>
 
 <section class="slide" data-section="three-levers">
   <div class="eyebrow"><svg class="ic"><use href="#ic-list"/></svg>2.2 · The three levers</div>
   <h2>A global balancer is not a box you put traffic through. It makes the client choose.</h2>
-  <div class="body" style="gap:14px;">
+  <div class="body" style="gap:11px;">
     <table class="tbl compact">
-      <thead><tr><th>Lever</th><th>What it actually does</th><th>When the choice happens</th></tr></thead>
+      <thead><tr><th style="width:15%">Lever</th><th style="width:34%">The network mechanism underneath</th><th style="width:33%">How the lever uses it</th><th style="width:18%">When the choice happens</th></tr></thead>
       <tbody>
-        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td>Your nameserver answers with a different address per user location and region health</td><td class="num">before connecting</td></tr>
-        <tr><td class="name">Routing<span>anycast · BGP</span></td><td>One IP announced from many places; the internet's routing picks the nearest</td><td class="num">during connecting</td></tr>
-        <tr><td class="name">Redirection<span>HTTP 302</span></td><td>The app answers with a redirect to a region-specific hostname</td><td class="num">after connecting</td></tr>
+        <tr><td class="name">Name resolution<span>DNS · GSLB</span></td><td><b>DNS</b> — Domain Name System: hostname → IP address, cached at every layer.</td><td>The nameserver answers differently per user location and region health</td><td class="num">before connecting</td></tr>
+        <tr><td class="name">Routing<span>anycast · BGP</span></td><td><b>Anycast</b>: one IP address announced from many points of presence (PoPs). <b>BGP</b> — Border Gateway Protocol: how networks share routes.</td><td>Announce everywhere; the internet routes to the nearest. Withdraw to drain a region.</td><td class="num">during connecting</td></tr>
+        <tr><td class="name">Redirection<span>HTTP 302</span></td><td><b>HTTP 302</b>: a response that says "ask this other URL instead".</td><td>The app answers with a redirect to a region-specific hostname</td><td class="num">after connecting</td></tr>
       </tbody>
     </table>
 
@@ -89,7 +89,7 @@
       <li>A local balancer is already <b>on the data path</b>. A global one has to act <b>before the connection exists</b> — so ③ is rare, and real systems use ① and ②.</li>
     </ul>
   </div>
-  <div class="foot"><span>24 / 55</span><span>name resolution · routing · redirection</span></div>
+  <div class="foot"><span>23 / 54</span><span>name resolution · routing · redirection</span></div>
 </section>
 
 <section class="slide" data-section="gslb-dns">
@@ -106,12 +106,12 @@
       <li data-step="2"><span class="chip risk">omission</span> It never sees <b>load</b>. A region that is healthy but saturated keeps its full share, because a health check answers "is it up", not "can it take more".</li>
     </ul>
   </div>
-  <div class="foot"><span>25 / 55</span><span>gslb · one hostname, many answers</span></div>
+  <div class="foot"><span>24 / 54</span><span>gslb · one hostname, many answers</span></div>
 </section>
 
 <section class="slide" data-section="dns-stale">
   <div class="eyebrow"><svg class="ic"><use href="#ic-clock"/></svg>2.4 · Why DNS can never be fast</div>
-  <h2>The TTL is a promise about lookups, and an open socket never looks anything up</h2>
+  <h2>The TTL (time to live) is a promise about lookups, and an open socket never looks anything up</h2>
   <div class="split">
     <div class="body">
       <div class="chart meter"><svg id="stale-flow" role="img" aria-label="Five layers caching a stale DNS answer, and the failover time they add up to"></svg></div>
@@ -123,7 +123,7 @@
       <li data-step="2"><span class="chip ok">do</span> Make the slowness harmless. Never cut the old address off: let it proxy onward, or answer <code>503</code> + <code>Retry-After</code>. Users can see <b>zero errors</b> during a failover that still takes five minutes.</li>
     </ul>
   </div>
-  <div class="foot"><span>26 / 55</span><span>ttl · caching layers · the failover formula</span></div>
+  <div class="foot"><span>25 / 54</span><span>ttl · caching layers · the failover formula</span></div>
 </section>
 
 <section class="slide" data-section="anycast">
@@ -137,10 +137,10 @@
     <ul class="points tight">
       <li><span class="chip">how</span> Several sites each announce the same prefix over <b>BGP</b> — "traffic for this address can come to me" — and every network on the path picks whichever announcement looks closest to it.</li>
       <li data-step="1"><span class="chip hot">failover</span> Withdraw the announcement and the internet re-learns the next-best path in seconds. No client needs a new answer: <b>the address never changed.</b></li>
-      <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN, address block and peering — which is why most teams rent anycast.</li>
+      <li data-step="2"><span class="chip risk">gotcha</span> BGP counts <b>networks crossed</b>, not milliseconds, and you cannot say "send this PoP 20% of traffic". You also need your own ASN (autonomous system number), address block and peering — which is why most teams rent anycast.</li>
     </ul>
   </div>
-  <div class="foot"><span>27 / 55</span><span>anycast · bgp · withdraw to fail over</span></div>
+  <div class="foot"><span>26 / 54</span><span>anycast · bgp · withdraw to fail over</span></div>
 </section>
 
 <section class="slide" data-section="edge-proxy">
@@ -157,7 +157,7 @@
       <li data-step="2"><span class="chip ok">cdn</span> A CDN is this same machine with a cache bolted on. Note the handshake win lands even on requests that can never be cached — which is why an API behind a CDN pays off at a <b>0% hit rate</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>28 / 55</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
+  <div class="foot"><span>27 / 54</span><span>edge proxy · cdn · why 0% hit rate still wins</span></div>
 </section>
 
 <section class="slide" data-section="global-compare">
@@ -179,32 +179,14 @@
       <li data-step="1"><span class="chip risk">the shared gotcha</span> <b>Global health checking is genuinely hard.</b> A region can be fine but unreachable from Europe because of one transit provider. And a flapping global check doesn't eject one pod — <b>it moves a continent</b>.</li>
     </ul>
   </div>
-  <div class="foot"><span>29 / 55</span><span>comparing the three levers</span></div>
-</section>
-
-<section class="slide" data-section="global-selfcheck">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-question"/></svg>2.8 · Check yourself</div>
-  <h2>Two questions that separate "knows the words" from "knows the mechanism"</h2>
-  <div class="two" style="align-items:stretch;">
-    <div class="card">
-      <div class="k">question 1</div>
-      <div class="t">Why can't DNS failover drain a region gracefully, when an edge proxy can?</div>
-      <p data-step="1">DNS gives one influence point — the answer you hand out — and then no relationship with the client until its cache expires. It cannot tell resolved clients to stop, and cannot tell in-flight work from new work. An edge proxy is on the path for every request, so it can stop sending new ones while outstanding ones finish.</p>
-    </div>
-    <div class="card">
-      <div class="k">question 2</div>
-      <div class="t">Origin in <code>us-east-1</code>, users in Vietnam. What does a CDN recover, and what does it not touch?</div>
-      <p data-step="2">It recovers the handshakes: TCP and TLS now complete ~30 ms away instead of ~230 ms, so ~690 ms becomes ~90 ms before the request is even in flight. It does not touch the origin fetch — that still crosses the Pacific, but once, over a warm pooled connection.</p>
-    </div>
-  </div>
-  <div class="foot"><span>30 / 55</span><span>self-check · global</span></div>
+  <div class="foot"><span>28 / 54</span><span>comparing the three levers</span></div>
 </section>
 
 <section class="slide" data-section="architecture">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.9 · Architecture</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>2.8 · Architecture</div>
   <h2>DNS picks the region, L4 spreads connections, L7 spreads requests, the mesh spreads calls</h2>
   <div class="body meter" style="justify-content:center;">
-    <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, Envoy fleet, services with sidecars">
+    <svg viewBox="0 0 1268 300" style="width:100%;height:auto;overflow:visible;" role="img" aria-label="Global architecture: Route 53, then per region NLB, L7 proxy fleet, services with sidecars">
       <defs><marker id="arrow-arch" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" class="sv-ink"/></marker></defs>
       <use href="#gl-client" class="gl" x="26" y="112" width="58" height="58"/><text x="55" y="190" text-anchor="middle" class="sv-lbl">Clients</text><text x="55" y="208" text-anchor="middle" class="sv-lbl-sm">web · mobile</text>
       <path d="M90 140 H174" class="sv-line" marker-end="url(#arrow-arch)"/>
@@ -217,7 +199,7 @@
         <text x="396" y="30" class="sv-lbl-sm">ap-southeast-1 · Singapore</text>
         <use href="#gl-balancer" class="gl" x="396" y="52" width="54" height="54"/><text x="460" y="76" class="sv-lbl">NLB</text><text x="460" y="96" class="sv-lbl-sm">L4 · 3 AZs</text>
         <path d="M552 79 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <use href="#gl-balancer" class="gl gl-hot" x="588" y="52" width="54" height="54"/><text x="652" y="76" class="sv-lbl">Envoy fleet × 12</text><text x="652" y="96" class="sv-hot">TLS · L7 · least request</text>
+        <use href="#gl-balancer" class="gl gl-hot" x="588" y="52" width="54" height="54"/><text x="652" y="76" class="sv-lbl">L7 proxy fleet × 12</text><text x="652" y="96" class="sv-hot">TLS · L7 · least request</text>
         <path d="M900 79 H934" class="sv-line" marker-end="url(#arrow-arch)"/>
         <use href="#gl-pod" class="gl" x="940" y="52" width="54" height="54"/><text x="1004" y="76" class="sv-lbl">30 services + sidecars</text><text x="1004" y="96" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
@@ -226,21 +208,21 @@
         <text x="396" y="190" class="sv-lbl-sm">ap-northeast-1 · Tokyo</text>
         <use href="#gl-balancer" class="gl" x="396" y="212" width="54" height="54"/><text x="460" y="236" class="sv-lbl">NLB</text><text x="460" y="256" class="sv-lbl-sm">L4 · 3 AZs</text>
         <path d="M552 239 H584" class="sv-line" marker-end="url(#arrow-arch)"/>
-        <use href="#gl-balancer" class="gl gl-hot" x="588" y="212" width="54" height="54"/><text x="652" y="236" class="sv-lbl">Envoy fleet × 12</text><text x="652" y="256" class="sv-hot">TLS · L7 · least request</text>
+        <use href="#gl-balancer" class="gl gl-hot" x="588" y="212" width="54" height="54"/><text x="652" y="236" class="sv-lbl">L7 proxy fleet × 12</text><text x="652" y="256" class="sv-hot">TLS · L7 · least request</text>
         <path d="M900 239 H934" class="sv-line" marker-end="url(#arrow-arch)"/>
         <use href="#gl-pod" class="gl" x="940" y="212" width="54" height="54"/><text x="1004" y="236" class="sv-lbl">30 services + sidecars</text><text x="1004" y="256" class="sv-lbl-sm">mesh: per-call gRPC balancing</text>
       </g>
     </svg>
   </div>
-  <div class="foot"><span>31 / 55</span><span>system design · architecture</span></div>
+  <div class="foot"><span>29 / 54</span><span>system design · architecture</span></div>
 </section>
 
 <section class="slide" data-section="capacity">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.10 · Capacity</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gauge"/></svg>2.9 · Capacity</div>
   <h2>Failover moves the traffic, not the capacity. Size each region for the whole world.</h2>
   <div class="split" style="align-items:start;">
     <div class="stack">
-      <div class="formula">peak <b>200,000 req/s</b> global<br>one region down → survivor takes <b>200,000</b><br>Envoy node: <b>25,000 req/s</b> at 60% CPU <span class="muted">(measure yours)</span></div>
+      <div class="formula">peak <b>200,000 req/s</b> global<br>one region down → survivor takes <b>200,000</b><br>one L7 balancer node: <b>25,000 req/s</b> at 60% CPU <span class="muted">(measure yours)</span></div>
       <div class="formula">200,000 ÷ 25,000 = <b>8 nodes</b><br>+ lose 1 AZ of 3 → × 1.5 = <b>12</b><br>per region: <b>12 nodes</b>, normally at ~33% of rated load</div>
     </div>
     <ul class="points tight">
@@ -250,7 +232,56 @@
       <li data-step="1">Then prove it: game-day drill, drain one region on purpose in business hours, watch p99 and 5xx.</li>
     </ul>
   </div>
-  <div class="foot"><span>32 / 55</span><span>system design · capacity</span></div>
+  <div class="foot"><span>30 / 54</span><span>system design · capacity</span></div>
+</section>
+
+<section class="slide" data-section="eks-path">
+  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>2.10 · The path on AWS EKS</div>
+  <h2>Four hops pick a destination before a request reaches a pod</h2>
+  <div class="body" style="gap:16px;">
+    <div class="chart">
+    <svg viewBox="0 0 1160 110" role="img" aria-label="Route 53, ALB or NLB, ingress controller, Kubernetes Service, pod">
+      <defs>
+        <marker id="arrow-eks" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
+      </defs>
+      <use href="#gl-internet" class="gl gl-hot" x="58" y="10" width="54" height="54"/>
+      <text x="85" y="80" text-anchor="middle" class="sv-lbl">Route 53 · DNS</text>
+      <text x="85" y="100" text-anchor="middle" class="sv-hot">① picks a region</text>
+      <path d="M118 37 H208" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-balancer" class="gl gl-hot" x="293" y="10" width="54" height="54"/>
+      <text x="320" y="80" text-anchor="middle" class="sv-lbl">ALB (L7) or NLB (L4)</text>
+      <text x="320" y="100" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
+      <path d="M353 37 H473" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-balancer" class="gl gl-hot" x="558" y="10" width="54" height="54"/>
+      <text x="585" y="80" text-anchor="middle" class="sv-lbl">Ingress · NGINX, Envoy</text>
+      <text x="585" y="100" text-anchor="middle" class="sv-hot">③ picks a pod</text>
+      <path d="M618 37 H748" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-balancer" class="gl" x="833" y="10" width="54" height="54"/>
+      <text x="860" y="80" text-anchor="middle" class="sv-lbl">Service · iptables / IPVS</text>
+      <text x="860" y="100" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
+      <path d="M893 37 H1023" class="sv-line" marker-end="url(#arrow-eks)"/>
+
+      <use href="#gl-pod" class="gl" x="1063" y="10" width="54" height="54"/>
+      <text x="1090" y="80" text-anchor="middle" class="sv-lbl">Pod</text>
+    </svg>
+    </div>
+    <table class="tbl dense">
+      <thead><tr><th></th><th>Layer</th><th>Default algorithm</th><th>Health signal</th></tr></thead>
+      <tbody>
+        <tr><td class="name">① Route 53</td><td>DNS</td><td>Latency, geo, or weighted records</td><td>Route 53 health checks</td></tr>
+        <tr><td class="name">② ALB / NLB</td><td>L7 (ALB) · L4 (NLB)</td><td>ALB: round robin, or least outstanding requests · NLB: 5-tuple flow hash, sticky per connection</td><td>Target group health check</td></tr>
+        <tr><td class="name">③ Ingress</td><td>L7</td><td>Round robin (NGINX); Envoy also offers least request, ring hash</td><td>Pod readiness via Endpoints</td></tr>
+        <tr><td class="name">④ Service</td><td>L4</td><td>iptables: random pick per connection · IPVS: round robin</td><td>Pod readiness only</td></tr>
+      </tbody>
+    </table>
+    <ul class="points tight" data-step="1">
+      <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>31 / 54</span><span>system design · the path on eks</span></div>
 </section>
 
 <script>

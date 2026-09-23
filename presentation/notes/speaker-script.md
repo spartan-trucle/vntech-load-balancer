@@ -20,15 +20,15 @@ nhớ sửa luôn ở đây.
 |---|---|---|---|
 | Cover + outline | 1–2 | Trúc | 2 phút |
 | 00 Giới thiệu | 3–9 | Trúc | 10 phút |
-| 01 Local load balancing | 10–21 | Trúc | 16 phút |
-| 02 Global load balancing | 22–32 | Trúc | 15 phút |
-| 03 Algorithms | 33–42 | Khánh | 15 phút |
+| 01 Local load balancing | 10–20 | Trúc | 16 phút |
+| 02 Global load balancing | 21–31 | Trúc | 15 phút |
+| 03 Algorithms | 32–42 | Khánh | 15 phút |
 | 03 Phụ lục (chỉ khi còn giờ / có người hỏi) | 43–47 | Khánh | 0–8 phút |
 | 04 Demo | 48–53 | Khánh | 10 phút |
 | Cảm ơn + Kahoot | 54 | cả hai | 3 phút |
 
 **Deck này chạy khoảng 60 phút nếu không tính phụ lục.** Cần cắt thì cắt theo thứ tự này, mỗi
-cái đều đứng độc lập được: phụ lục (43–47), rồi 32, 30, 18, 16. Đừng bao giờ bỏ slide 52 —
+cái đều đứng độc lập được: phụ lục (43–47), rồi 31, 18, 16. Đừng bao giờ bỏ slide 52 —
 demo live mới là thứ mọi người nhớ.
 
 ---
@@ -235,7 +235,7 @@ bắt TLS phải tới thẳng backend.
 theo weight, p99 theo từng route. Đa số traffic web và API rơi vào đây, nên **mặc định cứ chọn
 L7** trừ khi dính một lý do ở trên.
 **Nói:** Còn hệ thống lớn thì gần như luôn là *cả hai*: một lớp L4 rẻ ở biên để hứng connection,
-fleet L7 phía sau lo route. Đúng cái hình EKS ở slide 20.
+fleet L7 phía sau lo route. Đúng cái hình EKS ở slide 31.
 **→ 1:** Hai cái mặc định hay làm người ta vấp. Một là NLB *có* terminate TLS nếu bạn cho nó
 một TLS listener — và vẫn chia theo flow hash, vì nó không parse HTTP. Giải mã và hiểu là hai
 năng lực khác nhau. Hai là ALB mặc định round robin; least outstanding requests tắt cho tới khi
@@ -262,18 +262,7 @@ staging rồi giả lập dữ liệu cho giống.
 **Chốt:** L4 không làm được cái nào trong ba cái đó. Nó không thấy path, không thấy header — nó
 chọn một pod cho cả connection rồi hết phần nó.
 
-### 20 / 54 · Đường đi trên AWS EKS
-**Nói:** Thực tế không phải một load balancer, mà là bốn chặng. Route 53 chọn region. ALB chọn
-IP của node hoặc pod. Ingress controller chọn pod. Service, qua kube-proxy, lo các cuộc gọi
-pod-to-pod. Bốn thứ, mỗi thứ có algorithm riêng và định nghĩa "healthy" riêng — nhìn bảng: round
-robin ở ALB, round robin ở ingress, còn ở tầng Service thì iptables chọn *ngẫu nhiên* cho mỗi
-connection.
-**→ 1:** Traffic từ ngoài có thể bỏ hẳn chặng bốn — nếu ingress gửi thẳng vào pod IP thì
-Service chỉ còn dùng cho gọi nội bộ. Và ở đó nó cân bằng theo connection, không phải theo
-request. Nhớ điều này lúc nói tới gRPC.
-**Chốt:** Khi tải lệch, câu hỏi đầu tiên là *cái nào* trong bốn chặng đã ra quyết định.
-
-### 21 / 54 · Client-side balancing
+### 20 / 54 · Client-side balancing
 **Nói:** Với gọi service-to-service thì có thể bỏ luôn cái hộp ở giữa. gRPC client bật
 `round_robin` cộng với headless Service sẽ mở một connection cho mỗi pod và tự rải request.
 Service mesh cũng vậy, bằng sidecar nằm cạnh từng pod — code của mình chỉ gọi localhost. Bớt
@@ -283,11 +272,11 @@ pod từ headless Service hoặc từ registry.
 **→ 2:** Cái giá: client nào cũng cần danh sách pod và phải tự cập nhật. Danh sách cũ thì gọi
 vào pod không còn tồn tại, và giờ con bug đó nằm trong mọi service thay vì một chỗ.
 
-### 22 / 54 · Divider 02
+### 21 / 54 · Divider 02
 **Nói:** Giờ ra giữa các region. Bài toán khác hẳn: thứ ra quyết định thường là DNS, mà DNS thì
 không thấy được health hay load.
 
-### 23 / 54 · Một region không giải quyết được gì
+### 22 / 54 · Một region không giải quyết được gì
 **Nói:** Từ nãy tới giờ mình mặc định là load balancer luôn với tới được. Nhìn hình cho dễ.
 Ngày thường: balancer chọn pod, user nhận 200. Rồi pod-b chết — balancer né qua pod-c, user
 không hề biết có chuyện gì. Đó đúng là việc nó sinh ra để làm.
@@ -302,14 +291,17 @@ connection ở gần user hơn.
 **Chốt:** Bốn lý do đi global — latency, disaster recovery, capacity vượt quá một region, và
 data residency. Cái cuối là luật chứ không phải sở thích: GDPR, và Nghị định 53 của Việt Nam.
 
-### 24 / 54 · Ba đòn bẩy
+### 23 / 54 · Ba đòn bẩy
 **Nói:** Đây là chỗ phải đổi cách nghĩ. Load balancer local là một proxy *nằm trên data path* —
 traffic đã tới nó rồi, nó chỉ chọn backend. Load balancer global phải đổi được chỗ client gửi
 traffic *trước khi có bất kỳ connection nào*. Nó không phải cái hộp mình đẩy traffic qua, mà là
 cơ chế khiến client tự chọn.
-**Bảng:** Ba đòn bẩy, và cột quan trọng nhất là *khi nào*. Name resolution quyết định trước khi
-connect. Routing — anycast — quyết định trong lúc connect. Redirection, cái 302, quyết định sau
-khi connect.
+**Bảng:** Ba đòn bẩy. Cột thứ hai nhắc lại *cơ chế mạng* bên dưới, cho ai lâu rồi không đụng
+tới: DNS là Domain Name System, tra hostname ra IP, và mọi tầng đều cache câu trả lời. Anycast
+là **một** địa chỉ IP được announce từ nhiều PoP — point of presence — cùng lúc; BGP, Border
+Gateway Protocol, là cách các mạng báo cho nhau tuyến nào đi được. Cột thứ ba là đòn bẩy dùng
+cơ chế đó ra sao. Còn cột quan trọng nhất vẫn là *khi nào*: name resolution quyết định trước khi
+connect, routing quyết định trong lúc connect, redirection — cái 302 — quyết định sau khi connect.
 **→ 1:** Ba khoảnh khắc, nhìn ba hình nhỏ cho dễ hình dung. ① *Trước khi connect*: user chưa
 mở connection nào cả, mới chỉ đi hỏi DNS — và câu trả lời đó quyết định region. ② *Trong lúc
 connect*: chỉ có đúng một địa chỉ, nhưng mạng tự chọn giùm cửa nào gần nhất, mình không chen
@@ -317,7 +309,7 @@ vào được. ③ *Sau khi connect*: đã nói chuyện với server rồi mớ
 nguyên một vòng nữa, nên hiếm ai xài. Mọi thứ thật đều là ① hoặc ②, hoặc cả hai.
 **Chốt:** Giữ cái bảng này trong đầu cho bốn slide tới.
 
-### 25 / 54 · DNS-based routing (GSLB)
+### 24 / 54 · DNS-based routing (GSLB)
 **Nói:** Đòn bẩy một. Authoritative nameserver của bạn *chính là* load balancer global. Một
 query tới từ Việt Nam, nó áp policy, nó trả về địa chỉ Singapore kèm TTL 60 giây. Rồi để ý cái
 này: client kết nối thẳng tới Singapore, và GSLB ra khỏi đường đi hoàn toàn. Nó không bao giờ
@@ -331,7 +323,7 @@ tập ứng viên *trước*, rồi policy mới chạy trên phần còn lại.
 của bạn. Để ý cái thiếu: **load**. Một region healthy nhưng đã quá tải vẫn nhận đủ phần của nó,
 vì health check trả lời "nó còn sống không", chứ không phải "nó còn gánh thêm được không".
 
-### 26 / 54 · Vì sao DNS không bao giờ nhanh được
+### 25 / 54 · Vì sao DNS không bao giờ nhanh được
 **Nói:** Ở t=0 GSLB bắt đầu trả địa chỉ mới. Giờ đếm xem ai còn đang giữ địa chỉ cũ. Recursive
 resolver. OS stub resolver. Cache của chính trình duyệt. Runtime ngôn ngữ — cache của JVM mặc
 định là vĩnh viễn. Và cái thứ năm, cái người ta hay quên: một socket đang mở trong connection
@@ -348,7 +340,7 @@ vẫn mất năm phút.
 tiền theo số query, và chính mấy câu trả lời đã cache mới là thứ giữ user chạy được khi
 nameserver của mình không với tới được.
 
-### 27 / 54 · Anycast
+### 26 / 54 · Anycast
 **Nói:** Đòn bẩy hai, và là một ý tưởng hoàn toàn khác. Nhiều site cùng announce *cùng một* địa
 chỉ IP qua BGP — "traffic cho địa chỉ này cứ gửi về tôi" — và mọi network trên đường đi chọn
 cái announcement mà nó thấy gần nhất. Hai user ở đây quay cùng một địa chỉ mà đáp xuống hai toà
@@ -363,7 +355,7 @@ rút hẳn.
 **Chốt:** Nó cũng là network engineering thứ thiệt: ASN riêng, dải IP riêng, thoả thuận peering.
 Đó đúng là lý do phần lớn team đi thuê anycast chứ không tự dựng.
 
-### 28 / 54 · Anycast + edge proxy
+### 27 / 54 · Anycast + edge proxy
 **Nói:** Giờ ghép hai cái lại, và đây là câu trả lời hiện đại. Anycast đưa user tới PoP gần
 nhất, và PoP đó là một **L7 proxy đầy đủ**, không phải cái bảng chỉ đường. Nó tự hoàn tất
 handshake — ba vòng ở 30 mili-giây thay vì 230, tức 90 mili-giây thay vì 690 — rồi chuyển
@@ -377,7 +369,7 @@ không cần cache gì cả. Đó là lý do đặt một API sau CDN vẫn đá
 bằng 0%**.
 **Chốt:** Cloudflare, global load balancer của Google, Fastly — đều là cỗ máy này.
 
-### 29 / 54 · Đòn bẩy nào, khi nào
+### 28 / 54 · Đòn bẩy nào, khi nào
 **Nói:** Bảng so sánh. Failover: phút, giây, dưới một giây. Điều khiển theo từng request: không,
 không, full L7. Thấy được load của backend: không, không, có. Quy luật y hệt phần 1 — load
 balancer càng nằm *trên đường đi*, nó càng làm được nhiều.
@@ -388,28 +380,20 @@ thì được một mớ ý kiến trái nhau phải tự xử.
 **Chốt:** Và khi health check toàn cầu chập chờn, nó không loại một pod. **Nó dịch chuyển cả
 một châu lục.**
 
-### 30 / 54 · Tự kiểm tra
-**Nói:** Ba câu. Để mọi người trả lời trước rồi mới mở đáp án.
-**→ 1:** Drain êm: DNS chỉ có một điểm tác động rồi hết quan hệ với client. Edge proxy thì nằm
-trên đường đi của từng request.
-**→ 2:** CDN lấy lại phần handshake — 690 xuống 90 — và không đụng tới cú fetch về origin.
-**→ 3:** Anycast nhanh hơn vì đích của client không hề đổi; chỉ có đường đi đổi thôi.
-**Chốt:** Ba câu này mà thông thì bạn nắm được ba đòn bẩy và vì sao chúng khác nhau.
-
-### 31 / 54 · Kiến trúc
+### 29 / 54 · Kiến trúc
 **Nói:** Đây là toàn bộ mọi thứ ráp lại, và là hình dạng phần lớn team đang chạy thật. Route 53
 với latency routing, TTL 60 giây, chọn region. Trong mỗi region, một NLB trải trên ba AZ chia
-connection, một fleet Envoy terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
+connection, một fleet proxy L7 terminate TLS và chia request, còn mesh sidecar chia các cuộc gọi
 gRPC nội bộ.
 **Chốt:** Bốn quyết định cân bằng tải cho một request — và mỗi cái là một tầng khác nhau
 từ phần 1.
 
-### 32 / 54 · Capacity
+### 30 / 54 · Capacity
 **Nói:** Cái bẫy không ai lên kế hoạch cho: **failover chuyển traffic, chứ không chuyển
 capacity.** Singapore biến mất là Tokyo ôm 100% thế giới. Nếu Tokyo không gánh nổi *ngay lúc
 đó* thì bạn vừa biến một sự cố region thành hai.
 **Làm phép tính:** 200.000 request một giây trên toàn cầu. Mất một region nghĩa là con còn lại
-ôm hết 200.000. Một node Envoy chạy 25.000 ở 60% CPU — nhớ tự đo hệ thống của bạn, đừng lấy
+ôm hết 200.000. Một node L7 balancer chạy 25.000 ở 60% CPU — nhớ tự đo hệ thống của bạn, đừng lấy
 số của mình. Vậy là 8 node, nhân 1,5 để sống sót khi mất một AZ, thành 12 node mỗi region,
 bình thường chạy khoảng một phần ba công suất.
 **Nói:** Cái một phần ba nằm không đó không phải lãng phí. Nó chính là thứ khiến failover trở
@@ -418,11 +402,22 @@ mỗi cái ~50 KB, là 20 GB trên cả fleet.
 **→ 1:** Rồi chứng minh nó. Game-day drill: cố tình drain một region, trong giờ hành chính, và
 nhìn p99 với 5xx. Kế hoạch capacity chưa từng test thì vẫn chỉ là giả thuyết.
 
-### 33 / 54 · Divider 03
+### 31 / 54 · Đường đi trên AWS EKS
+**Nói:** Thực tế không phải một load balancer, mà là bốn chặng. Route 53 chọn region. ALB (L7) hoặc NLB (L4) chọn
+IP của node hoặc pod. Ingress controller chọn pod. Service, qua kube-proxy, lo các cuộc gọi
+pod-to-pod. Bốn thứ, mỗi thứ có algorithm riêng và định nghĩa "healthy" riêng — nhìn bảng: ALB round
+robin còn NLB băm 5-tuple, round robin ở ingress, còn ở tầng Service thì iptables chọn *ngẫu nhiên* cho mỗi
+connection.
+**→ 1:** Traffic từ ngoài có thể bỏ hẳn chặng bốn — nếu ingress gửi thẳng vào pod IP thì
+Service chỉ còn dùng cho gọi nội bộ. Và ở đó nó cân bằng theo connection, không phải theo
+request. Nhớ điều này lúc nói tới gRPC.
+**Chốt:** Khi tải lệch, câu hỏi đầu tiên là *cái nào* trong bốn chặng đã ra quyết định.
+
+### 32 / 54 · Divider 03
 **Nói:** Mình là Khánh. Mười slide tới, mỗi algorithm đều chỉ có một câu hỏi: load balancer
 thật sự nhìn vào cái gì? Thứ tự, capacity đã cấu hình, tải đang chạy, hay client là ai.
 
-### 34 / 54 · Load balancing algorithm là gì?
+### 33 / 54 · Load balancing algorithm là gì?
 **Nói:** Trước hết tách hai thứ mọi người hay gộp. Health check quyết định server nào *được
 phép*. Algorithm chọn một *trong số đó*, cho request này, dựa trên thông tin nó có. Static là
 luật cố định, mù tịt về việc server đang làm gì lúc này. Dynamic là nó đọc trạng thái sống của
@@ -432,7 +427,7 @@ connection đang chạy → least connections, cái dynamic duy nhất. IP của
 **Chốt:** Với mỗi cái, hỏi hai câu: nó biết gì, và nó *bỏ qua* gì? Phần bị bỏ qua luôn là chỗ
 nó vỡ.
 
-### 35 / 54 · Round robin
+### 34 / 54 · Round robin
 **Nói:** Server kế tiếp trong danh sách, hết thì quay lại đầu. Một biến đếm, `i++ % N`. Mặc
 định của NGINX, HAProxy và ALB. Nhìn nè: sáu request, mỗi con hai. Đều tăm tắp — nếu đếm theo
 số request.
@@ -442,7 +437,7 @@ có mười.
 **Chốt:** Round robin đếm request, không đếm khối lượng việc. Dùng khi server cùng cỡ và
 request tốn xấp xỉ nhau.
 
-### 36 / 54 · Weighted round robin
+### 35 / 54 · Weighted round robin
 **Nói:** Server A to gấp ba, nên cho weight 3. Cách làm ngây thơ là đi theo một danh sách cố
 định, `A A A B C` — đúng tỉ lệ, nhưng A ăn ba cú liên tiếp trong khi B và C ngồi chơi.
 **→ 1:** NGINX làm mượt: cộng weight vào biến đếm của từng server, chọn con lớn nhất, rồi trừ
@@ -451,7 +446,7 @@ request tốn xấp xỉ nhau.
 là bạn vừa cấu hình sẵn một cú quá tải.
 **Dùng khi:** instance nhiều cỡ khác nhau trong lúc migration, hoặc chia traffic cho canary.
 
-### 37 / 54 · Least connections
+### 36 / 54 · Least connections
 **Nói:** Giờ tới cái biết đọc trạng thái sống. Server B đang GC pause — mỗi request năm giây
 thay vì một. Round robin vẫn đều đặn đưa cho nó mỗi request thứ ba và chúng chất đống: bốn trên
 mười hai, bốn cái kẹt cùng lúc.
@@ -462,7 +457,7 @@ thì có zero connection, nên bị dội nước ngay khoảnh khắc nó vào 
 **Dùng khi:** thời gian request chênh nhau nhiều, hoặc connection sống lâu — WebSocket, upload,
 DB proxy.
 
-### 38 / 54 · IP hash
+### 37 / 54 · IP hash
 **Nói:** Mục tiêu khác: đưa cùng một client về cùng một server, mà không cần bảng lưu ở đâu cả.
 `hash(ip) % N`. Mấy giá trị hash đang trên màn hình — mọi người kiểm tra phép tính giúp mình.
 Vòng một, ai cũng có session. Vòng hai, cùng IP, cùng hash, cùng server: sáu trên sáu tìm lại
@@ -471,7 +466,7 @@ Vòng một, ai cũng có session. Vòng hai, cùng IP, cùng hash, cùng server
 *một client*. Tất cả đáp xuống server A. Và `ip_hash` của NGINX chỉ dùng ba octet đầu của IPv4,
 nên nguyên một /24 dùng chung một server. User mobile thì đổi IP nên cũng mất affinity luôn.
 
-### 39 / 54 · IP hash khi số server thay đổi
+### 38 / 54 · IP hash khi số server thay đổi
 **Nói:** Vấn đề lớn hơn. Ba server, session đã nằm đúng chỗ.
 **→ 1:** Thêm server D. `% 3` thành `% 4`, và phần lớn user — ba phần tư — rơi vào server chưa
 từng thấy session của họ. Alex Xu gọi đây là bài toán rehashing, chương 5. Mỗi một cái như vậy
@@ -480,7 +475,7 @@ là một lần bị đăng xuất.
 **→ 3:** Consistent hashing sửa được phần *quy mô* — chỉ khoảng 1/N user phải dịch chuyển.
 Trong NGINX là `hash $remote_addr consistent`. Phụ lục có phần đi chi tiết.
 
-### 40 / 54 · Sticky session: stateful vs stateless
+### 39 / 54 · Sticky session: stateful vs stateless
 **Nói:** Lùi lại một bước. IP hash chỉ quan trọng vì server đang giữ session trong RAM. Đó mới
 là con bug thật. Alex Xu, chương 1: với server stateful thì mọi request của một client phải quay
 lại đúng server đó — sticky session làm được việc đó, nhưng giờ thêm bớt server thành khó, và
@@ -492,7 +487,7 @@ Tầng web thành stateless và server nào cũng phục vụ được bất k�
 **→ 2:** Vẫn muốn affinity? Dùng nó như một *gợi ý cache* — mất nó thì chỉ nên tốn một cache
 miss, chứ không phải một lần đăng xuất.
 
-### 41 / 54 · So sánh các algorithm
+### 40 / 54 · So sánh các algorithm
 **Nói:** Cả phần này gói trong một bảng. Đọc kỹ hai dòng quan trọng: chỉ least connections biết
 tải hiện tại. Chỉ IP hash cho affinity. Không cái nào làm được cả hai — đó không phải do bảng
 này thiếu, mà đúng là tình trạng của bốn cái kinh điển.
@@ -564,7 +559,7 @@ production.
 **Nói:** Trước khi mình chạy — mọi người đoán thử. Mỗi cái dưới đây là một dòng trong khối
 upstream. (Lấy đáp án từ khán phòng cho từng dòng rồi mới mở.)
 **→ 1:** `weight=4` → `8001 8001 8002 8001 8003 8001`. Smooth weighted round robin, tỉ lệ 4:1:1
-— đúng kiểu đan xen mình thấy ở slide 36.
+— đúng kiểu đan xen mình thấy ở slide 35.
 **→ 2:** `least_conn` → vẫn ra thứ tự round robin, vì mọi request xong ngay lập tức, số đếm hoà
 nhau ở zero, và NGINX phá hoà bằng round robin. Least connections cần request *chậm* thì mới
 khác round robin.
@@ -595,7 +590,7 @@ mười giây, rồi NGINX thử lại.
 *passive*. NGINX chỉ biết khi có một request thật fail — một user thật đã trả giá cho phát hiện
 đó. Active health check thì probe theo timer thay vì vậy.
 **→ 3:** Thử đúng như vậy với `ip_hash` xem, mấy user đang ở 8002 sẽ dời qua server khác. Nếu
-session nằm trong memory thì họ vừa bị đăng xuất. Đúng y slide 40.
+session nằm trong memory thì họ vừa bị đăng xuất. Đúng y slide 39.
 
 ### 54 / 54 · Cảm ơn + Kahoot
 **Nói:** Xong rồi đó. Hỏi đáp trước, rồi một ván Kahoot ngắn về chuyện load balancer biết những
@@ -607,13 +602,13 @@ gì: thứ tự, capacity, tải, danh tính client. Quét QR hoặc vào kahoot
 
 - **"Bản thân load balancer có phải single point of failure không?"** → Ngắn gọn: có. Trong một
   region thì chạy thành cặp (VRRP, floating IP) hoặc thành fleet sau ECMP/anycast, hoặc xài loại
-  managed. Nhưng cả region sập thì hết cách — đó đúng là slide 23.
-- **"Sao không xài luôn DNS round robin?"** → Slide 25. Không có health, không biết load, và TTL
+  managed. Nhưng cả region sập thì hết cách — đó đúng là slide 22.
+- **"Sao không xài luôn DNS round robin?"** → Slide 24. Không có health, không biết load, và TTL
   nghĩa là một IP đã chết vẫn nhận traffic cả mấy phút.
-- **"Tụi mình xài gRPC mà một pod ăn hết tải."** → Slide 20 cộng với 3.5: gRPC dồn mọi thứ lên
+- **"Tụi mình xài gRPC mà một pod ăn hết tải."** → Slide 31 cộng với 3.5: gRPC dồn mọi thứ lên
   một connection, nên load balancer L4 chọn pod đúng một lần rồi thôi. Cân bằng theo request ở
   L7, hoặc theo từng call trong client / mesh.
 - **"Nên dùng algorithm nào?"** → Slide 42. Bắt đầu bằng round robin, chuyển qua least
   connections khi thời gian request chênh lệch, và coi sticky session như một mùi lạ cần xem lại.
-- **"Failover thật sự nhanh cỡ nào?"** → Slide 26: thời gian phát hiện cộng TTL cộng mấy con
+- **"Failover thật sự nhanh cỡ nào?"** → Slide 25: thời gian phát hiện cộng TTL cộng mấy con
   rớt lại, nên DNS là vài phút, anycast là vài giây.

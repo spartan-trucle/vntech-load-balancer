@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>INTRODUCTION</div>
   <h2>Introduction</h2>
   <p class="lead">The three ways one server fails you — capacity, availability, operability — what a load balancer is, and the words people mix up.</p>
-  <div class="foot"><span>3 / 55</span><span>introduction</span></div>
+  <div class="foot"><span>3 / 54</span><span>introduction</span></div>
 </section>
 
 <section class="slide" data-section="three-axes">
@@ -29,7 +29,7 @@
     <div class="card lift">
       <div class="k">② Availability</div>
       <div class="t">Change you did not ask for</div>
-      <p>One crash, one kernel panic, one AZ losing power = 100% down. Running 3 instances fixes nothing until something notices the dead one.</p>
+      <p>One crash, one kernel panic, one AZ (availability zone) losing power = 100% down. Running 3 instances fixes nothing until something notices the dead one.</p>
       <svg class="mini" viewBox="0 0 300 96" role="img" aria-label="Three instances, one dead, traffic still sent to it">
         <use href="#gl-client" class="gl" x="4" y="28" width="34" height="34"/>
         <text x="21" y="78" text-anchor="middle" class="sv-lbl-sm">users</text>
@@ -65,7 +65,7 @@
     </div>
   </div>
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">Capacity is <em>how much</em> you can serve. Availability is surviving change you did not ask for. Operability is making change you did ask for, safely. Most of your changes are planned — that is why operability bites even a service that fits on one box.</p>
-  <div class="foot"><span>4 / 55</span><span>capacity · availability · operability</span></div>
+  <div class="foot"><span>4 / 54</span><span>capacity · availability · operability</span></div>
 </section>
 
 <section class="slide" data-section="one-server">
@@ -114,7 +114,7 @@
     </svg>
     <figcaption>More servers only help if something splits the traffic. Clients know one hostname; something behind that name has to pick a server for every request.</figcaption>
   </div>
-  <div class="foot"><span>5 / 55</span><span>why load balancing exists</span></div>
+  <div class="foot"><span>5 / 54</span><span>why load balancing exists</span></div>
 </section>
 
 <section class="slide" data-section="what-is-lb">
@@ -184,7 +184,7 @@
       </ul>
     </div>
   </div>
-  <div class="foot"><span>6 / 55</span><span>definition · listener, pool, algorithm, health</span></div>
+  <div class="foot"><span>6 / 54</span><span>definition · listener, pool, algorithm, health</span></div>
 </section>
 
 <section class="slide" data-section="proxy-vocabulary">
@@ -257,7 +257,7 @@
   <ul class="points tight" data-step="1">
     <li>To the client the LB <em>is</em> the server; to the backend it <em>is</em> the client — the backend sees the LB's IP, not the user's. Pass the real one in <code>X-Forwarded-For</code> (L7) or PROXY protocol (L4).</li>
   </ul>
-  <div class="foot"><span>7 / 55</span><span>forward proxy · reverse proxy · load balancer</span></div>
+  <div class="foot"><span>7 / 54</span><span>forward proxy · reverse proxy · load balancer</span></div>
 </section>
 
 <section class="slide" data-section="three-jobs">
@@ -283,8 +283,8 @@
       <p>Drain one pod, replace it, add it back. Canary 5% of traffic to v2. Clients see one stable address.</p>
     </div>
   </div>
-  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF rules. Those are features of the box, not of load balancing.</p>
-  <div class="foot"><span>8 / 55</span><span>spread · route around failure · hide change</span></div>
+  <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">It usually does more: TLS termination, HTTP/2 to clients, compression, WAF (web application firewall) rules. Those are features of the box, not of load balancing.</p>
+  <div class="foot"><span>8 / 54</span><span>spread · route around failure · hide change</span></div>
 </section>
 <section class="slide" data-section="lb-types">
   <div class="eyebrow"><svg class="ic"><use href="#ic-server"/></svg>Types of load balancer</div>
@@ -302,8 +302,8 @@
       <svg class="ic"><use href="#ic-search"/></svg>
       <div class="k">By what it reads</div>
       <div class="t">A port, or the HTTP request inside</div>
-      <p><b>Layer 4</b> · transport<br>Reads the IP address and TCP/UDP port. Picks a backend once per connection. AWS NLB.</p>
-      <p><b>Layer 7</b> · application<br>Reads the method, path, headers and cookies. Picks a backend per request. AWS ALB.</p>
+      <p><b>Layer 4</b> · transport<br>Reads the IP address and TCP/UDP port. Picks a backend once per connection. AWS NLB, the Network Load Balancer.</p>
+      <p><b>Layer 7</b> · application<br>Reads the method, path, headers and cookies. Picks a backend per request. AWS ALB, the Application Load Balancer.</p>
       <p style="margin-top:auto;"><span class="chip hot">part 1</span> how each one works</p>
     </div>
     <div class="card lift">
@@ -311,12 +311,12 @@
       <div class="k">By how far it reaches</div>
       <div class="t">One data center, or the whole planet</div>
       <p><b>Local</b> · one cluster or region<br>Backends are milliseconds apart and one balancer sees all of them.</p>
-      <p><b>Global (GSLB)</b> · across regions<br>Picks a region for the user, usually through DNS or anycast, before any local balancer is reached.</p>
+      <p><b>Global</b> · GSLB, global server load balancing<br>Picks a region for the user, usually through DNS or anycast, before any local balancer is reached.</p>
       <p style="margin-top:auto;"><span class="chip hot">part 2</span> DNS, anycast, edge proxies</p>
     </div>
   </div>
   <p class="caption" data-step="1" style="margin:0; font-size:16.5px;">One box is usually several of these at once: an AWS ALB is cloud, software underneath, and layer 7. The questions are independent.</p>
-  <div class="foot"><span>9 / 55</span><span>hardware · software · cloud · l4 · l7 · gslb</span></div>
+  <div class="foot"><span>9 / 54</span><span>hardware · software · cloud · l4 · l7 · gslb</span></div>
 </section>
 
 <section class="slide" data-section="scale-up-out">
@@ -336,6 +336,6 @@
       <div class="stack" style="gap:8px; margin-top:auto;"><span class="chip ok" style="align-self:flex-start">survives a dead pod</span><span class="chip hot" style="align-self:flex-start">needs stateless app + LB</span></div>
     </div>
   </div>
-  <div class="foot"><span>10 / 55</span><span>vertical vs. horizontal scaling</span></div>
+  <div class="foot"><span>10 / 54</span><span>vertical vs. horizontal scaling</span></div>
 </section>
 

@@ -4,7 +4,7 @@
   <div class="section-tag"><i></i>SECTION 1</div>
   <h2>Local load balancing</h2>
   <p class="lead">Inside one data center: what an L4 balancer and an L7 balancer actually do to your traffic, how they check that a backend is alive, and how to choose.</p>
-  <div class="foot"><span>11 / 55</span><span>section 1 · local load balancing</span></div>
+  <div class="foot"><span>11 / 54</span><span>section 1 · local load balancing</span></div>
 </section>
 
 <section class="slide" data-section="osi-stack">
@@ -70,7 +70,7 @@
         </g>
     </svg>
   </div>
-  <div class="foot"><span>12 / 55</span><span>osi model · l4 = nlb, l7 = alb</span></div>
+  <div class="foot"><span>12 / 54</span><span>osi model · l4 = nlb, l7 = alb</span></div>
 </section>
 
 <section class="slide" data-section="packet-vs-request">
@@ -88,7 +88,7 @@
       <li data-step="2">One request can span many packets; one packet can hold the tail of one request and the head of the next. Nothing on the wire marks where a request begins.</li>
     </ul>
   </div>
-  <div class="foot"><span>13 / 55</span><span>a packet is not a request</span></div>
+  <div class="foot"><span>13 / 54</span><span>a packet is not a request</span></div>
 </section>
 
 <section class="slide" data-section="l4-mechanics">
@@ -101,11 +101,11 @@
     </div>
     <ul class="points tight">
       <li><span class="chip">state</span> One row per flow: <code>(src ip, src port, dst ip, dst port) → pod</code>. Packets 2..N carry no routing hint, so the table is the only memory of the choice.</li>
-      <li data-step="1"><span class="chip hot">tls</span> Encrypted bytes forward exactly like plain ones — it was never going to read them. The one L7-ish signal it gets is <code>SNI</code>, sent in the clear during the handshake, which is how L4 does per-domain routing while holding no keys.</li>
+      <li data-step="1"><span class="chip hot">tls</span> Encrypted bytes forward exactly like plain ones — it was never going to read them. The one L7-ish signal it gets is <code>SNI</code> (Server Name Indication), sent in the clear during the handshake, which is how L4 does per-domain routing while holding no keys.</li>
       <li data-step="2"><span class="chip risk">cost</span> Restart the balancer and the table is gone: every live connection resets. And it kept no copy of the bytes, so it can never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>14 / 55</span><span>l4 · one decision per connection</span></div>
+  <div class="foot"><span>14 / 54</span><span>l4 · one decision per connection</span></div>
 </section>
 
 <section class="slide" data-section="l7-mechanics">
@@ -122,7 +122,7 @@
       <li data-step="2"><span class="chip hot">retry</span> It still holds the request in memory, so when a pod dies it writes the same bytes to another one. The client never learns anything went wrong.</li>
     </ul>
   </div>
-  <div class="foot"><span>15 / 55</span><span>l7 · one decision per request</span></div>
+  <div class="foot"><span>15 / 54</span><span>l7 · one decision per request</span></div>
 </section>
 
 <section class="slide" data-section="lb-is-a-program">
@@ -140,7 +140,7 @@
       <li data-step="2">An L4 balancer never keeps anything: it forwards each packet and forgets it. That is why it costs so much less, and why it could never retry.</li>
     </ul>
   </div>
-  <div class="foot"><span>16 / 55</span><span>memory · size limit · why retries stop</span></div>
+  <div class="foot"><span>16 / 54</span><span>memory · size limit · why retries stop</span></div>
 </section>
 
 <section class="slide" data-section="health-checks">
@@ -157,7 +157,7 @@
       <li data-step="2"><span class="chip risk">gotcha</span> Never check the database inside <code>/healthz</code>. A 2 s DB blip fails every pod at once and turns "degraded" into "100% down". Keep the check shallow.</li>
     </ul>
   </div>
-  <div class="foot"><span>17 / 55</span><span>active · passive · flapping · panic mode</span></div>
+  <div class="foot"><span>17 / 54</span><span>active · passive · flapping · panic mode</span></div>
 </section>
 
 <section class="slide" data-section="l4-l7-choose">
@@ -197,7 +197,7 @@ needs warm-up for a spike</pre>
       <li data-step="2"><span class="chip risk">4</span> <b>NLB cross-zone is off and billed</b> (ALB: on and free). Off, an AZ with 1 pod takes as much as one with 5.</li>
     </ul>
   </div>
-  <div class="foot"><span>18 / 55</span><span>when to use which · aws defaults</span></div>
+  <div class="foot"><span>18 / 54</span><span>when to use which · aws defaults</span></div>
 </section>
 
 <section class="slide" data-section="l7-routing">
@@ -265,60 +265,11 @@ needs warm-up for a spike</pre>
       <li data-step="2"><span class="chip hot">test in production</span> QA sends a header and lands on v2 every time, against real data, while everyone else stays on v1.</li>
     </ul>
   </div>
-  <div class="foot"><span>19 / 55</span><span>l7 routing · path, weight, header</span></div>
-</section>
-
-<section class="slide" data-section="eks-path">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-gate"/></svg>1.9 · The path on AWS EKS</div>
-  <h2>Four hops pick a destination before a request reaches a pod</h2>
-  <div class="body" style="gap:16px;">
-    <div class="chart">
-    <svg viewBox="0 0 1160 110" role="img" aria-label="Route 53, ALB, ingress controller, Kubernetes Service, pod">
-      <defs>
-        <marker id="arrow-eks" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" class="sv-ink"/></marker>
-      </defs>
-      <use href="#gl-internet" class="gl gl-hot" x="58" y="10" width="54" height="54"/>
-      <text x="85" y="80" text-anchor="middle" class="sv-lbl">Route 53 · DNS</text>
-      <text x="85" y="100" text-anchor="middle" class="sv-hot">① picks a region</text>
-      <path d="M118 37 H208" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-balancer" class="gl gl-hot" x="293" y="10" width="54" height="54"/>
-      <text x="320" y="80" text-anchor="middle" class="sv-lbl">ALB · L7, managed</text>
-      <text x="320" y="100" text-anchor="middle" class="sv-hot">② picks a node / pod IP</text>
-      <path d="M353 37 H473" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-balancer" class="gl gl-hot" x="558" y="10" width="54" height="54"/>
-      <text x="585" y="80" text-anchor="middle" class="sv-lbl">Ingress · NGINX, Envoy</text>
-      <text x="585" y="100" text-anchor="middle" class="sv-hot">③ picks a pod</text>
-      <path d="M618 37 H748" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-balancer" class="gl" x="833" y="10" width="54" height="54"/>
-      <text x="860" y="80" text-anchor="middle" class="sv-lbl">Service · iptables / IPVS</text>
-      <text x="860" y="100" text-anchor="middle" class="sv-lbl-sm">④ pod-to-pod calls</text>
-      <path d="M893 37 H1023" class="sv-line" marker-end="url(#arrow-eks)"/>
-
-      <use href="#gl-pod" class="gl" x="1063" y="10" width="54" height="54"/>
-      <text x="1090" y="80" text-anchor="middle" class="sv-lbl">Pod</text>
-    </svg>
-    </div>
-    <table class="tbl dense">
-      <thead><tr><th></th><th>Layer</th><th>Default algorithm</th><th>Health signal</th></tr></thead>
-      <tbody>
-        <tr><td class="name">① Route 53</td><td>DNS</td><td>Latency, geo, or weighted records</td><td>Route 53 health checks</td></tr>
-        <tr><td class="name">② ALB</td><td>L7</td><td>Round robin; can switch to least outstanding requests</td><td>Target group health check</td></tr>
-        <tr><td class="name">③ Ingress</td><td>L7</td><td>Round robin (NGINX); Envoy also offers least request, ring hash</td><td>Pod readiness via Endpoints</td></tr>
-        <tr><td class="name">④ Service</td><td>L4</td><td>iptables: random pick per connection · IPVS: round robin</td><td>Pod readiness only</td></tr>
-      </tbody>
-    </table>
-    <ul class="points tight" data-step="1">
-      <li><b>External traffic can skip hop ④.</b> With the ingress sending straight to pod IPs, the Service is only used for internal pod-to-pod calls — and there it balances <b>connections</b>, not requests.</li>
-    </ul>
-  </div>
-  <div class="foot"><span>20 / 55</span><span>layers · the path on eks</span></div>
+  <div class="foot"><span>19 / 54</span><span>l7 routing · path, weight, header</span></div>
 </section>
 
 <section class="slide" data-section="client-side-lb">
-  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.10 · Client-side balancing</div>
+  <div class="eyebrow"><svg class="ic"><use href="#ic-users"/></svg>1.9 · Client-side balancing</div>
   <h2>For service-to-service calls, the caller can pick the backend itself and skip a hop</h2>
   <div class="split">
     <div class="chart meter">
@@ -360,7 +311,7 @@ needs warm-up for a spike</pre>
       <li data-step="2">The cost: every client needs the pod list, and must refresh it when pods come and go. Stale lists send calls to pods that no longer exist.</li>
     </ul>
   </div>
-  <div class="foot"><span>21 / 55</span><span>client-side · grpc, service mesh</span></div>
+  <div class="foot"><span>20 / 54</span><span>client-side · grpc, service mesh</span></div>
 </section>
 
 <script>
